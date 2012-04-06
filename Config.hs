@@ -1,12 +1,14 @@
 -- | This module takes care of parsing the command-line arguments
 -- and defines a few constants
-module Config (parseArgs) where
+module Config (Target(..), parseArgs) where
 
 import Control.Monad(unless)
 import Data.Maybe(maybe)
+import Data.List
 import System.Console.GetOpt
 import System.Exit
 import System.IO
+import Text.Regex.Posix
 
 version = "0.1"
 
@@ -47,15 +49,33 @@ actionFromFlag f c =
 -- | From a list of arguments, return a configuration,
 -- the origin directory and the target directory.
 -- It is in IO, because it can print version/help messages, and exit the program.
-parseArgs :: [String] -> IO (Config, String, String)
+parseArgs :: [String] -> IO (Config, Target, Target)
 parseArgs args = do
     let (flags, nonflags, errs) = getOpt Permute options args
     config <- foldl (>>=) (return defaultConfig) $ map actionFromFlag flags
     unless (null errs) (mapM (hPutStrLn stderr) errs >> exitFailure)
     case nonflags of
-        [dir1, dir2] -> return (config, dir1, dir2)
+        [target1, target2] -> return (config, parseTarget target1, parseTarget target2)
         _ -> do
-            putStrLn "Exactly two directories must be provided"
+            putStrLn "Exactly two targets must be provided"
             putStrLn helpText
             exitFailure
-    
+
+-- | A target is either the origin or the end-point of the synchronization.
+-- If host is 'None' (ie localhost), then user is too.
+data Target = Target {
+      user :: Maybe String
+    , host :: Maybe String
+    , dir :: FilePath
+    }
+    deriving (Show)
+
+parseTarget :: String -> Target
+parseTarget str =
+    let (beforeCol, afterCol) = break (== ':') str in
+    if null afterCol -- No colon has been found
+        then Target Nothing Nothing beforeCol
+        else let (beforeAro, afterAro) = break (== '@') beforeCol in
+            if null afterAro -- No arobase has been found
+                then Target Nothing (Just beforeCol) (tail afterCol)
+                else Target (Just beforeAro) (Just $ tail afterAro) (tail afterCol)
