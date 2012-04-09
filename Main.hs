@@ -5,9 +5,10 @@ import System.Environment
 import System.Exit
 
 import Config
+import Hashing
 
 main :: IO ()
 main = do
     args <- getArgs
-    (config, dir1, dir2) <- parseArgs args
-    exitSuccess
+    (config, t1, t2) <- parseArgs args
+    ExitSuccess
