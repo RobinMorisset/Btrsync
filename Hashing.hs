@@ -7,10 +7,10 @@ import Control.Monad
 import Data.Bits (xor)
 import qualified Data.ByteString.Lazy as B
 import Data.Digest.Pure.SHA
-import Data.Functor
-import Data.Maybe
+import Data.List
 import qualified Data.Map as M
 import System.Directory
+import System.FilePath.Posix
 
 type Hash = Integer
 data File = File FilePath Hash
@@ -38,7 +38,8 @@ getPathValidity path = do
     isDir <- doesDirectoryExist path
     return $ case (isFile, isDir) of
         (True, False) -> PVFile path
-        (False, True) | path /= "." && path /= ".." -> PVDir path
+        (False, True) | not (isSuffixOf "." path) 
+                    && not (isSuffixOf ".." path) -> PVDir path
         _ -> PVFail 
 
 hashDir :: [File] -> [Dir] -> Hash
@@ -53,7 +54,9 @@ hashDir files dirs =
 toDir :: FilePath -> IO (Dir, M.Map Integer File, M.Map Integer Dir)
 toDir path = do
     contents <- getDirectoryContents path
-    validPaths <- mapM getPathValidity contents
+    -- Because getDirectoryContents return file/directory names and not paths
+    let contents_absolute = map (combine path) contents
+    validPaths <- mapM getPathValidity contents_absolute
     let (filesP, dirsP) = Prelude.foldl (\ (fs, ds) p -> case p of
             PVFile filepath -> (filepath : fs, ds)
             PVDir dirpath -> (fs, dirpath : ds)
