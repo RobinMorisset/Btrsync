@@ -14,7 +14,9 @@ import System.Directory
 
 type Hash = Integer
 data File = File FilePath Hash
+    deriving (Eq, Show)
 data Dir = Dir FilePath Hash [File] [Dir]
+    deriving (Eq, Show)
 
 subDirs (Dir _ _ ds _) = ds
 subFiles (Dir _ _ _ fs) = fs
@@ -28,6 +30,7 @@ toFile path = do
     return $ File path h
 
 data PathValidity = PVFile FilePath | PVDir FilePath | PVFail
+    deriving (Show, Eq)
 
 getPathValidity :: FilePath -> IO PathValidity
 getPathValidity path = do
@@ -35,7 +38,7 @@ getPathValidity path = do
     isDir <- doesDirectoryExist path
     return $ case (isFile, isDir) of
         (True, False) -> PVFile path
-        (False, True) -> PVDir path
+        (False, True) | path /= "." && path /= ".." -> PVDir path
         _ -> PVFail 
 
 hashDir :: [File] -> [Dir] -> Hash
