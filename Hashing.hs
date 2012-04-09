@@ -1,6 +1,6 @@
 -- | This module produces the tree/set of directories and files, along with their hash,
 -- from a FilePath
-module Hashing where
+module Hashing (Dir(..), File(..), Hash(..), toDir) where
 
 import Prelude hiding (readFile)
 import Control.Monad

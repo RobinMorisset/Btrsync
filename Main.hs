@@ -11,4 +11,4 @@ main :: IO ()
 main = do
     args <- getArgs
     (config, t1, t2) <- parseArgs args
-    ExitSuccess
+    exitSuccess
