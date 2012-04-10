@@ -8,7 +8,6 @@ import Data.List
 import System.Console.GetOpt
 import System.Exit
 import System.IO
-import Text.Regex.Posix
 
 version = "0.1"
 
