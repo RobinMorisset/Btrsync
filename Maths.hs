@@ -132,5 +132,5 @@ detChanges a list =
   let b = head list in
   let tl = tail list in
   if (pgcd a b == 1) 
-  then b : (detChanges a tl)
-  else (detChanges a tl)
+  then (detChanges a tl)
+  else b : (detChanges a tl)
