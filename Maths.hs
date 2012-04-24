@@ -50,3 +50,19 @@ minFraction d p =
     let a = head result + last result in
     let b = head (tail result) in
     (numerator (abs a), numerator (abs b))
+
+pgcd :: Hash -> Hash -> Hash
+pgcd 0 k = k
+pgcd k 0 = k
+pgcd a b = pgcd c (d `mod` c)
+           where d = max a b
+                 c = min a b
+
+detChanges :: Hash -> [Hash] -> [Hash]
+detChanges a [] = []
+detChanges a list =
+  let b = head list in
+  let tl = tail list in
+  if (pgcd a b == 1) 
+  then b : (detChanges a tl)
+  else (detChanges a tl)
