@@ -95,8 +95,8 @@ modExponent i j p | otherwise =
 
 -- Take the next prime for each h in hs, then
 --  multiply them all together modulo p
-mkProduct :: [Hash] -> Hash -> Hash
-mkProduct hs p =
+mkProduct :: Hash -> [Hash] -> Hash
+mkProduct p hs =
     foldl (\acc h -> (h * acc) `mod` p) 1 hs
     
 modularInv :: Integral a => a -> a -> a
