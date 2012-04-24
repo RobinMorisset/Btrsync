@@ -25,7 +25,7 @@ main = do
             Just s -> return $ mkStdGen s
     let low = 2 ^ 1000 :: Hash
         high = 2 ^ 1001 :: Hash
-        p = fst $ randomR (low, high) g
+        p = nextPrime . fst $ randomR (low, high) g
  
     -- Currently, we are only considering not-recursive dirs
     (_, files1, _) <- toDir (dir t1)

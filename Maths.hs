@@ -127,10 +127,4 @@ pgcd a b = pgcd c (d `mod` c)
                  c = min a b
 
 detChanges :: Hash -> [Hash] -> [Hash]
-detChanges a [] = []
-detChanges a list =
-  let b = head list in
-  let tl = tail list in
-  if (pgcd a b == 1) 
-  then (detChanges a tl)
-  else b : (detChanges a tl)
+detChanges x l = filter (\ y -> pgcd x y /= 1) l
