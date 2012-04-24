@@ -10,8 +10,76 @@ import Data.Bits
 import Data.List
 import Data.Array
 import Data.Ratio
+import System.Random
 
 import Hashing (Hash(..))
+
+-- (eq. to) find2km (2^k * n) = (k,n)
+find2km :: Integral a => a -> (a,a)
+find2km n = f 0 n
+  where 
+    f k m
+      | r == 1 = (k,m)
+      | otherwise = f (k+1) q
+        where (q,r) = quotRem m 2        
+                      
+-- n is the number to test; a is the (presumably randomly chosen) witness
+millerRabinPrimality :: Hash -> Hash -> Bool
+millerRabinPrimality n a
+  | a <= 1 || a >= n-1 = 
+    error $ "millerRabinPrimality: a out of range (" 
+    ++ show a ++ " for "++ show n ++ ")" 
+  | n < 2 = False
+  | even n = False
+  | b0 == 1 || b0 == n' = True
+  | otherwise = iter (tail b)
+    where
+      n' = n-1
+      (k,m) = find2km n'
+      b0 = powMod n a m
+      b = take (fromIntegral k) $ iterate (squareMod n) b0
+      iter [] = False
+      iter (x:xs)
+        | x == 1 = False
+        | x == n' = True
+        | otherwise = iter xs
+                                    
+-- (eq. to) pow' (*) (^2) n k = n^k
+pow' :: (Num a, Integral b) => (a->a->a) -> (a->a) -> a -> b -> a
+pow' _ _ _ 0 = 1
+pow' mul sq x' n' = f x' n' 1
+  where 
+    f x n y
+      | n == 1 = x `mul` y
+      | r == 0 = f x2 q y
+      | otherwise = f x2 q (x `mul` y)
+        where
+          (q,r) = quotRem n 2
+          x2 = sq x
+                       
+mulMod :: Integral a => a -> a -> a -> a
+mulMod a b c = (b * c) `mod` a
+squareMod :: Integral a => a -> a -> a
+squareMod a b = (b * b) `rem` a
+ 
+-- (eq. to) powMod m n k = n^k `mod` m
+powMod :: Integral a => a -> a -> a -> a
+powMod m = pow' (mulMod m) (squareMod m)
+
+isPrime :: Hash -> Bool
+isPrime n =
+  f n 10
+  where
+    f n k =
+      if (k == 0) then True else
+      let g = unsafePerformIO getStdGen in
+      let (a, _ ) = randomR (2, n-1) g in
+      if millerRabinPrimality n a
+      then f n (k-1)
+      else False
+
+nextPrime :: Hash -> Hash
+nextPrime n = head . filter isPrime $ [n..]
 
 -- returns i ^ j mod p
 -- TODO: optimise further (#SPECIALIZE, and using divmod for example)
@@ -29,14 +97,14 @@ modExponent i j p | otherwise =
 --  multiply them all together modulo p
 mkProduct :: [Hash] -> Hash -> Hash
 mkProduct hs p =
-    let hs' = map (\ h -> nextPrime $ shiftL h 16) hs in
-    foldl (\acc h -> (h * acc) `mod` p) 1 hs'
-
+    foldl (\acc h -> (h * acc) `mod` p) 1 hs
+    
 modularInv :: Integral a => a -> a -> a
 modularInv q 1 = 1
 modularInv q p = (n * q + 1) `div` p
   where n = p - modularInv p (q `mod` p)
 
+-- minimize a fraction modulo p
 minFraction :: Hash -> Hash -> (Hash,Hash)
 minFraction d p = 
   let resultlll = lll [[1,0,0,-1],[0,1,0,d%1],[0,0,1,-p%1]] in
