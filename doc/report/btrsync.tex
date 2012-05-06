@@ -177,39 +177,15 @@ $\forall i>0$ we have $2 A_i B_i<p$. Moreover, From equations (\ref{eqnewp}) and
  
 The problem is that (by opposition to the basic protocol) we have no guarantee that such an $(a,b)$ is unique. Namely we could in theory stumble upon another $(a',b')$ satisfying (\ref{eqab}) for some index $i' \neq i$. We expect this to happen with negligible probability for large enough $w$, but this makes the modified protocol heuristic only.
 
+\section{Theoretical complexity and algorithmic improvements}
+
+TODO (@fbenhamo)
+
 \section{File Laundry: Reducing $u$}
 
 What happens if we shorten $u$ in the basic protocol?\smallskip
 
-{\Large BEGIN OLD}
-
-As foreseen by the birthday paradox, we should start seeing collisions. As a direct function of our two parameters $(\eta,u)$, we would roughly expect:
-
-$$
-E(\eta,u)=\frac{\binom{\eta}{2}}{2^u} = \frac{\eta(\eta-1)}{2^{u+1}}\mbox{~collisions}
-$$
-
-For instance, for $\eta=10^6$ files and 32-bit hash values, one should expect about 116 collisions.\smallskip
-
-That being said, a collision can only yield a {\sl false positive} and never a {\sl false negative}. In other words, whilst a collision may make the parties blind to a difference\footnote{{\sl e.g.} result in confusing {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create an nonexistent difference {\sl ex nihilo}.\smallskip
-
-Hence, it suffices to replace the function $\mbox{{\tt Hash}}(F)$ by a chopped $\mbox{{\tt MAC}}_k(F) \bmod 2^u$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each round the parties will detect new files and deletions, fix these and "launder" again the remaining files.\smallskip
-
-Indeed, the probability that a stubborn file persists colliding decreases exponentially with the number of iterations. Assuming the $\eta$ remains invariant between rounds, the probability that a given file will successfully keep playing hide-and-seek after at the second iteration is:
-
-$$
-\frac{E(\eta,u)}{\eta}=\frac{\eta-1}{2^{u+1}}
-$$
-
-Hence the probability that after the second round at least one false positive will survive is:
-
-$$
-z=1-(1-\frac{E(\eta,u)}{\eta})^{E(\eta,u)}
-$$
-
-For the $(\eta=10^6,u=32)$ instance considered previously, gives $z\simeq 1.34\%$.
-
-{\Large END OLD}
+\subsection{First method}
 
 As foreseen by the birthday paradox, we should start seeing collisions.
 Let us analyse them.
@@ -242,21 +218,42 @@ Hence the probability that after $k$ rounds at least one false positive will sur
 
 For the $(\eta=10^6,u=32)$ instance considered previously, this gives $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3} \%$.
 
-THIS section does not work but maybe only a small thing is missing.
+\subsection{Improvement}
 
-However, I HOPE WE CAN (one can) improve a lot the algorithm, using the following trick: we can remove the files which are different in the first possible iteration, and only work with common files and files which collided (in a bad way, blinding a difference).
+However, we can improve a lot the algorithm, using the following trick: we can remove the files which are different in the first possible iteration, and only work with common files and files which collided (in a bad way, blinding a difference).
 Now, the only collision which can be bad for round $k$, are the collisions of a file $i$ with a file $j$ such that $i$ and $j$ both have collided at all the previous iterations.
 And let write $Z^l_i$ the random variable equal to $1$ when the file $i$ has a bad collisions for all the $l$ first iterations.
 
-We have, $Z^1_i = X^1_i$, and for $l \ge 2$, we have
+Suppose $\eta > 1$. 
+Let us set $Z^0_i = 1$ and let us write $p_l = \Prob{Z^{l-1}_{i} = 1 \text{ and } Z^{l-1}_{j} = 1} $ for all $l$ and $i \neq j$.
+For $k \ge 1$, we have
 \begin{align*} 
-\Prob{Z^l_i=1} &= \Prob{\exists j\neq i \text{, } X^l_{i,j} = 1 \text{, } Z^{l-1}_{i} = 1  \text{ and } Z^{l-1}_{j} = 1}  \\ 
-&\le \sum_{j=1, j\neq i}^\eta \Prob{X^1_{i,j} = 1} \Prob{Z^{l-1}_{i} = 1 \text{ and } Z^{l-1}_{j} = 1}  \\ 
+\Prob{Z^k_i=1} &= \Prob{\exists j\neq i \text{, } X^k_{i,j} = 1 \text{, } Z^{k-1}_{i} = 1  \text{ and } Z^{l-1}_{j} = 1}  \\ 
+&\le \sum_{j=1, j\neq i}^\eta \Prob{X^{k-1}_{i,j} = 1} \Prob{Z^{k-1}_{i} = 1 \text{ and } Z^{k-1}_{j} = 1}  \\ 
+&\le \frac{\eta-1}{2^u} p_{k-1}
 \end{align*}
+Furthermore $p_0 = 1$ and
+\begin{align*}
+p_l &= \Prob{X^{l}_1 = X^{l}_2 \text{, } Z^{l}_{1} = 1 \text{ and } Z^{l}_{2} = 1}
+  + \Prob{X^{l}_1 \neq X^{l}_2 \text{, } Z^{l}_{1} = 1 \text{ and } Z^{l}_{2} = 1} \\
+&\le \Prob{X^{l}_1 = X^{l}_2 \text{, } Z^{l-1}_{1} = 1 \text{ and } Z^{l-1}_{2} = 1} \\
+  &\quad+ \sum_{i \ge 3, j \ge 3} \Prob{X^l_{1,i} = 1 \text{, } X^l_{2,j} = 1 \text{, } Z^{l-1}_{1} = 1 \text{ and } Z^{l-1}_{2} = 1} \\
+&= \Prob{X^{l}_1 = X^{l}_2} \Prob{Z^{l-1}_{1} = 1 \text{ and } Z^{l-1}_{2} = 1} \\
+  &\quad+ \sum_{i \ge 3, j \ge 3} \Prob{X^l_{1,i} = 1} \Prob{X^l_{2,j} = 1} \Prob{Z^{l-1}_{1} = 1 \text{ and } Z^{l-1}_{2} = 1} \\
+&\le \frac{1}{2^u} p_{l-1} + \frac{(\eta-2)^2}{2^{2u}} p_{l-1}
+\end{align*}
+so we have
+\[ p_l \le \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^l, \]
+and
+\[ \Prob{Z^l_i=1} \le \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{k-1} \]
+And finally, the probability that after $k$ rounds at least one false positive will survive is
+\[
+\epsilon'_k \le \frac{\eta(\eta-1)}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{k-1}
+\]
 
-I HAVE NOT FOUND A WAY TO FINISH THIS, even if I think, we can win a bit.
-The problem is that the Z... are not independent at all (imagine $\eta = 2$ to understand why).
-If we use $\Prob{Z^{l-1}_{i} = 1 \text{ and } Z^{l-1}_{j} = 1} \le \Prob{Z^{l-1}_{i} = 1}$, we get the previous bound unfortunately...
+For the $(\eta=10^6,u=32)$ instance considered previously, this gives $\epsilon_2 \le 0.013\%$.
+
+TODO: verify I have not made a mistake and compare with using a bigger u (maybe using example... and timing...)
 
 \section{Implementation}
 
