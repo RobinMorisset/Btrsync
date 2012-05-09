@@ -18,7 +18,7 @@
 \usepackage{amsmath, amsfonts, amssymb, graphicx, rotating,epsfig}
 \usepackage{algorithm,algorithmic}
 \usepackage[english]{babel}
-\usepackage[latin1]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage{url}
 
 \newcommand{\ignore}[1]{}
@@ -31,18 +31,21 @@
 \newcommand{\rmu}[0]{\mbox{RM}}
 \newcommand{\Prob}[1]{{\Pr\left[\,{#1}\,\right]}}
 \newcommand{\EE}[1]{{\mathbb{E}\left[{#1}\right]}}
+\newcommand{\Oapp}{\ensuremath{\tilde{O}}}
+
+\usepackage{hyperref}
 
 \begin{document}
 
 \title{When File Synchronization Meets Number Theory}
 
-\author{Antoine Amarilli \and Florian Bourse \and Robin Morisset \and\\
-David Naccache \and Pablo Rauzy}
-\institute{}
+\author{Antoine Amarilli \and Fabrice Ben Hamouda \and Florian Bourse \and\\ 
+Robin Morisset \and David Naccache \and Pablo Rauzy}
+
 \institute{
 \'{E}cole normale sup\'{e}rieure, D\'{e}partement d'informatique \\
    45, rue d'Ulm, {\sc f}-75230, Paris Cedex 05, France.\\
-   \email{surname.name@ens.fr}
+   \email{surname.name@ens.fr} (todo for the space in my name: fabrice.ben.hamouda)
 }
 
 \maketitle
@@ -112,6 +115,8 @@ $2AB<p$. Let $s=a b^{-1} \mod p$.
 Then given $A,B,s$ and $p$, one can recover $a$ and $b$ in polynomial time.
 \end{theorem}
 
+@fbenhamo: TODO REMARK: Actually, this problem is known as rational number reconstruction \cite{pan2004rational} and \cite{wang2003acceleration}.
+
 Taking $A=B=2^{ut}-1$, we have from (\ref{equp}) that $2AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Therefore, we can
 recover $a$ and $b$ from $s$ in polynomial time. By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can
 easily identify the discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
@@ -177,15 +182,11 @@ $\forall i>0$ we have $2 A_i B_i<p$. Moreover, From equations (\ref{eqnewp}) and
  
 The problem is that (by opposition to the basic protocol) we have no guarantee that such an $(a,b)$ is unique. Namely we could in theory stumble upon another $(a',b')$ satisfying (\ref{eqab}) for some index $i' \neq i$. We expect this to happen with negligible probability for large enough $w$, but this makes the modified protocol heuristic only.
 
-\section{Theoretical complexity and algorithmic improvements}
-
-TODO (@fbenhamo)
-
-\section{File Laundry: Reducing $u$}
+\subsection{File Laundry: Reducing $u$}
 
 What happens if we shorten $u$ in the basic protocol?\smallskip
 
-\subsection{First method}
+\subsubsection{First method}
 
 As foreseen by the birthday paradox, we should start seeing collisions.
 Let us analyse them.
@@ -194,7 +195,7 @@ We see the hash function $\mbox{{\tt Hash}}$ as a random function from $\{0,1\}^
 Let $X^1_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file, and equal to $0$ otherwise.
 Clearly, we have $\Prob{X_i = 1} \le \frac{\eta -1}{2^u}$.
 And the number of files which collides are, in average:
-\[ \EE{\sum_{i=1}^{\eta} X_i} \le \sum_{i=1}^\eta \frac{\eta -1}{2^u} = \frac{\eta (\eta - 1)}{2^u}. \]
+\[ \EE{\sum_{i=0}^{\eta-1} X_i} \le \sum_{i=0}^{\eta-1} \frac{\eta -1}{2^u} = \frac{\eta (\eta - 1)}{2^u}. \]
 For instance, for $\eta=10^6$ files and 32-bit hash values, one should expect about at most 233 files which collide.\smallskip
 
 That being said, a collision can only yield a {\sl false positive} and never a {\sl false negative}. In other words, whilst a collision may make the parties blind to a difference\footnote{{\sl e.g.} result in confusing {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create an nonexistent difference {\sl ex nihilo}.\smallskip
@@ -209,7 +210,7 @@ By independence, we have
  \[ \Prob{Y_i = 1} = \Prob{X^1_i = 1} \dots \Prob{X^k_i = 1} \le \left( \frac{\eta -1}{2^u} \right)^k. \] 
 Therefore the number of files which collides is, in average
 \[
- \EE{\sum_{i=1}^{\eta} Y_i} \le \sum_{i=1}^\eta \left( \frac{\eta -1}{2^u} \right)^k =  \eta \left(\frac{\eta - 1}{2^u}\right)^k.
+ \EE{\sum_{i=0}^{\eta-1} Y_i} \le \sum_{i=0}^{\eta-1} \left( \frac{\eta -1}{2^u} \right)^k =  \eta \left(\frac{\eta - 1}{2^u}\right)^k.
 \]
 Hence the probability that after $k$ rounds at least one false positive will survive is
 \[
@@ -218,7 +219,7 @@ Hence the probability that after $k$ rounds at least one false positive will sur
 
 For the $(\eta=10^6,u=32)$ instance considered previously, this gives $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3} \%$.
 
-\subsection{Improvement}
+\subsubsection{Improvement}
 
 However, we can improve a lot the algorithm, using the following trick: we can remove the files which are different in the first possible iteration, and only work with common files and files which collided (in a bad way, blinding a difference).
 Now, the only collision which can be bad for round $k$, are the collisions of a file $i$ with a file $j$ such that $i$ and $j$ both have collided at all the previous iterations.
@@ -229,17 +230,17 @@ Let us set $Z^0_i = 1$ and let us write $p_l = \Prob{Z^{l-1}_{i} = 1 \text{ and 
 For $k \ge 1$, we have
 \begin{align*} 
 \Prob{Z^k_i=1} &= \Prob{\exists j\neq i \text{, } X^k_{i,j} = 1 \text{, } Z^{k-1}_{i} = 1  \text{ and } Z^{l-1}_{j} = 1}  \\ 
-&\le \sum_{j=1, j\neq i}^\eta \Prob{X^{k-1}_{i,j} = 1} \Prob{Z^{k-1}_{i} = 1 \text{ and } Z^{k-1}_{j} = 1}  \\ 
+&\le \sum_{j=0, j\neq i}^{\eta-1} \Prob{X^{k-1}_{i,j} = 1} \Prob{Z^{k-1}_{i} = 1 \text{ and } Z^{k-1}_{j} = 1}  \\ 
 &\le \frac{\eta-1}{2^u} p_{k-1}
 \end{align*}
 Furthermore $p_0 = 1$ and
 \begin{align*}
-p_l &= \Prob{X^{l}_1 = X^{l}_2 \text{, } Z^{l}_{1} = 1 \text{ and } Z^{l}_{2} = 1}
-  + \Prob{X^{l}_1 \neq X^{l}_2 \text{, } Z^{l}_{1} = 1 \text{ and } Z^{l}_{2} = 1} \\
-&\le \Prob{X^{l}_1 = X^{l}_2 \text{, } Z^{l-1}_{1} = 1 \text{ and } Z^{l-1}_{2} = 1} \\
-  &\quad+ \sum_{i \ge 3, j \ge 3} \Prob{X^l_{1,i} = 1 \text{, } X^l_{2,j} = 1 \text{, } Z^{l-1}_{1} = 1 \text{ and } Z^{l-1}_{2} = 1} \\
-&= \Prob{X^{l}_1 = X^{l}_2} \Prob{Z^{l-1}_{1} = 1 \text{ and } Z^{l-1}_{2} = 1} \\
-  &\quad+ \sum_{i \ge 3, j \ge 3} \Prob{X^l_{1,i} = 1} \Prob{X^l_{2,j} = 1} \Prob{Z^{l-1}_{1} = 1 \text{ and } Z^{l-1}_{2} = 1} \\
+p_l &= \Prob{X^{l}_0 = X^{l}_1 \text{, } Z^{l}_{0} = 1 \text{ and } Z^{l}_{1} = 1}
+  + \Prob{X^{l}_0 \neq X^{l}_1 \text{, } Z^{l}_{0} = 1 \text{ and } Z^{l}_{1} = 1} \\
+&\le \Prob{X^{l}_0 = X^{l}_1 \text{, } Z^{l-1}_{0} = 1 \text{ and } Z^{l-1}_{1} = 1} \\
+  &\quad+ \sum_{i \ge 2, j \ge 2} \Prob{X^l_{0,i} = 1 \text{, } X^l_{1,j} = 1 \text{, } Z^{l-1}_{0} = 1 \text{ and } Z^{l-1}_{1} = 1} \\
+&= \Prob{X^{l}_0 = X^{l}_1} \Prob{Z^{l-1}_{0} = 1 \text{ and } Z^{l-1}_{1} = 1} \\
+  &\quad+ \sum_{i \ge 2, j \ge 2} \Prob{X^l_{0,i} = 1} \Prob{X^l_{1,j} = 1} \Prob{Z^{l-1}_{0} = 1 \text{ and } Z^{l-1}_{1} = 1} \\
 &\le \frac{1}{2^u} p_{l-1} + \frac{(\eta-2)^2}{2^{2u}} p_{l-1}
 \end{align*}
 so we have
@@ -255,6 +256,50 @@ For the $(\eta=10^6,u=32)$ instance considered previously, this gives $\epsilon_
 
 TODO: verify I have not made a mistake and compare with using a bigger u (maybe using example... and timing...)
 
+\section{Theoretical complexity and algorithmic improvements}
+
+In this section, we analyse the theoretical costs of our algorithms and propose some algorithmic improvements.
+
+\subsection{Theoretical complexity}
+
+Let $M(k)$ be the time required to multiply two numbers of $k$ bits.
+We suppose $M(k+k') \ge M(k) + M(k')$, for any $k,k'$.
+We know that the multiplication and the division of two numbers of $k$ bits modulo a number of $k$ bits costs about $\Oapp(M(k))$ \cite{burnikel1998fast}.
+The gcd computation also costs $\Oapp(M(k))$~\cite{moller2008schonhage}.
+Furthermore, using naive algorithms, $M(k) = O(k^2)$, but using fast algorithms such as FFT (TODO CITE), $M(k) = O( ) = \Oapp(k)$.
+We note, that the FFT multiplication is faster than the other methods (naive or Karatsuba) for number of about $10^4*64$ bits (from gmp sources - if you find any better sources, it would be interesting...).
+And using such big numbers, the division and the gcd algorithms used in gmp are also the ones with complexity $\Oapp(M(k))$.
+
+Since $p$ has $2 u t$ bits and, here are the costs:
+\begin{enumerate}
+\item (Neil) computation of the redundancy $c=\prod_{i=1}^n h_i \bmod p$, cost: $O(n M(u t))$, $\Oapp(n u t)$ with FFT
+\item (Oscar) computation of the redundancy $c'=\prod_{i=1}^n h_i \bmod p$, cost: $O(n M(u t))$, $\Oapp(n u t)$ with FFT
+\item (Oscar) computation of $s = c' / c \bmod p$, cost: $M(u t)$, $\Oapp(u t)$ with FFT
+\item (Oscar) computation of the two $u t$-bits number $a$ and $b$, such that $s = a / b \bmod p$, cost: $\Oapp(M(u t))$, using a new technique of Wang and Pan in \cite{pan2004rational} and \cite{wang2003acceleration}; however using naive extended gcd, it costs $\Oapp((u t)^2)$.
+@fbenhamo TODO However I do not know any software where it is implemented, nor the actual speed in practice, neither if this can be adapted for the polynomial case (this can be an advantage over the polynomial method for set reconciliation - but I think this is not the case, unfortunately, I have not access to interesting articles about polynomial rational reconstruction - but see p.139 of http://algo.inria.fr/chyzak/mpri/poly-20120112.pdf).
+\item (Oscar) factorization of $a$, i.e., $n$ divisions of $a$ by a $h_i$, cost: $\Oapp(n M(u t))$, $\Oapp(n u t)$ with FFT
+\item (Oscar) factorization of $b$, i.e., $n$ divisions of $b$ by a $h_i$, cost: $\Oapp(n M(u t))$. $\Oapp(n u t)$ with FFT
+\end{enumerate}
+
+\subsection{Improvement}
+
+It is possible to improve the complexity of the computation of the redundancy and the factorization to $\Oapp(n/t M(u t)$, $\Oapp(n u)$ with FFT~\cite{schonhage1971schnelle}.
+To simplify the explanations, let us suppose $t$ is a power of $2$: $t=2^\tau$, and $t$ divides $n$.
+
+The idea is the following: we group $h_i$ by group of $t$ elements and we compute the product of each of these groups (without modulo)
+\[ H_j = \prod_{i=j t}^{j t + t - 1} h_i. \]
+Each of these products can be computed in $\Oapp(M(u t))$ using a standard method of product tree, depicted in Algorithm~\ref{todo} and in Figure~\ref{todo}.
+And all these $n / t$ products can be computed in $\Oapp(n/t M(u t))$.
+Then, one can compute $c$ by multiplying these products $H_j$ together, modulo $p$, which costs $\Oapp(n/t M(u t))$.
+
+The same technique applies for the factorization, but this time, we have to be a little more careful.
+After computing the tree product, we can compute the gcd of $a$ (or $b$) with $H_j$, then we can compute the gcd of this new element with the two children of $H_j$ in the product tree ($\prod_{i=j t}{j t + t/2 - 1} h_i$ and $\prod_{i=j t}{j t + t/2 - 1} h_i$) and then compute the gcd of these two new values, with the children of the previous children, and so on.
+Intuitively, we go down the product tree doing gcd.
+At the end (i.e., at the leaves), we obtain the division of $a$ by each of the $h_i$.
+This algorithm is depicted in Algorithm~\ref{todo}.
+The complexity of the algorithm is $\Oapp(M(u t))$.
+
+
 \section{Implementation}
 
 \subsection{Program Structure}
@@ -269,6 +314,10 @@ In this work we [to be completed by David]
 
 The authors acknowledge Guillain Potron for his early involvement in this project.
 
+\bibliographystyle{plain}
+\bibliography{btrsync}
+
+% TODO: why not use bibtex ?
 \begin{thebibliography}{30}
 
 \bibitem{rsync} A. Tridgell, Efficient Algorithms for Sorting and Synchronization, Ph.D. Thesis, The Australian National University, February 1999.
