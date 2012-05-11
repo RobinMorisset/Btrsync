@@ -14,12 +14,14 @@
 
 \makeitbig
 
-\usepackage{verbatim}
-\usepackage{amsmath, amsfonts, amssymb, graphicx, rotating,epsfig}
-\usepackage{algorithm,algorithmic}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
+\usepackage{amsmath, amsfonts, amssymb, graphicx, rotating, epsfig}
+\usepackage{verbatim}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
 \usepackage{url}
+\usepackage{tikz}
 
 \newcommand{\ignore}[1]{}
 \newcommand{\btr}{{\tt btrsync}}
@@ -264,11 +266,11 @@ In this section, we analyse the theoretical costs of our algorithms and propose 
 
 Let $M(k)$ be the time required to multiply two numbers of $k$ bits.
 We suppose $M(k+k') \ge M(k) + M(k')$, for any $k,k'$.
-We know that the multiplication and the division of two numbers of $k$ bits modulo a number of $k$ bits costs about $\Oapp(M(k))$ \cite{burnikel1998fast}.
-The gcd computation also costs $\Oapp(M(k))$~\cite{moller2008schonhage}.
-Furthermore, using naive algorithms, $M(k) = O(k^2)$, but using fast algorithms such as FFT (TODO CITE), $M(k) = O( ) = \Oapp(k)$.
+We know that the division and the modular reduction of two numbers of $k$ bits modulo a number of $k$ bits costs about $\Oapp(M(k))$ \cite{burnikel1998fast}.
+%The gcd computation also costs $\Oapp(M(k))$~\cite{moller2008schonhage}.
+Furthermore, using naive algorithms, $M(k) = O(k^2)$, but using fast algorithms such as FFT~\cite{schonhage1971schnelle}, $M(k) = \Oapp(k)$.
 We note, that the FFT multiplication is faster than the other methods (naive or Karatsuba) for number of about $10^4*64$ bits (from gmp sources - if you find any better sources, it would be interesting...).
-And using such big numbers, the division and the gcd algorithms used in gmp are also the ones with complexity $\Oapp(M(k))$.
+And using such big numbers, the division and the modulo reduction algorithms used in gmp are also the ones with complexity $\Oapp(M(k))$.
 
 Since $p$ has $2 u t$ bits and, here are the costs:
 \begin{enumerate}
@@ -277,8 +279,8 @@ Since $p$ has $2 u t$ bits and, here are the costs:
 \item (Oscar) computation of $s = c' / c \bmod p$, cost: $M(u t)$, $\Oapp(u t)$ with FFT
 \item (Oscar) computation of the two $u t$-bits number $a$ and $b$, such that $s = a / b \bmod p$, cost: $\Oapp(M(u t))$, using a new technique of Wang and Pan in \cite{pan2004rational} and \cite{wang2003acceleration}; however using naive extended gcd, it costs $\Oapp((u t)^2)$.
 @fbenhamo TODO However I do not know any software where it is implemented, nor the actual speed in practice, neither if this can be adapted for the polynomial case (this can be an advantage over the polynomial method for set reconciliation - but I think this is not the case, unfortunately, I have not access to interesting articles about polynomial rational reconstruction - but see p.139 of http://algo.inria.fr/chyzak/mpri/poly-20120112.pdf).
-\item (Oscar) factorization of $a$, i.e., $n$ divisions of $a$ by a $h_i$, cost: $\Oapp(n M(u t))$, $\Oapp(n u t)$ with FFT
-\item (Oscar) factorization of $b$, i.e., $n$ divisions of $b$ by a $h_i$, cost: $\Oapp(n M(u t))$. $\Oapp(n u t)$ with FFT
+\item (Oscar) factorization of $a$, i.e., $n$ modulo reductions of $a$ by a $h_i$, cost: $\Oapp(n M(u t))$, $\Oapp(n u t)$ with FFT
+\item (Oscar) factorization of $b$, i.e., $n$ modulo reductions of $b$ by a $h_i$, cost: $\Oapp(n M(u t))$. $\Oapp(n u t)$ with FFT
 \end{enumerate}
 
 \subsection{Improvement}
@@ -288,17 +290,204 @@ To simplify the explanations, let us suppose $t$ is a power of $2$: $t=2^\tau$, 
 
 The idea is the following: we group $h_i$ by group of $t$ elements and we compute the product of each of these groups (without modulo)
 \[ H_j = \prod_{i=j t}^{j t + t - 1} h_i. \]
-Each of these products can be computed in $\Oapp(M(u t))$ using a standard method of product tree, depicted in Algorithm~\ref{todo} and in Figure~\ref{todo}.
+Each of these products can be computed in $\Oapp(M(u t))$ using a standard method of product tree, depicted in Algorithm~\ref{alg:prod-tree} (for $j=0$) and in Figure~\ref{fig:prod-tree}.
 And all these $n / t$ products can be computed in $\Oapp(n/t M(u t))$.
 Then, one can compute $c$ by multiplying these products $H_j$ together, modulo $p$, which costs $\Oapp(n/t M(u t))$.
 
-The same technique applies for the factorization, but this time, we have to be a little more careful.
-After computing the tree product, we can compute the gcd of $a$ (or $b$) with $H_j$, then we can compute the gcd of this new element with the two children of $H_j$ in the product tree ($\prod_{i=j t}{j t + t/2 - 1} h_i$ and $\prod_{i=j t}{j t + t/2 - 1} h_i$) and then compute the gcd of these two new values, with the children of the previous children, and so on.
-Intuitively, we go down the product tree doing gcd.
-At the end (i.e., at the leaves), we obtain the division of $a$ by each of the $h_i$.
-This algorithm is depicted in Algorithm~\ref{todo}.
-The complexity of the algorithm is $\Oapp(M(u t))$.
+\begin{figure}[t]
+\centering
+\centerline{
+\begin{tikzpicture}[level/.style={sibling distance=60mm/#1}]
+\node (z){$\displaystyle \pi=\pi_1=\prod_{i=0}^{t-1} h_i$}
+  child {node (a) {$\displaystyle \pi_2=\prod_{i=0}^{t/2-1} h_i$}
+    child {node (b) {$\displaystyle \pi_4=\prod_{i=0}^{t/4-1} h_i$}
+      child {node {$\vdots$}
+        child {node (d) {$\displaystyle \pi_t=h_0$}}
+        child {node (e) {$\displaystyle \pi_{t+1}=h_1$}}
+      } 
+      child {node {$\vdots$}}
+    }
+    child {node (g) {$\displaystyle \pi_5=\prod_{i=t/4}^{t/2-1} h_i$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+  }
+  child {node (j) {$\displaystyle \pi_3=\prod_{i=t/2}^{t-1} h_i$}
+    child {node (k) {$\displaystyle \pi_6=\prod_{i=t/2}^{3t/4-1} h_i$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+    child {node (l) {$\displaystyle \pi_7=\prod_{i=3t/4}^{t-1} h_i$}
+      child {node {$\vdots$}}
+      child {node (c){$\vdots$}
+        child {node (o) {$\displaystyle h_{t-2}$}}
+        child {node (p) {$\displaystyle \pi_{2t-1}=h_{t-1}$}
+%        
+%        
+          child [grow=right] {node (qe) {} edge from parent[draw=none]
+            child [grow=right] {node (q) {$2^\tau M(u) \le M(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (r) {$\vdots$} edge from parent[draw=none]
+            child [grow=up] {node (s) {$4 M(u t/4) \le M(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (t) {$2 M(u t/2) \le M(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (u) {$M(u t)$} edge from parent[draw=none]}
+          }}}
+          child [grow=down] {node (v) {$\tau M(u t) = \Oapp(M(u t))$}edge from parent[draw=none]}
+            }
+          }
+        }
+    }
+  }
+};
+%\path (o) -- (e) node (x) [midway] {$\cdots$}
+%  child [grow=down] {
+%    node (y) {$O\left(\displaystyle\sum_{i = 0}^k 2^i \cdot \frac{n}{2^i}\right)$}
+%    edge from parent[draw=none]
+%  };
+\path (q) -- (r) node [midway] {+};
+\path (s) -- (r) node [midway] {+};
+\path (s) -- (t) node [midway] {+};
+\path (s) -- (l) node [midway] {$\displaystyle \longrightarrow$};
+\path (t) -- (u) node [midway] {+};
+\path (z) -- (u) node [midway] {$\displaystyle \longrightarrow$};
+\path (j) -- (t) node [midway] {$\displaystyle \longrightarrow$};
+\path (p) -- (q) node [midway] {$\displaystyle \longrightarrow$};
+%\path (y) -- (x) node [midway] {$\Downarrow$};
+%\path (v) -- (y)
+%  node (w) [midway] {$\tau M(u t) = \Oapp(M(u t))$};
+\path (q) -- (v) node [midway] {$\displaystyle \le$};
+%\path (e) -- (x) node [midway] {+};
+%\path (o) -- (x) node [midway] {+};
+%\path (y) -- (w) node [midway] {$\displaystyle \longrightarrow$};
+%\path (v) -- (w) node [midway] {$\Leftrightarrow$};
+%\path (r) -- (c) node [midway] {$\cdots$};
+\end{tikzpicture}}
+\caption{Product tree}\label{fig:prod-tree}
+\end{figure}
 
+\begin{algorithm}
+\newcommand{\vstart}{\ensuremath{\mathrm{start}}}
+\newcommand{\vmid}{\ensuremath{\mathrm{mid}}}
+\newcommand{\vend}{\ensuremath{\mathrm{end}}}
+\begin{algorithmic}[1]
+\Require{a table $h$ such that $h[i] = h_i$}
+\Ensure{$\pi = \pi_1 = \prod_0^{t-1} h_i$, and $\pi[i] = \pi_i$ for $i \in \{1,\dots,2t-1\}$ as in Figure~\ref{fig:prod-tree}}
+\State $\pi \gets $ array of size $t$
+\Function{prodTree}{$i$,$\vstart$,$\vend$}
+  \If{$\vstart = \vend$}
+    \State \Return $1$
+  \ElsIf{$\vstart+1 = \vend$}
+    \State \Return $h[\vstart]$
+  \Else
+    \State $\vmid \gets \lfloor (\vstart+\vend)/2 \rfloor$
+    \State $\pi[i] \gets $\Call{prodTree}{$2\times i$,$\vstart$,$\vmid$}
+    \State $\pi[i+1] \gets $\Call{prodTree}{$2\times i+1$,$\vstart$,$\vmid$}
+    \State \Return  $\times$ \Call{prodTree}{$\vmid$,$\vend$}
+  \EndIf
+\EndFunction
+\State $\pi[1] \gets $\Call{prodTree}{$1,0,t$}
+\end{algorithmic}
+\caption{Product tree algorithm}\label{alg:prod-tree}
+\end{algorithm}
+
+The same technique applies for the factorization, but this time, we have to be a little more careful.
+After computing the tree product, we can compute the residues of $a$ (or $b$) modulo $H_j$, then we can compute the residues of these new elements modulo the two children of $H_j$ in the product tree ($\prod_{i=j t}{j t + t/2 - 1} h_i$ and $\prod_{i=j t}{j t + t/2 - 1} h_i$), and then compute the residues of these two new values modulo the children of the previous children, and so on.
+Intuitively, we go down the product tree doing modulo reduction.
+At the end (i.e., at the leaves), we obtain the residues of $a$ modulo each of the $h_i$.
+This algorithm is depicted in Algorithm~\ref{fig:div-prod-tree} and in Figure~\ref{fig:div-prod-tree} (for $j=1$).
+The complexity of the algorithm is $\Oapp(M(u t))$, for each $j$.
+So the total complexity is $\Oapp(n/t \Oapp(M(u t))$.
+
+\begin{figure}[t]
+\centering
+\centerline{
+\begin{tikzpicture}[level/.style={sibling distance=60mm/#1}]
+\node (z){$\displaystyle a \bmod \pi_1$}
+  child {node (a) {$\displaystyle a \bmod \pi_2$}
+    child {node (b) {$\displaystyle a \bmod \pi_3$}
+      child {node {$\vdots$}
+        child {node (d) {$\displaystyle a \bmod h_{0}$}}
+        child {node (e) {$\displaystyle a \bmod h_{1}$}}
+      } 
+      child {node {$\vdots$}}
+    }
+    child {node (g) {$\displaystyle a \bmod \pi_5$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+  }
+  child {node (j) {$\displaystyle a \bmod \pi_3$}
+    child {node (k) {$\displaystyle a \bmod \pi_6$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+    child {node (l) {$\displaystyle a \bmod \pi_7$}
+      child {node {$\vdots$}}
+      child {node (c){$\vdots$}
+        child {node (o) {$ $}}
+        child {node (p) {$\displaystyle a \bmod h_{t-1}$}
+%        
+%        
+          child [grow=right] {node (qe) {} edge from parent[draw=none]
+            child [grow=right] {node (q) {$2^\tau O(M(u)) = O(M(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (r) {$\vdots$} edge from parent[draw=none]
+            child [grow=up] {node (s) {$4 O(M(u t/4)) = O(M(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (t) {$2 O(M(u t/2)) = O(M(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (u) {$O(M(u t))$} edge from parent[draw=none]}
+          }}}
+          child [grow=down] {node (v) {$\tau O(M(u t)) = \Oapp(M(u t))$}edge from parent[draw=none]}
+            }
+          }
+        }
+    }
+  }
+};
+%\path (o) -- (e) node (x) [midway] {$\cdots$}
+%  child [grow=down] {
+%    node (y) {$O\left(\displaystyle\sum_{i = 0}^k 2^i \cdot \frac{n}{2^i}\right)$}
+%    edge from parent[draw=none]
+%  };
+\path (q) -- (r) node [midway] {+};
+\path (s) -- (r) node [midway] {+};
+\path (s) -- (t) node [midway] {+};
+\path (s) -- (l) node [midway] {$\displaystyle \longrightarrow$};
+\path (t) -- (u) node [midway] {+};
+\path (z) -- (u) node [midway] {$\displaystyle \longrightarrow$};
+\path (j) -- (t) node [midway] {$\displaystyle \longrightarrow$};
+\path (p) -- (q) node [midway] {$\displaystyle \longrightarrow$};
+%\path (y) -- (x) node [midway] {$\Downarrow$};
+%\path (v) -- (y)
+%  node (w) [midway] {$\tau M(u t) = \Oapp(M(u t))$};
+\path (q) -- (v) node [midway] {$\displaystyle =$};
+%\path (e) -- (x) node [midway] {+};
+%\path (o) -- (x) node [midway] {+};
+%\path (y) -- (w) node [midway] {$\displaystyle \longrightarrow$};
+%\path (v) -- (w) node [midway] {$\Leftrightarrow$};
+%\path (r) -- (c) node [midway] {$\cdots$};
+\end{tikzpicture}}
+\caption{Division from product tree}\label{fig:div-prod-tree}
+\end{figure}
+
+\begin{algorithm}
+\newcommand{\vstart}{\ensuremath{\mathrm{start}}}
+\newcommand{\vmid}{\ensuremath{\mathrm{mid}}}
+\newcommand{\vend}{\ensuremath{\mathrm{end}}}
+\begin{algorithmic}[1]
+\Require{$a$ an integer, $\pi$ the product tree from Algorithm~\ref{alg:prod-tree}}
+\Ensure{$A_i = A[i] = a \bmod \pi_i$ for $i \in \{1,\dots,2t-1\}$, computed as in Figure~\ref{alg:div-prod-tree}}
+\State $A \gets $ array of size $t$
+\Function{modTree}{$i$}
+  \If{$i < 2t$}
+    \State $A[i] \gets A[\lfloor i/2 \rfloor] \bmod \pi[i]$
+    \State \Call{modTree}{$2 \times i$}
+    \State \Call{modTree}{$2 \times i+1$}
+  \EndIf
+\EndFunction
+\State $A[1] \gets a \bmod \pi[1]$
+\State \Call{modTree}{$2$}
+\State \Call{modTree}{$3$}
+\end{algorithmic}
+\caption{Division using product tree}\label{alg:div-prod-tree}
+\end{algorithm}
 
 \section{Implementation}
 
@@ -314,21 +503,12 @@ In this work we [to be completed by David]
 
 The authors acknowledge Guillain Potron for his early involvement in this project.
 
-\bibliographystyle{plain}
+% TODO to cite !
+\nocite{rsync} 
+\nocite{wagner}
+
+\bibliographystyle{splncs03}
 \bibliography{btrsync}
-
-% TODO: why not use bibtex ?
-\begin{thebibliography}{30}
-
-\bibitem{rsync} A. Tridgell, Efficient Algorithms for Sorting and Synchronization, Ph.D. Thesis, The Australian National University, February 1999.
-
-\bibitem{wagner} D. Wagner, Edit Lenses, POPL'12, [to be completed].
-
-\bibitem{cryptorational} J. Stern, P.-A. Fouque and G.-J. Wackers, {\sl CryptoComputing with Rationals}. Proceedings of Financial Cryptography 2002, Lecture Notes in Computer Science (2002), Springer-Verlag. \smallskip
-
-\bibitem{vallee} B. Vall\'ee, {\sl Gauss' algorithm revisited}. J. Algorithms, 12:556-572, 1991.
-
-\end{thebibliography}
 
 \appendix
 
