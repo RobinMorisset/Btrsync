@@ -3,6 +3,7 @@ module Main (main) where
 
 import Control.Monad
 import Control.Monad.State
+import Control.Monad.Trans
 import Data.Bits
 import qualified Data.Map as M
 import Data.Maybe
@@ -33,23 +34,25 @@ main = do
     g <- case seed config of
             Nothing -> getStdGen
             Just s -> return $ mkStdGen s
+
+    (_, files1, _) <- toDir $ dir t1
+    (_, files2, _) <- toDir $ dir t2
+
     (flip evalStateT) g $ do
         let low = 2 ^ 1000 :: Hash
             high = 2 ^ 1001 :: Hash
         p <- nextPrime . fst $ randomR (low, high) g
     
         -- Currently, we are only considering not-recursive dirs
-        (_, files1, _) <- liftM toDir $ (dir t1)
-        filesPrime1 <- M.mapKeys nextShiftedPrime files1
+        filesPrime1 <- mapKeysM nextShiftedPrime files1
         let ks1 = M.keys filesPrime1
         let pi1 = mkProduct p ks1
 
-        (_, files2, _) <- liftM toDir $ (dir t2)
-        filesPrime2 <- M.mapKeys nextShiftedPrime files2
+        filesPrime2 <- mapKeysM nextShiftedPrime files2
         let ks2 = M.keys filesPrime2 
         let pi2 = mkProduct p ks2
         
-        liftM $ do 
+        lift $ do 
             putStr "p ="
             print p
             putStr "pi1 ="
@@ -60,7 +63,7 @@ main = do
         let d = (pi1 * modularInv p pi2) `mod` p
         let (a, b) = minFraction d p
 
-        liftM $ do
+        lift $ do
             putStr "d ="
             print d
             putStr "a ="
@@ -78,7 +81,7 @@ main = do
                 (fromJust . ((flip M.lookup) filesPrime2))
                 deleteHashes
     
-        liftM $ do
+        lift $ do
             putStr "NEW_HASHES ="
             print newHashes 
             print newFiles
