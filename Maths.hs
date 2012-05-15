@@ -2,14 +2,13 @@
 -- | Implements all the arithmetic part of the btrsync protocol
 module Maths where
 
-import Foreign
-import Foreign.C.Types
-
-import Math.Lattices.LLL
+import Control.Monad
+import Control.Monad.State
 import Data.Bits
 import Data.List
 import Data.Array
 import Data.Ratio
+import Math.Lattices.LLL
 import System.Random
 
 import Hashing (Hash(..))
@@ -66,20 +65,21 @@ squareMod a b = (b * b) `rem` a
 powMod :: Integral a => a -> a -> a -> a
 powMod m = pow' (mulMod m) (squareMod m)
 
-isPrime :: Hash -> Bool
+isPrime :: (RandomGen g, MonadState g m) => Hash -> m Bool
 isPrime n =
   f n 10
   where
-    f n k =
-      if (k == 0) then True else
-      let g = unsafePerformIO getStdGen in
-      let (a, _ ) = randomR (2, n-1) g in
-      if millerRabinPrimality n a
-      then f n (k-1)
-      else False
+    f n k | k == 0 = return True
+    f n k | otherwise = do
+        g <- get
+        let (a, g') = randomR (2, n-1) g
+        put g'
+        if millerRabinPrimality n a
+            then f n (k - 1)
+            else return False
 
-nextPrime :: Hash -> Hash
-nextPrime n = head . filter isPrime $ [n..]
+nextPrime :: (RandomGen g, MonadState g m) => Hash -> m Hash
+nextPrime n = liftM head $ filterM isPrime [n..]
 
 -- returns i ^ j mod p
 -- TODO: optimise further (#SPECIALIZE, and using divmod for example)
