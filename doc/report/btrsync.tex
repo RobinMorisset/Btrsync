@@ -70,13 +70,13 @@ In tackling this problem we separate the {\sl ``what''} from the {\sl ``where''}
 
 Let $\mbox{{\tt Hash}}$ denote a collision-resistant hash function\footnote{{\sl e.g.} SHA-1} and let $F$ be a file. Let $\mbox{{\tt NextPrime}}(F)$ be the prime immediately larger than $\mbox{{\tt Hash}}(F)$ and let $u$ denote the size of {\tt NextPrime}'s output in bits. Define the shorthand notations: $h_i=\mbox{{\tt NextPrime}}(F_i)$ and $h'_i=\mbox{{\tt NextPrime}}(F'_i)$.\smallskip
 
-\section{The Contents Synchronization Protocol}
+\section{The Content Synchronization Protocol}
 
 To efficiently synchronize directories, we propose a new protocol based on modular arithmetic. In terms of asymptotic complexity, the proposed procedure is comparable to prior publications \cite{} (that anyhow reached optimality) but its interest lies in its simplicity and novelty.\smallskip
 
 \subsection{Description of the Basic Exchanges}
 
-Let $t$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ that we wish to spot.{\sl i.e.}:
+Let $t$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ that we wish to spot, {\sl i.e.}:
 
 $$t=\#\mathfrak{F}+\#\mathfrak{F}'-2 \#(\mathfrak{F} \bigcap \mathfrak{F}')$$
 
@@ -84,10 +84,10 @@ We generate a prime $p$ such that:
 
 \begin{equation}
 \label{equp}
-2^{2tu+1} \leq p < 2^{2tu+2}
+2^{2ut+1} \leq p < 2^{2ut+2}
 \end{equation}
 
-Given $\mathfrak{F}$, Neil generates and sends to Oscar the redundancy~:
+Given $\mathfrak{F}$, Neil generates and sends to Oscar the redundancy:
 
 \begin{equation}
 c=\prod_{i=1}^n h_i \bmod p
@@ -97,7 +97,7 @@ Oscar computes:\smallskip
 
 $$c'=\prod_{i=1}^n h'_i \bmod p{~~~\mbox{and}~~~}s=\frac{c'}{c} \bmod p$$
 
-Using \cite{vallee} the integer $s$ can be written as~:
+Using \cite{vallee} the integer $s$ can be written as:
 $$s=\frac{a}{b} \bmod p{~~~\mbox{where the~}G_i\mbox{~denote files and~}}
 \left\{
 \begin{array}{lcr}
@@ -143,11 +143,11 @@ As we have just seen the ``output $\bot$ and halt'' should actually never occur 
 
 \subsection{The Case of Insufficient Information}
 
-To extend the protocol to an unlimited number of differences, Oscar and Neil will use more than one $p$ by agreeing on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails, Neil will keep amassing information about the difference as shown in the appendix. Note that no information is lost and that information adds-up until it reaches a threshold that suffices to identify the difference.
+To extend the protocol to an unlimited number of differences, Oscar and Neil will use more than one $p$ by agreeing on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails, Neil will keep accumulating information about the difference as shown in the appendix. Note that no information is lost and that information adds up until it reaches a threshold that suffices to identify the difference.
 
 \section{Variants}
 
-In this section we explore two strategies allowing to reduce the size of $p$ and hence improve transmission by {\sl constant factors} (from a complexity standpoint, nothing can be done as the protocol transmits information proportional in size to the difference).
+In this section we explore two strategies to reduce the size of $p$ and hence improve transmission by {\sl constant factors} (from an asymptotic complexity standpoint, nothing can be done as the protocol transmits information proportional in size to the difference).
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
@@ -157,7 +157,7 @@ Generate a prime $p$ smaller than previously, namely:
 2^{ut+w-1}<p \leq 2^{ut+w}
 \end{equation}
 
-for some small integer $w \geq 1$ (we suggest to take $w=50$). For large $\eta=\max(n,n')$ and $t$ the size of the new prime $p$ will be approximately half the size of the prime $p$ generated in the previous section. The resulting redundancy $c$ is calculated as previously but approximately twice smaller. As previously, we have~:
+for some small integer $w \geq 1$ (say $w=50$). For large $\eta=\max(n,n')$ and $t$, the size of the new prime $p$ will be approximately half the size of the prime $p$ generated in the previous section. The resulting redundancy $c$ is calculated as previously but is approximately two times smaller. As previously, we have:
 
 $$
 s=\frac{a}{b} \bmod p{~~~\mbox{and~}}
@@ -170,7 +170,7 @@ b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox
 \right.
 $$
 
-and since there are at most $t$ differences, we must have~:
+and since there are at most $t$ differences, we must have:
 \begin{equation}
 \label{eqab}
 a b \leq 2^{ut}
@@ -180,7 +180,7 @@ The difference with respect to the basic protocol is that we don't have a fixed 
 
 $$(A_i=2^{w \cdot i},B_i=\lfloor (p-1)/(2 \cdot A_i) \rfloor)\mbox{~~where~~}B_i>1$$. 
 
-$\forall i>0$ we have $2 A_i B_i<p$. Moreover, From equations (\ref{eqnewp}) and (\ref{eqab}) there must be at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, given $(A_i,B_i,p,s)$ one can recover $a$ and $b$, and eventually the difference.\smallskip
+For all $i>0$ we have $2 A_i B_i<p$. Moreover, from equations (\ref{eqnewp}) and (\ref{eqab}) there must be at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, given $(A_i,B_i,p,s)$ one can recover $a$ and $b$, and eventually the difference.\smallskip
  
 The problem is that (by opposition to the basic protocol) we have no guarantee that such an $(a,b)$ is unique. Namely we could in theory stumble upon another $(a',b')$ satisfying (\ref{eqab}) for some index $i' \neq i$. We expect this to happen with negligible probability for large enough $w$, but this makes the modified protocol heuristic only.
 
@@ -190,27 +190,27 @@ What happens if we shorten $u$ in the basic protocol?\smallskip
 
 \subsubsection{First method}
 
-As foreseen by the birthday paradox, we should start seeing collisions.
+As illustrated by the birthday paradox, we should start seeing collisions.
 Let us analyse them.
 
 We see the hash function $\mbox{{\tt Hash}}$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^u-1\}$.
 Let $X^1_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file, and equal to $0$ otherwise.
 Clearly, we have $\Prob{X_i = 1} \le \frac{\eta -1}{2^u}$.
-And the number of files which collides are, in average:
+The number of files which collide is, on average:
 \[ \EE{\sum_{i=0}^{\eta-1} X_i} \le \sum_{i=0}^{\eta-1} \frac{\eta -1}{2^u} = \frac{\eta (\eta - 1)}{2^u}. \]
-For instance, for $\eta=10^6$ files and 32-bit hash values, one should expect about at most 233 files which collide.\smallskip
+For instance, for $\eta=10^6$ files and 32-bit hash values, the expected number of files which collides is less than $233$.\smallskip
 
-That being said, a collision can only yield a {\sl false positive} and never a {\sl false negative}. In other words, whilst a collision may make the parties blind to a difference\footnote{{\sl e.g.} result in confusing {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create an nonexistent difference {\sl ex nihilo}.\smallskip
+That being said, a collision can only yield a {\sl false positive} and never a {\sl false negative}. In other words, while a collision may make the parties blind to a difference\footnote{{\sl e.g.} result in confusing {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create an nonexistent difference {\sl ex nihilo}.\smallskip
 
 Hence, it suffices to replace the function $\mbox{{\tt Hash}}(F)$ by a chopped $\mbox{{\tt MAC}}_k(F) \bmod 2^u$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each round the parties will detect new files and deletions, fix these and ``launder'' again the remaining files.\smallskip
 
 Indeed, the probability that a stubborn file persists colliding decreases exponentially with the number $k$ of iterations, if the hash functions are random and independent for each iteration.
-Assume the $\eta$ remains invariant between iterations.
-Let $Y_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file for all the $k$ iterations, and equal to $0$ otherwise.
-Let $X^l_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file during iteration $l$, and equal to $0$ otherwise.
+Assume $\eta$ remains invariant between iterations.
+Let $X^l_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file during iteration $l$, and equal to $0$ otherwise. Let $Y_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file for all the $k$ iterations, and equal to $0$ otherwise, ie. $Y_i = \prod_{l=1}^k X^l_i$.
+
 By independence, we have
  \[ \Prob{Y_i = 1} = \Prob{X^1_i = 1} \dots \Prob{X^k_i = 1} \le \left( \frac{\eta -1}{2^u} \right)^k. \] 
-Therefore the number of files which collides is, in average
+Therefore the number of files which collide is, on averageA
 \[
  \EE{\sum_{i=0}^{\eta-1} Y_i} \le \sum_{i=0}^{\eta-1} \left( \frac{\eta -1}{2^u} \right)^k =  \eta \left(\frac{\eta - 1}{2^u}\right)^k.
 \]
@@ -258,7 +258,7 @@ For the $(\eta=10^6,u=32)$ instance considered previously, this gives $\epsilon_
 
 TODO: verify I have not made a mistake and compare with using a bigger u (maybe using example... and timing...)
 
-\section{Theoretical complexity and algorithmic improvements}
+\section{Theoretical time complexity and algorithmic improvements}
 
 In this section, we analyse the theoretical costs of our algorithms and propose some algorithmic improvements.
 
@@ -269,7 +269,7 @@ We suppose $M(k+k') \ge M(k) + M(k')$, for any $k,k'$.
 We know that the division and the modular reduction of two numbers of $k$ bits modulo a number of $k$ bits costs about $\Oapp(M(k))$ \cite{burnikel1998fast}.
 %The gcd computation also costs $\Oapp(M(k))$~\cite{moller2008schonhage}.
 Furthermore, using naive algorithms, $M(k) = O(k^2)$, but using fast algorithms such as FFT~\cite{schonhage1971schnelle}, $M(k) = \Oapp(k)$.
-We note, that the FFT multiplication is faster than the other methods (naive or Karatsuba) for number of about $10^4*64$ bits (from gmp sources - if you find any better sources, it would be interesting...).
+We note that the FFT multiplication is faster than the other methods (naive or Karatsuba) for number of about $10^4 \cdot 64$ bits (from gmp sources -- if you find any better sources, it would be interesting...).
 And using such big numbers, the division and the modulo reduction algorithms used in gmp are also the ones with complexity $\Oapp(M(k))$.
 
 Since $p$ has $2 u t$ bits and, here are the costs:
@@ -278,12 +278,12 @@ Since $p$ has $2 u t$ bits and, here are the costs:
 \item (Oscar) computation of the redundancy $c'=\prod_{i=1}^n h_i \bmod p$, cost: $O(n M(u t))$, $\Oapp(n u t)$ with FFT
 \item (Oscar) computation of $s = c' / c \bmod p$, cost: $M(u t)$, $\Oapp(u t)$ with FFT
 \item (Oscar) computation of the two $u t$-bits number $a$ and $b$, such that $s = a / b \bmod p$, cost: $\Oapp(M(u t))$, using a new technique of Wang and Pan in \cite{pan2004rational} and \cite{wang2003acceleration}; however using naive extended gcd, it costs $\Oapp((u t)^2)$.
-@fbenhamo TODO However I do not know any software where it is implemented, nor the actual speed in practice, neither if this can be adapted for the polynomial case (this can be an advantage over the polynomial method for set reconciliation - but I think this is not the case, unfortunately, I have not access to interesting articles about polynomial rational reconstruction - but see p.139 of http://algo.inria.fr/chyzak/mpri/poly-20120112.pdf).
+@fbenhamo TODO However I do not know any software where it is implemented, nor the actual speed in practice, neither if this can be adapted for the polynomial case (this can be an advantage over the polynomial method for set reconciliation -- but I think this is not the case, unfortunately, I have not access to interesting articles about polynomial rational reconstruction - but see p.139 of http://algo.inria.fr/chyzak/mpri/poly-20120112.pdf).
 \item (Oscar) factorization of $a$, i.e., $n$ modulo reductions of $a$ by a $h_i$, cost: $\Oapp(n M(u t))$, $\Oapp(n u t)$ with FFT
 \item (Oscar) factorization of $b$, i.e., $n$ modulo reductions of $b$ by a $h_i$, cost: $\Oapp(n M(u t))$. $\Oapp(n u t)$ with FFT
 \end{enumerate}
 
-\subsection{Improvement}
+\subsection{Improvements}
 
 It is possible to improve the complexity of the computation of the redundancy and the factorization to $\Oapp(n/t M(u t)$, $\Oapp(n u)$ with FFT~\cite{schonhage1971schnelle}.
 To simplify the explanations, let us suppose $t$ is a power of $2$: $t=2^\tau$, and $t$ divides $n$.
@@ -543,7 +543,6 @@ The authors acknowledge Guillain Potron for his early involvement in this projec
 \end{tabular}
 \end{center}
 
-Note that the parties do not need to store the $p_i$'s in full. Indeed, the bits of each $p_i$ could be generated using a pseudo-random number generator and a small corrected additive constant of an average value of $\mbox{ln}(p_i) \cong \mbox{ln}(2^{2tu+2}) \cong 1.39(tu+1)$ which storage
-requires essentially $\log_2(tu)$ bits.
+Note that the parties do not need to store the $p_i$'s in full. Indeed, the bits of each $p_i$ could be generated using a pseudo-random number generator and a small corrected additive constant of an average value of $\mbox{ln}(p_i) \cong \mbox{ln}(2^{2tu+2}) \cong 1.39(tu+1)$ whose storage requires essentially $\log_2(tu)$ bits.
 
 \end{document}
