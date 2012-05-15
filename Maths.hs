@@ -98,7 +98,9 @@ modExponent i j p | otherwise =
 mkProduct :: Hash -> [Hash] -> Hash
 mkProduct p hs =
     foldl (\acc h -> (h * acc) `mod` p) 1 hs
-    
+
+-- | modularInv q p returns the inverse of p, modulo q
+-- (yes I know it is weird)
 modularInv :: Integral a => a -> a -> a
 modularInv q 1 = 1
 modularInv q p = (n * q + 1) `div` p
@@ -123,3 +125,12 @@ pgcd a b = pgcd c (d `mod` c)
 detChanges :: Hash -> [Hash] -> [Hash]
 detChanges x l = filter (\ y -> pgcd x y /= 1) l
 
+-- | Chinese Remainder Theorem.
+-- Given a list of (a_i, n_i), this function returns a x such that
+--   forall i. x mod n_i == a_i
+crt :: [(Integer, Integer)] -> Integer
+crt l =
+    let n = product $ map snd l in
+    sum $ map (\(a_i, n_i) -> 
+        let n_n_i = n `div` n_i in
+        a_i * n_n_i * modularInv n_i n_n_i) l
