@@ -38,18 +38,18 @@ main = do
     (_, files2, _) <- toDir $ dir t2
 
     (flip evalStateT) g $ do
-        let low = 2 ^ 1000 :: Hash
-            high = 2 ^ 1001 :: Hash
-            a = 0
-            b = 0
-            modulo = 1
+        let low = 2 ^ 200 :: Hash
+            high = 2 ^ 201 :: Hash
         
         filesPrime1 <- mapKeysM nextShiftedPrime files1
         filesPrime2 <- mapKeysM nextShiftedPrime files2
         let ks1 = M.keys filesPrime1
         let ks2 = M.keys filesPrime2 
-        
-        let whilenot n1 n2 modulo = do
+
+        lift $ print "DEBUG_BEFORE_WHILENOT"       
+ 
+        let whilenot :: Integer -> Integer -> Integer -> StateT StdGen IO ([File], [File])
+            whilenot n1 n2 modulo = do
             p <- nextPrime . fst $ randomR (low, high) g
         
             -- Currently, we are only considering not-recursive dirs
@@ -98,7 +98,9 @@ main = do
                 print deleteHashes
                 print deleteFiles
             
-            unless (oknew && okdelete) $ whilenot a b (modulo*p)
+            if (oknew && okdelete) 
+                then return (newFiles, deleteFiles)
+                else whilenot a b (modulo*p)
         
-        whilenot a b modulo
+        whilenot 0 0 1
     exitSuccess
