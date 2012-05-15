@@ -1,0 +1,549 @@
+\documentclass[11pt]{llncs}
+
+\def\makeitbig{%
+\setlength{\textwidth}{15.9cm}%
+\setlength{\oddsidemargin}{.01cm}%
+\setlength{\evensidemargin}{.01cm}%
+\setlength{\textheight}{21.5cm}%
+\setlength{\topmargin}{-.25cm}%
+\setlength{\headheight}{.7cm}%
+\leftmargini 20pt     \leftmarginii 20pt%
+\leftmarginiii 20pt   \leftmarginiv 20pt%
+\leftmarginv 12pt     \leftmarginvi 12pt%
+\pagestyle{myheadings}}%
+
+\makeitbig
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amsfonts, amssymb, graphicx, rotating, epsfig}
+\usepackage{verbatim}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{url}
+\usepackage{tikz}
+
+\newcommand{\ignore}[1]{}
+\newcommand{\btr}{{\tt btrsync}}
+\newcommand{\rsy}{{\tt rsync}}
+\newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\Cov}[0]{\mbox{Cov}}
+\newcommand{\Var}[0]{\mbox{Var}}
+\newcommand{\xor}[0]{\oplus}
+\newcommand{\rmu}[0]{\mbox{RM}}
+\newcommand{\Prob}[1]{{\Pr\left[\,{#1}\,\right]}}
+\newcommand{\EE}[1]{{\mathbb{E}\left[{#1}\right]}}
+\newcommand{\Oapp}{\ensuremath{\tilde{O}}}
+
+\usepackage{hyperref}
+
+\begin{document}
+
+\title{When File Synchronization Meets Number Theory}
+
+\author{Antoine Amarilli \and Fabrice Ben Hamouda \and Florian Bourse \and\\ 
+Robin Morisset \and David Naccache \and Pablo Rauzy}
+
+\institute{
+\'{E}cole normale sup\'{e}rieure, D\'{e}partement d'informatique \\
+   45, rue d'Ulm, {\sc f}-75230, Paris Cedex 05, France.\\
+   \email{surname.name@ens.fr} (todo for the space in my name: fabrice.ben.hamouda)
+}
+
+\maketitle
+
+\begin{abstract}
+
+In this work we [to be completed by David]
+
+\end{abstract}
+
+\section{Introduction}
+
+In this work we [to be completed by David]
+
+\section{A Few Notations}
+
+We model the directory synchronization problem as follows: Oscar possesses an old version of a directory $\mathfrak{D}$ that he wishes to update. Neil has the up-to-date version $\mathfrak{D}'$. The challenge faced by Oscar and Neil\footnote{Oscar and Neil will respectively stand for {\sl \underline{o}ld} and {\sl \underline{n}ew}.} is that of {\sl exchanging as little data as possible} during the synchronization process. Note that in reality $\mathfrak{D}$ and $\mathfrak{D}'$ may differ both in their files and in their tree structure.\smallskip
+
+In tackling this problem we separate the {\sl "what"} from the {\sl "where"}: namely, we disregard the relative position of files in subdirectories. Let $\mathfrak{F}$ and $\mathfrak{F}'$ denote the multisets of files contained in $\mathfrak{D}$ and $\mathfrak{D}'$. We denote $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$ and $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
+
+Let $\mbox{{\tt Hash}}$ denote a collision-resistant hash function\footnote{{\sl e.g.} SHA-1} and let $F$ be a file. Let $\mbox{{\tt NextPrime}}(F)$ be the prime immediately larger than $\mbox{{\tt Hash}}(F)$ and let $u$ denote the size of {\tt NextPrime}'s output in bits. Define the shorthand notations: $h_i=\mbox{{\tt NextPrime}}(F_i)$ and $h'_i=\mbox{{\tt NextPrime}}(F'_i)$.\smallskip
+
+\section{The Contents Synchronization Protocol}
+
+To efficiently synchronize directories, we propose a new protocol based on modular arithmetic. In terms of asymptotic complexity, the proposed procedure is comparable to prior publications \cite{} (that anyhow reached optimality) but its interest lies in its simplicity and novelty.\smallskip
+
+\subsection{Description of the Basic Exchanges}
+
+Let $t$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ that we wish to spot.{\sl i.e.}:
+
+$$t=\#\mathfrak{F}+\#\mathfrak{F}'-2 \#(\mathfrak{F} \bigcap \mathfrak{F}')$$
+
+We generate a prime $p$ such that:
+
+\begin{equation}
+\label{equp}
+2^{2tu+1} \leq p < 2^{2tu+2}
+\end{equation}
+
+Given $\mathfrak{F}$, Neil generates and sends to Oscar the redundancy~:
+
+\begin{equation}
+c=\prod_{i=1}^n h_i \bmod p
+\end{equation}
+
+Oscar computes:\smallskip
+
+$$c'=\prod_{i=1}^n h'_i \bmod p{~~~\mbox{and}~~~}s=\frac{c'}{c} \bmod p$$
+
+Using \cite{vallee} the integer $s$ can be written as~:
+$$s=\frac{a}{b} \bmod p{~~~\mbox{where the~}G_i\mbox{~denote files and~}}
+\left\{
+\begin{array}{lcr}
+a & =&  \prod\limits_{G_i \in \mathfrak{F}'\wedge G_i \not\in\mathfrak{F}} \mbox{{\tt NextPrime}}(G_i) \\
+\\
+b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox{{\tt NextPrime}}(G_i)
+\end{array}
+\right.
+$$
+
+Note that since $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements, we have that $a$ and $b$ are strictly lesser than $2^{ut}$. Theorem \ref{theo} (see \cite{cryptorational}) shows that given $s$ one can recover $a$ and $b$ efficiently. The algorithm is based on Gauss' algorithm for finding the shortest vector in a two-dimensional lattice \cite{vallee}.
+
+\begin{theorem}
+\label{theo}
+Let $a,b \in {\mathbb Z}$ such that $-A \leq a \leq A$ and $0<b \leq B$. Let $p$ be some prime integer such that
+$2AB<p$. Let $s=a b^{-1} \mod p$.
+Then given $A,B,s$ and $p$, one can recover $a$ and $b$ in polynomial time.
+\end{theorem}
+
+@fbenhamo: TODO REMARK: Actually, this problem is known as rational number reconstruction \cite{pan2004rational} and \cite{wang2003acceleration}.
+
+Taking $A=B=2^{ut}-1$, we have from (\ref{equp}) that $2AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Therefore, we can
+recover $a$ and $b$ from $s$ in polynomial time. By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can
+easily identify the discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
+
+Formally, this is done as follows:\smallskip
+
+\begin{center}
+\begin{tabular}{|lcl|}\hline
+~~{\bf Oscar}                       &                                                      &   {\bf Neil}~\\
+                                   &~~{{\LARGE $\stackrel{c}{\longrightarrow}$}}~~        &   \\
+                                   &                                                      &computes $a,b$~\\
+                                   &                                                      &if $a$ does not factor properly~\\
+                                   &                                                      &~~~~~~then output $\bot$ and halt~\\
+                                   &                                                      &~~~~~~else let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod h'_i =0\}$~~\\
+                                   &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
+~~deletes files s.t. $b \bmod h_i =0$&                                                      &\\
+~~adds $\mathfrak{S}$ to the disk    &                                                      &\\\hline
+\end{tabular}
+\end{center}
+
+As we have just seen the "output $\bot$ and halt" should actually never occur if bounds on parameter sizes are respected. However, a file synchronization procedure that works {\sl only} for a limited number of differences is not of major practical usefulness. In the next subsection we will show how to extend the protocol even in the case where the differences exceed the informational capacity of the modulus $p$ used.
+
+\subsection{The Case of Insufficient Information}
+
+To extend the protocol to an unlimited number of differences, Oscar and Neil will use more than one $p$ by agreeing on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails, Neil will keep amassing information about the difference as shown in the appendix. Note that no information is lost and that information adds-up until it reaches a threshold that suffices to identify the difference.
+
+\section{Variants}
+
+In this section we explore two strategies allowing to reduce the size of $p$ and hence improve transmission by {\sl constant factors} (from a complexity standpoint, nothing can be done as the protocol transmits information proportional in size to the difference).
+
+\subsection{Probabilistic Decoding: Reducing $p$}
+
+Generate a prime $p$ smaller than previously, namely:
+\begin{equation}
+\label{eqnewp}
+2^{ut+w-1}<p \leq 2^{ut+w}
+\end{equation}
+
+for some small integer $w \geq 1$ (we suggest to take $w=50$). For large $\eta=\max(n,n')$ and $t$ the size of the new prime $p$ will be approximately half the size of the prime $p$ generated in the previous section. The resulting redundancy $c$ is calculated as previously but approximately twice smaller. As previously, we have~:
+
+$$
+s=\frac{a}{b} \bmod p{~~~\mbox{and~}}
+\left\{
+\begin{array}{lcr}
+a & =&  \prod\limits_{G_i \in \mathfrak{F}'\wedge G_i \not\in\mathfrak{F}} \mbox{{\tt NextPrime}}(G_i) \\
+\\
+b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox{{\tt NextPrime}}(G_i)
+\end{array}
+\right.
+$$
+
+and since there are at most $t$ differences, we must have~:
+\begin{equation}
+\label{eqab}
+a b \leq 2^{ut}
+\end{equation}
+
+The difference with respect to the basic protocol is that we don't have a fixed bound for $a$ and $b$ anymore; equation (\ref{eqab}) only provides a bound for the product $a b$. Therefore, we define a finite sequence of integers:
+
+$$(A_i=2^{w \cdot i},B_i=\lfloor (p-1)/(2 \cdot A_i) \rfloor)\mbox{~~where~~}B_i>1$$. 
+
+$\forall i>0$ we have $2 A_i B_i<p$. Moreover, From equations (\ref{eqnewp}) and (\ref{eqab}) there must be at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, given $(A_i,B_i,p,s)$ one can recover $a$ and $b$, and eventually the difference.\smallskip
+ 
+The problem is that (by opposition to the basic protocol) we have no guarantee that such an $(a,b)$ is unique. Namely we could in theory stumble upon another $(a',b')$ satisfying (\ref{eqab}) for some index $i' \neq i$. We expect this to happen with negligible probability for large enough $w$, but this makes the modified protocol heuristic only.
+
+\subsection{File Laundry: Reducing $u$}
+
+What happens if we shorten $u$ in the basic protocol?\smallskip
+
+\subsubsection{First method}
+
+As foreseen by the birthday paradox, we should start seeing collisions.
+Let us analyse them.
+
+We see the hash function $\mbox{{\tt Hash}}$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^u-1\}$.
+Let $X^1_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file, and equal to $0$ otherwise.
+Clearly, we have $\Prob{X_i = 1} \le \frac{\eta -1}{2^u}$.
+And the number of files which collides are, in average:
+\[ \EE{\sum_{i=0}^{\eta-1} X_i} \le \sum_{i=0}^{\eta-1} \frac{\eta -1}{2^u} = \frac{\eta (\eta - 1)}{2^u}. \]
+For instance, for $\eta=10^6$ files and 32-bit hash values, one should expect about at most 233 files which collide.\smallskip
+
+That being said, a collision can only yield a {\sl false positive} and never a {\sl false negative}. In other words, whilst a collision may make the parties blind to a difference\footnote{{\sl e.g.} result in confusing {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create an nonexistent difference {\sl ex nihilo}.\smallskip
+
+Hence, it suffices to replace the function $\mbox{{\tt Hash}}(F)$ by a chopped $\mbox{{\tt MAC}}_k(F) \bmod 2^u$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each round the parties will detect new files and deletions, fix these and "launder" again the remaining files.\smallskip
+
+Indeed, the probability that a stubborn file persists colliding decreases exponentially with the number $k$ of iterations, if the hash functions are random and independent for each iteration.
+Assume the $\eta$ remains invariant between iterations.
+Let $Y_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file for all the $k$ iterations, and equal to $0$ otherwise.
+Let $X^l_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file during iteration $l$, and equal to $0$ otherwise.
+By independence, we have
+ \[ \Prob{Y_i = 1} = \Prob{X^1_i = 1} \dots \Prob{X^k_i = 1} \le \left( \frac{\eta -1}{2^u} \right)^k. \] 
+Therefore the number of files which collides is, in average
+\[
+ \EE{\sum_{i=0}^{\eta-1} Y_i} \le \sum_{i=0}^{\eta-1} \left( \frac{\eta -1}{2^u} \right)^k =  \eta \left(\frac{\eta - 1}{2^u}\right)^k.
+\]
+Hence the probability that after $k$ rounds at least one false positive will survive is
+\[
+\epsilon_k \le \eta \left(\frac{\eta - 1}{2^u}\right)^k
+\]
+
+For the $(\eta=10^6,u=32)$ instance considered previously, this gives $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3} \%$.
+
+\subsubsection{Improvement}
+
+However, we can improve a lot the algorithm, using the following trick: we can remove the files which are different in the first possible iteration, and only work with common files and files which collided (in a bad way, blinding a difference).
+Now, the only collision which can be bad for round $k$, are the collisions of a file $i$ with a file $j$ such that $i$ and $j$ both have collided at all the previous iterations.
+And let write $Z^l_i$ the random variable equal to $1$ when the file $i$ has a bad collisions for all the $l$ first iterations.
+
+Suppose $\eta > 1$. 
+Let us set $Z^0_i = 1$ and let us write $p_l = \Prob{Z^{l-1}_{i} = 1 \text{ and } Z^{l-1}_{j} = 1} $ for all $l$ and $i \neq j$.
+For $k \ge 1$, we have
+\begin{align*} 
+\Prob{Z^k_i=1} &= \Prob{\exists j\neq i \text{, } X^k_{i,j} = 1 \text{, } Z^{k-1}_{i} = 1  \text{ and } Z^{l-1}_{j} = 1}  \\ 
+&\le \sum_{j=0, j\neq i}^{\eta-1} \Prob{X^{k-1}_{i,j} = 1} \Prob{Z^{k-1}_{i} = 1 \text{ and } Z^{k-1}_{j} = 1}  \\ 
+&\le \frac{\eta-1}{2^u} p_{k-1}
+\end{align*}
+Furthermore $p_0 = 1$ and
+\begin{align*}
+p_l &= \Prob{X^{l}_0 = X^{l}_1 \text{, } Z^{l}_{0} = 1 \text{ and } Z^{l}_{1} = 1}
+  + \Prob{X^{l}_0 \neq X^{l}_1 \text{, } Z^{l}_{0} = 1 \text{ and } Z^{l}_{1} = 1} \\
+&\le \Prob{X^{l}_0 = X^{l}_1 \text{, } Z^{l-1}_{0} = 1 \text{ and } Z^{l-1}_{1} = 1} \\
+  &\quad+ \sum_{i \ge 2, j \ge 2} \Prob{X^l_{0,i} = 1 \text{, } X^l_{1,j} = 1 \text{, } Z^{l-1}_{0} = 1 \text{ and } Z^{l-1}_{1} = 1} \\
+&= \Prob{X^{l}_0 = X^{l}_1} \Prob{Z^{l-1}_{0} = 1 \text{ and } Z^{l-1}_{1} = 1} \\
+  &\quad+ \sum_{i \ge 2, j \ge 2} \Prob{X^l_{0,i} = 1} \Prob{X^l_{1,j} = 1} \Prob{Z^{l-1}_{0} = 1 \text{ and } Z^{l-1}_{1} = 1} \\
+&\le \frac{1}{2^u} p_{l-1} + \frac{(\eta-2)^2}{2^{2u}} p_{l-1}
+\end{align*}
+so we have
+\[ p_l \le \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^l, \]
+and
+\[ \Prob{Z^l_i=1} \le \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{k-1} \]
+And finally, the probability that after $k$ rounds at least one false positive will survive is
+\[
+\epsilon'_k \le \frac{\eta(\eta-1)}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{k-1}
+\]
+
+For the $(\eta=10^6,u=32)$ instance considered previously, this gives $\epsilon_2 \le 0.013\%$.
+
+TODO: verify I have not made a mistake and compare with using a bigger u (maybe using example... and timing...)
+
+\section{Theoretical complexity and algorithmic improvements}
+
+In this section, we analyse the theoretical costs of our algorithms and propose some algorithmic improvements.
+
+\subsection{Theoretical complexity}
+
+Let $M(k)$ be the time required to multiply two numbers of $k$ bits.
+We suppose $M(k+k') \ge M(k) + M(k')$, for any $k,k'$.
+We know that the division and the modular reduction of two numbers of $k$ bits modulo a number of $k$ bits costs about $\Oapp(M(k))$ \cite{burnikel1998fast}.
+%The gcd computation also costs $\Oapp(M(k))$~\cite{moller2008schonhage}.
+Furthermore, using naive algorithms, $M(k) = O(k^2)$, but using fast algorithms such as FFT~\cite{schonhage1971schnelle}, $M(k) = \Oapp(k)$.
+We note, that the FFT multiplication is faster than the other methods (naive or Karatsuba) for number of about $10^4*64$ bits (from gmp sources - if you find any better sources, it would be interesting...).
+And using such big numbers, the division and the modulo reduction algorithms used in gmp are also the ones with complexity $\Oapp(M(k))$.
+
+Since $p$ has $2 u t$ bits and, here are the costs:
+\begin{enumerate}
+\item (Neil) computation of the redundancy $c=\prod_{i=1}^n h_i \bmod p$, cost: $O(n M(u t))$, $\Oapp(n u t)$ with FFT
+\item (Oscar) computation of the redundancy $c'=\prod_{i=1}^n h_i \bmod p$, cost: $O(n M(u t))$, $\Oapp(n u t)$ with FFT
+\item (Oscar) computation of $s = c' / c \bmod p$, cost: $M(u t)$, $\Oapp(u t)$ with FFT
+\item (Oscar) computation of the two $u t$-bits number $a$ and $b$, such that $s = a / b \bmod p$, cost: $\Oapp(M(u t))$, using a new technique of Wang and Pan in \cite{pan2004rational} and \cite{wang2003acceleration}; however using naive extended gcd, it costs $\Oapp((u t)^2)$.
+@fbenhamo TODO However I do not know any software where it is implemented, nor the actual speed in practice, neither if this can be adapted for the polynomial case (this can be an advantage over the polynomial method for set reconciliation - but I think this is not the case, unfortunately, I have not access to interesting articles about polynomial rational reconstruction - but see p.139 of http://algo.inria.fr/chyzak/mpri/poly-20120112.pdf).
+\item (Oscar) factorization of $a$, i.e., $n$ modulo reductions of $a$ by a $h_i$, cost: $\Oapp(n M(u t))$, $\Oapp(n u t)$ with FFT
+\item (Oscar) factorization of $b$, i.e., $n$ modulo reductions of $b$ by a $h_i$, cost: $\Oapp(n M(u t))$. $\Oapp(n u t)$ with FFT
+\end{enumerate}
+
+\subsection{Improvement}
+
+It is possible to improve the complexity of the computation of the redundancy and the factorization to $\Oapp(n/t M(u t)$, $\Oapp(n u)$ with FFT~\cite{schonhage1971schnelle}.
+To simplify the explanations, let us suppose $t$ is a power of $2$: $t=2^\tau$, and $t$ divides $n$.
+
+The idea is the following: we group $h_i$ by group of $t$ elements and we compute the product of each of these groups (without modulo)
+\[ H_j = \prod_{i=j t}^{j t + t - 1} h_i. \]
+Each of these products can be computed in $\Oapp(M(u t))$ using a standard method of product tree, depicted in Algorithm~\ref{alg:prod-tree} (for $j=0$) and in Figure~\ref{fig:prod-tree}.
+And all these $n / t$ products can be computed in $\Oapp(n/t M(u t))$.
+Then, one can compute $c$ by multiplying these products $H_j$ together, modulo $p$, which costs $\Oapp(n/t M(u t))$.
+
+\begin{figure}[t]
+\centering
+\centerline{
+\begin{tikzpicture}[level/.style={sibling distance=60mm/#1}]
+\node (z){$\displaystyle \pi=\pi_1=\prod_{i=0}^{t-1} h_i$}
+  child {node (a) {$\displaystyle \pi_2=\prod_{i=0}^{t/2-1} h_i$}
+    child {node (b) {$\displaystyle \pi_4=\prod_{i=0}^{t/4-1} h_i$}
+      child {node {$\vdots$}
+        child {node (d) {$\displaystyle \pi_t=h_0$}}
+        child {node (e) {$\displaystyle \pi_{t+1}=h_1$}}
+      } 
+      child {node {$\vdots$}}
+    }
+    child {node (g) {$\displaystyle \pi_5=\prod_{i=t/4}^{t/2-1} h_i$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+  }
+  child {node (j) {$\displaystyle \pi_3=\prod_{i=t/2}^{t-1} h_i$}
+    child {node (k) {$\displaystyle \pi_6=\prod_{i=t/2}^{3t/4-1} h_i$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+    child {node (l) {$\displaystyle \pi_7=\prod_{i=3t/4}^{t-1} h_i$}
+      child {node {$\vdots$}}
+      child {node (c){$\vdots$}
+        child {node (o) {$\displaystyle h_{t-2}$}}
+        child {node (p) {$\displaystyle \pi_{2t-1}=h_{t-1}$}
+%        
+%        
+          child [grow=right] {node (qe) {} edge from parent[draw=none]
+            child [grow=right] {node (q) {$2^\tau M(u) \le M(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (r) {$\vdots$} edge from parent[draw=none]
+            child [grow=up] {node (s) {$4 M(u t/4) \le M(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (t) {$2 M(u t/2) \le M(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (u) {$M(u t)$} edge from parent[draw=none]}
+          }}}
+          child [grow=down] {node (v) {$\tau M(u t) = \Oapp(M(u t))$}edge from parent[draw=none]}
+            }
+          }
+        }
+    }
+  }
+};
+%\path (o) -- (e) node (x) [midway] {$\cdots$}
+%  child [grow=down] {
+%    node (y) {$O\left(\displaystyle\sum_{i = 0}^k 2^i \cdot \frac{n}{2^i}\right)$}
+%    edge from parent[draw=none]
+%  };
+\path (q) -- (r) node [midway] {+};
+\path (s) -- (r) node [midway] {+};
+\path (s) -- (t) node [midway] {+};
+\path (s) -- (l) node [midway] {$\displaystyle \longrightarrow$};
+\path (t) -- (u) node [midway] {+};
+\path (z) -- (u) node [midway] {$\displaystyle \longrightarrow$};
+\path (j) -- (t) node [midway] {$\displaystyle \longrightarrow$};
+\path (p) -- (q) node [midway] {$\displaystyle \longrightarrow$};
+%\path (y) -- (x) node [midway] {$\Downarrow$};
+%\path (v) -- (y)
+%  node (w) [midway] {$\tau M(u t) = \Oapp(M(u t))$};
+\path (q) -- (v) node [midway] {$\displaystyle \le$};
+%\path (e) -- (x) node [midway] {+};
+%\path (o) -- (x) node [midway] {+};
+%\path (y) -- (w) node [midway] {$\displaystyle \longrightarrow$};
+%\path (v) -- (w) node [midway] {$\Leftrightarrow$};
+%\path (r) -- (c) node [midway] {$\cdots$};
+\end{tikzpicture}}
+\caption{Product tree}\label{fig:prod-tree}
+\end{figure}
+
+\begin{algorithm}
+\newcommand{\vstart}{\ensuremath{\mathrm{start}}}
+\newcommand{\vmid}{\ensuremath{\mathrm{mid}}}
+\newcommand{\vend}{\ensuremath{\mathrm{end}}}
+\begin{algorithmic}[1]
+\Require{a table $h$ such that $h[i] = h_i$}
+\Ensure{$\pi = \pi_1 = \prod_0^{t-1} h_i$, and $\pi[i] = \pi_i$ for $i \in \{1,\dots,2t-1\}$ as in Figure~\ref{fig:prod-tree}}
+\State $\pi \gets $ array of size $t$
+\Function{prodTree}{$i$,$\vstart$,$\vend$}
+  \If{$\vstart = \vend$}
+    \State \Return $1$
+  \ElsIf{$\vstart+1 = \vend$}
+    \State \Return $h[\vstart]$
+  \Else
+    \State $\vmid \gets \lfloor (\vstart+\vend)/2 \rfloor$
+    \State $\pi[i] \gets $\Call{prodTree}{$2\times i$,$\vstart$,$\vmid$}
+    \State $\pi[i+1] \gets $\Call{prodTree}{$2\times i+1$,$\vstart$,$\vmid$}
+    \State \Return  $\times$ \Call{prodTree}{$\vmid$,$\vend$}
+  \EndIf
+\EndFunction
+\State $\pi[1] \gets $\Call{prodTree}{$1,0,t$}
+\end{algorithmic}
+\caption{Product tree algorithm}\label{alg:prod-tree}
+\end{algorithm}
+
+The same technique applies for the factorization, but this time, we have to be a little more careful.
+After computing the tree product, we can compute the residues of $a$ (or $b$) modulo $H_j$, then we can compute the residues of these new elements modulo the two children of $H_j$ in the product tree ($\prod_{i=j t}{j t + t/2 - 1} h_i$ and $\prod_{i=j t}{j t + t/2 - 1} h_i$), and then compute the residues of these two new values modulo the children of the previous children, and so on.
+Intuitively, we go down the product tree doing modulo reduction.
+At the end (i.e., at the leaves), we obtain the residues of $a$ modulo each of the $h_i$.
+This algorithm is depicted in Algorithm~\ref{fig:div-prod-tree} and in Figure~\ref{fig:div-prod-tree} (for $j=1$).
+The complexity of the algorithm is $\Oapp(M(u t))$, for each $j$.
+So the total complexity is $\Oapp(n/t \Oapp(M(u t))$.
+
+\begin{figure}[t]
+\centering
+\centerline{
+\begin{tikzpicture}[level/.style={sibling distance=60mm/#1}]
+\node (z){$\displaystyle a \bmod \pi_1$}
+  child {node (a) {$\displaystyle a \bmod \pi_2$}
+    child {node (b) {$\displaystyle a \bmod \pi_3$}
+      child {node {$\vdots$}
+        child {node (d) {$\displaystyle a \bmod h_{0}$}}
+        child {node (e) {$\displaystyle a \bmod h_{1}$}}
+      } 
+      child {node {$\vdots$}}
+    }
+    child {node (g) {$\displaystyle a \bmod \pi_5$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+  }
+  child {node (j) {$\displaystyle a \bmod \pi_3$}
+    child {node (k) {$\displaystyle a \bmod \pi_6$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+    child {node (l) {$\displaystyle a \bmod \pi_7$}
+      child {node {$\vdots$}}
+      child {node (c){$\vdots$}
+        child {node (o) {$ $}}
+        child {node (p) {$\displaystyle a \bmod h_{t-1}$}
+%        
+%        
+          child [grow=right] {node (qe) {} edge from parent[draw=none]
+            child [grow=right] {node (q) {$2^\tau O(M(u)) = O(M(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (r) {$\vdots$} edge from parent[draw=none]
+            child [grow=up] {node (s) {$4 O(M(u t/4)) = O(M(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (t) {$2 O(M(u t/2)) = O(M(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (u) {$O(M(u t))$} edge from parent[draw=none]}
+          }}}
+          child [grow=down] {node (v) {$\tau O(M(u t)) = \Oapp(M(u t))$}edge from parent[draw=none]}
+            }
+          }
+        }
+    }
+  }
+};
+%\path (o) -- (e) node (x) [midway] {$\cdots$}
+%  child [grow=down] {
+%    node (y) {$O\left(\displaystyle\sum_{i = 0}^k 2^i \cdot \frac{n}{2^i}\right)$}
+%    edge from parent[draw=none]
+%  };
+\path (q) -- (r) node [midway] {+};
+\path (s) -- (r) node [midway] {+};
+\path (s) -- (t) node [midway] {+};
+\path (s) -- (l) node [midway] {$\displaystyle \longrightarrow$};
+\path (t) -- (u) node [midway] {+};
+\path (z) -- (u) node [midway] {$\displaystyle \longrightarrow$};
+\path (j) -- (t) node [midway] {$\displaystyle \longrightarrow$};
+\path (p) -- (q) node [midway] {$\displaystyle \longrightarrow$};
+%\path (y) -- (x) node [midway] {$\Downarrow$};
+%\path (v) -- (y)
+%  node (w) [midway] {$\tau M(u t) = \Oapp(M(u t))$};
+\path (q) -- (v) node [midway] {$\displaystyle =$};
+%\path (e) -- (x) node [midway] {+};
+%\path (o) -- (x) node [midway] {+};
+%\path (y) -- (w) node [midway] {$\displaystyle \longrightarrow$};
+%\path (v) -- (w) node [midway] {$\Leftrightarrow$};
+%\path (r) -- (c) node [midway] {$\cdots$};
+\end{tikzpicture}}
+\caption{Division from product tree}\label{fig:div-prod-tree}
+\end{figure}
+
+\begin{algorithm}
+\newcommand{\vstart}{\ensuremath{\mathrm{start}}}
+\newcommand{\vmid}{\ensuremath{\mathrm{mid}}}
+\newcommand{\vend}{\ensuremath{\mathrm{end}}}
+\begin{algorithmic}[1]
+\Require{$a$ an integer, $\pi$ the product tree from Algorithm~\ref{alg:prod-tree}}
+\Ensure{$A_i = A[i] = a \bmod \pi_i$ for $i \in \{1,\dots,2t-1\}$, computed as in Figure~\ref{alg:div-prod-tree}}
+\State $A \gets $ array of size $t$
+\Function{modTree}{$i$}
+  \If{$i < 2t$}
+    \State $A[i] \gets A[\lfloor i/2 \rfloor] \bmod \pi[i]$
+    \State \Call{modTree}{$2 \times i$}
+    \State \Call{modTree}{$2 \times i+1$}
+  \EndIf
+\EndFunction
+\State $A[1] \gets a \bmod \pi[1]$
+\State \Call{modTree}{$2$}
+\State \Call{modTree}{$3$}
+\end{algorithmic}
+\caption{Division using product tree}\label{alg:div-prod-tree}
+\end{algorithm}
+
+\section{Implementation}
+
+\subsection{Program Structure}
+
+\subsection{Time Measurements}
+
+\section{Conclusion and Further Improvements}
+
+In this work we [to be completed by David]
+
+\section{Acknowledgment}
+
+The authors acknowledge Guillain Potron for his early involvement in this project.
+
+% TODO to cite !
+\nocite{rsync} 
+\nocite{wagner}
+
+\bibliographystyle{splncs03}
+\bibliography{btrsync}
+
+\appendix
+
+\section{Extended Protocol}
+
+\begin{center}
+\begin{tabular}{|lcl|}\hline
+\multicolumn{3}{|c|}{{\sf First phase during which Neil amasses modular information on the difference~~}} \\\hline
+~~{\bf Oscar}                      &                                                      &   {\bf Neil}~\\
+                                   &                                                      &start protocol with $p_1$~\\
+                                   &~~{{\LARGE $\stackrel{c_1}{\longrightarrow}$}}~~      &   \\
+                                   &                                                      &computes $a,b$ using $p_1$~\\
+                                   &                                                      &if $a$ factors properly then {\sf Terminate Phase}\\
+                                   &                                                      &~~~~~~else switch to $p_2$~~\\
+                                   &~~{{\LARGE $\stackrel{c_2}{\longrightarrow}$}}~~      &   \\
+                                   &                                                      &computes $c \bmod p_1 p_2=\mbox{CRT}_{p_1,p_2}(c_1,c_2)$~~\\
+                                   &                                                      &computes $a,b$ using $p_1 p_2$~\\
+                                   &                                                      &if $a$ factors properly then {\sf Terminate Phase}\\
+                                   &                                                      &~~~~~~else switch to $p_3$~~\\
+                                   &~~{{\LARGE $\stackrel{c_3}{\longrightarrow}$}}~~      &   \\
+                                   &                                                      &computes $c \bmod p_1 p_2 p_3=\mbox{CRT}_{p_1,p_2,p_3}(c_1,c_2,c_3)$~~\\
+                                   &                                                      &computes $a,b$ using $p_1 p_2 p_3$~\\
+                                   &                                                      &if $a$ factors properly then {\sf Terminate Phase}\\
+                                   &                                                      &~~~~~~else switch to $p_4$ \ldots~~\\
+                                   &                  $\vdots$                            & \\\hline\hline
+\multicolumn{3}{|c|}{{\sf Terminate Phase~~}} \\\hline
+                                   &                                                      & \\
+                                   &                                                      &~~~~~~Let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod h'_i =0\}$~~\\
+                                   &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
+                                   ~~deletes files s.t. $b \bmod h_i =0$&                                                      &\\
+                                   ~~adds $\mathfrak{S}$ to the disk    &                                                      &\\\hline
+\end{tabular}
+\end{center}
+
+Note that the parties do not need to store the $p_i$'s in full. Indeed, the bits of each $p_i$ could be generated using a pseudo-random number generator and a small corrected additive constant of an average value of $\mbox{ln}(p_i) \cong \mbox{ln}(2^{2tu+2}) \cong 1.39(tu+1)$ which storage
+requires essentially $\log_2(tu)$ bits.
+
+\end{document} 

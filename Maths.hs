@@ -106,18 +106,12 @@ modularInv q p = (n * q + 1) `div` p
 
 -- minimize a fraction modulo p
 minFraction :: Hash -> Hash -> (Hash,Hash)
-minFraction d p = 
-  let resultlll = lll [[1,0,0,-1],[0,1,0,d%1],[0,0,1,-p%1]] in
-  let result = resultlll!1 in
-  let a = head result + last result in
-  let b = head (tail result) in
-  if (a * b > 0) then
-    (numerator (abs a), numerator (abs b))
-  else
-    let result = resultlll!2 in  
-    let a = head result + last result in
-    let b = head (tail result) in
-    (numerator (abs a), numerator (abs b))
+minFraction d p =
+  let resultlll = lll [[1,0,p%1],[0,1,-p*d%1],[0,0,p*p%1]]
+      result = resultlll!0
+      a = head result
+      b = head (tail result) in
+  (numerator (abs a),numerator (abs b))
 
 pgcd :: Hash -> Hash -> Hash
 pgcd 0 k = k
@@ -128,3 +122,4 @@ pgcd a b = pgcd c (d `mod` c)
 
 detChanges :: Hash -> [Hash] -> [Hash]
 detChanges x l = filter (\ y -> pgcd x y /= 1) l
+
