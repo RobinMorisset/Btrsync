@@ -70,9 +70,13 @@ In tackling this problem we separate the {\sl ``what''} from the {\sl ``where''}
 
 Let $\mbox{{\tt Hash}}$ denote a collision-resistant hash function\footnote{{\sl e.g.} SHA-1} and let $F$ be a file. Let $\mbox{{\tt NextPrime}}(F)$ be the prime immediately larger than $\mbox{{\tt Hash}}(F)$ and let $u$ denote the size of {\tt NextPrime}'s output in bits. Define the shorthand notations: $h_i=\mbox{{\tt NextPrime}}(F_i)$ and $h'_i=\mbox{{\tt NextPrime}}(F'_i)$.\smallskip
 
+TODO(amarilli): use the uniform nextprime (discussion of relative costs with respect to (1.) hashing costs and (2.) finding the next prime costs)
+
 \section{The Content Synchronization Protocol}
 
 To efficiently synchronize directories, we propose a new protocol based on modular arithmetic. In terms of asymptotic complexity, the proposed procedure is comparable to prior publications \cite{} (that anyhow reached optimality) but its interest lies in its simplicity and novelty.\smallskip
+
+TODO(amarilli) we need a real analysis of the expected quantity of information transferred. Since apparently there is a hope that we are better than them (because we can adapt the size of the hashes), we should really make this clearer than what the previous paragraph says, ie. reformulate the problem as a synchronization problem where hash sizes are unknown so that we are better than them.
 
 \subsection{Description of the Basic Exchanges}
 
@@ -189,6 +193,8 @@ The problem is that (by opposition to the basic protocol) we have no guarantee t
 What happens if we shorten $u$ in the basic protocol?\smallskip
 
 \subsubsection{First method}
+
+TODO(amarilli): I find it hard to understand what we are studying, and why we are interested in the probability of a file to collide in all rounds. I get it now, but maybe we can improve the writing.
 
 As illustrated by the birthday paradox, we should start seeing collisions.
 Let us analyse them.
