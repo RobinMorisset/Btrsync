@@ -38,8 +38,8 @@ main = do
     (_, files2, _) <- toDir $ dir t2
 
     (flip evalStateT) g $ do
-        let low = 2 ^ 200 :: Hash
-            high = 2 ^ 201 :: Hash
+        let low = 2 ^ 300 :: Hash
+            high = 2 ^ 301 :: Hash
         
         filesPrime1 <- mapKeysM nextShiftedPrime files1
         filesPrime2 <- mapKeysM nextShiftedPrime files2
@@ -48,10 +48,12 @@ main = do
 
         lift $ print "DEBUG_BEFORE_WHILENOT"       
  
-        let whilenot :: Integer -> Integer -> Integer -> StateT StdGen IO ([File], [File])
-            whilenot n1 n2 modulo = do
+        let whilenot :: Integer -> Integer -> StateT StdGen IO ([File], [File])
+            whilenot oldD modulo = do
+            g <- get
             p <- nextPrime . fst $ randomR (low, high) g
-        
+            let newP = p * modulo 
+
             -- Currently, we are only considering not-recursive dirs
             let pi1 = mkProduct p ks1
             let pi2 = mkProduct p ks2
@@ -59,14 +61,16 @@ main = do
             lift $ do 
                 putStr "p ="
                 print p
+                putStr "newP="
+                print newP
                 putStr "pi1 ="
                 print pi1
                 putStr "pi2 ="
                 print pi2
             
-            let d = (pi1 * modularInv p pi2) `mod` p
-            let (a', b') = minFraction d p
-            let (a, b) = (crt [(n1,modulo),(a',p)], crt [(n2,modulo),(b',p)])
+            let d' = (pi1 * modularInv p pi2) `mod` p 
+            let d = crt [(d',p), (oldD, modulo)]
+            let (a, b) = minFraction d newP
             
             lift $ do
                 putStr "d ="
@@ -78,17 +82,21 @@ main = do
 
             let newHashes = detChanges a ks1
                 deleteHashes = detChanges b ks2
+                pNewHashes = product newHashes `mod` newP
+                okNew = pNewHashes == a
+                pDeleteHashes = product deleteHashes `mod` newP
+                okDelete = pDeleteHashes == b
                 -- TODO: cleanup
-                foldaux :: (M.Map Hash File) -> (Bool, [File]) -> Hash -> (Bool, [File])
-                foldaux filesPrime (bool,files) h = 
+                foldaux :: (M.Map Hash File) -> [File] -> Hash -> [File]
+                foldaux filesPrime files h = 
                     let maybeFile = M.lookup h filesPrime in
                     case maybeFile of
-                        Nothing -> (False, files)
-                        Just file -> (bool, file : files)
-                (oknew,newFiles) = 
-                    foldl (foldaux filesPrime1) (True,[]) newHashes
-                (okdelete,deleteFiles) = 
-                    foldl (foldaux filesPrime2) (True,[]) deleteHashes
+                        Nothing -> files
+                        Just file -> file : files
+                newFiles = 
+                    foldl (foldaux filesPrime1) [] newHashes
+                deleteFiles = 
+                    foldl (foldaux filesPrime2) [] deleteHashes
 
             lift $ do
                 putStr "NEW_HASHES ="
@@ -96,11 +104,12 @@ main = do
                 print newFiles
                 putStr "DELETE_HASHES ="
                 print deleteHashes
-                print deleteFiles
-            
-            if (oknew && okdelete) 
+                print deleteFiles           
+ 
+            if (okNew && okDelete) 
                 then return (newFiles, deleteFiles)
-                else whilenot a b (modulo*p)
+                else whilenot d newP
         
-        whilenot 0 0 1
+        _ <- whilenot 0 1
+        return ()
     exitSuccess
