@@ -66,7 +66,7 @@ In this work we [to be completed by David]
 
 We model the directory synchronization problem as follows: Oscar possesses an old version of a directory $\mathfrak{D}$ that he wishes to update. Neil has the up-to-date version $\mathfrak{D}'$. The challenge faced by Oscar and Neil\footnote{Oscar and Neil will respectively stand for {\sl \underline{o}ld} and {\sl \underline{n}ew}.} is that of {\sl exchanging as little data as possible} during the synchronization process. Note that in reality $\mathfrak{D}$ and $\mathfrak{D}'$ may differ both in their files and in their tree structure.\smallskip
 
-In tackling this problem we separate the {\sl "what"} from the {\sl "where"}: namely, we disregard the relative position of files in subdirectories. Let $\mathfrak{F}$ and $\mathfrak{F}'$ denote the multisets of files contained in $\mathfrak{D}$ and $\mathfrak{D}'$. We denote $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$ and $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
+In tackling this problem we separate the {\sl ``what''} from the {\sl ``where''}: namely, we disregard the relative position of files in subdirectories. Let $\mathfrak{F}$ and $\mathfrak{F}'$ denote the multisets of files contained in $\mathfrak{D}$ and $\mathfrak{D}'$. We denote $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$ and $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
 
 Let $\mbox{{\tt Hash}}$ denote a collision-resistant hash function\footnote{{\sl e.g.} SHA-1} and let $F$ be a file. Let $\mbox{{\tt NextPrime}}(F)$ be the prime immediately larger than $\mbox{{\tt Hash}}(F)$ and let $u$ denote the size of {\tt NextPrime}'s output in bits. Define the shorthand notations: $h_i=\mbox{{\tt NextPrime}}(F_i)$ and $h'_i=\mbox{{\tt NextPrime}}(F'_i)$.\smallskip
 
@@ -139,7 +139,7 @@ Formally, this is done as follows:\smallskip
 \end{tabular}
 \end{center}
 
-As we have just seen the "output $\bot$ and halt" should actually never occur if bounds on parameter sizes are respected. However, a file synchronization procedure that works {\sl only} for a limited number of differences is not of major practical usefulness. In the next subsection we will show how to extend the protocol even in the case where the differences exceed the informational capacity of the modulus $p$ used.
+As we have just seen the ``output $\bot$ and halt'' should actually never occur if bounds on parameter sizes are respected. However, a file synchronization procedure that works {\sl only} for a limited number of differences is not of major practical usefulness. In the next subsection we will show how to extend the protocol even in the case where the differences exceed the informational capacity of the modulus $p$ used.
 
 \subsection{The Case of Insufficient Information}
 
@@ -202,7 +202,7 @@ For instance, for $\eta=10^6$ files and 32-bit hash values, one should expect ab
 
 That being said, a collision can only yield a {\sl false positive} and never a {\sl false negative}. In other words, whilst a collision may make the parties blind to a difference\footnote{{\sl e.g.} result in confusing {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create an nonexistent difference {\sl ex nihilo}.\smallskip
 
-Hence, it suffices to replace the function $\mbox{{\tt Hash}}(F)$ by a chopped $\mbox{{\tt MAC}}_k(F) \bmod 2^u$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each round the parties will detect new files and deletions, fix these and "launder" again the remaining files.\smallskip
+Hence, it suffices to replace the function $\mbox{{\tt Hash}}(F)$ by a chopped $\mbox{{\tt MAC}}_k(F) \bmod 2^u$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each round the parties will detect new files and deletions, fix these and ``launder'' again the remaining files.\smallskip
 
 Indeed, the probability that a stubborn file persists colliding decreases exponentially with the number $k$ of iterations, if the hash functions are random and independent for each iteration.
 Assume the $\eta$ remains invariant between iterations.
@@ -546,4 +546,4 @@ The authors acknowledge Guillain Potron for his early involvement in this projec
 Note that the parties do not need to store the $p_i$'s in full. Indeed, the bits of each $p_i$ could be generated using a pseudo-random number generator and a small corrected additive constant of an average value of $\mbox{ln}(p_i) \cong \mbox{ln}(2^{2tu+2}) \cong 1.39(tu+1)$ which storage
 requires essentially $\log_2(tu)$ bits.
 
-\end{document} 
+\end{document}
