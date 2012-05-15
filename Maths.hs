@@ -130,14 +130,15 @@ pgcd a b = pgcd c (d `mod` c)
                  c = min a b
 
 detChanges :: Hash -> [Hash] -> [Hash]
-detChanges x l = filter (\ y -> pgcd x y /= 1) l
+detChanges x l = filter (\ y -> x `mod` y == 0) l
 
 -- | Chinese Remainder Theorem.
 -- Given a list of (a_i, n_i), this function returns a x such that
 --   forall i. x mod n_i == a_i
 crt :: [(Integer, Integer)] -> Integer
 crt l =
-    let n = product $ map snd l in
-    sum $ map (\(a_i, n_i) -> 
-        let n_n_i = n `div` n_i in
-        a_i * n_n_i * modularInv n_i n_n_i) l
+    let n = product $ map snd l
+        s = sum $ map (\(a_i, n_i) -> 
+                let n_n_i = n `div` n_i in
+                a_i * n_n_i * modularInv n_i n_n_i) l
+    in s `mod` n
