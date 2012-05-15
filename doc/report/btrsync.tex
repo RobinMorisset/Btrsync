@@ -268,17 +268,21 @@ TODO: verify I have not made a mistake and compare with using a bigger u (maybe 
 
 In this section, we analyse the theoretical costs of our algorithms and propose some algorithmic improvements.
 
+TODO(amarilli): we should compare the time complexity to that of the other
+paper, and, if we are better, insist on it. If we can combine this to
+``Practical set reconciliation'', we should.
+
 \subsection{Theoretical complexity}
 
 Let $M(k)$ be the time required to multiply two numbers of $k$ bits.
 We suppose $M(k+k') \ge M(k) + M(k')$, for any $k,k'$.
-We know that the division and the modular reduction of two numbers of $k$ bits modulo a number of $k$ bits costs about $\Oapp(M(k))$ \cite{burnikel1998fast}.
+We know that the division and the modular reduction of two numbers of $k$ bits modulo a number of $k$ bits costs $\Oapp(M(k))$ \cite{burnikel1998fast}.
 %The gcd computation also costs $\Oapp(M(k))$~\cite{moller2008schonhage}.
 Furthermore, using naive algorithms, $M(k) = O(k^2)$, but using fast algorithms such as FFT~\cite{schonhage1971schnelle}, $M(k) = \Oapp(k)$.
 We note that the FFT multiplication is faster than the other methods (naive or Karatsuba) for number of about $10^4 \cdot 64$ bits (from gmp sources -- if you find any better sources, it would be interesting...).
 And using such big numbers, the division and the modulo reduction algorithms used in gmp are also the ones with complexity $\Oapp(M(k))$.
 
-Since $p$ has $2 u t$ bits and, here are the costs:
+Since $p$ has $2 u t$ bits, here are the costs:
 \begin{enumerate}
 \item (Neil) computation of the redundancy $c=\prod_{i=1}^n h_i \bmod p$, cost: $O(n M(u t))$, $\Oapp(n u t)$ with FFT
 \item (Oscar) computation of the redundancy $c'=\prod_{i=1}^n h_i \bmod p$, cost: $O(n M(u t))$, $\Oapp(n u t)$ with FFT
@@ -520,6 +524,7 @@ The authors acknowledge Guillain Potron for his early involvement in this projec
 
 \section{Extended Protocol}
 
+TODO(amarilli) what does  ``Terminate phase'' mean? Is it ``last phase''?
 \begin{center}
 \begin{tabular}{|lcl|}\hline
 \multicolumn{3}{|c|}{{\sf First phase during which Neil amasses modular information on the difference~~}} \\\hline
@@ -550,5 +555,8 @@ The authors acknowledge Guillain Potron for his early involvement in this projec
 \end{center}
 
 Note that the parties do not need to store the $p_i$'s in full. Indeed, the bits of each $p_i$ could be generated using a pseudo-random number generator and a small corrected additive constant of an average value of $\mbox{ln}(p_i) \cong \mbox{ln}(2^{2tu+2}) \cong 1.39(tu+1)$ whose storage requires essentially $\log_2(tu)$ bits.
+
+TODO(amarilli): I'm not sure I get this. Actually we just need to agree on a
+seed for a certain PRNG, and use NextPrime.
 
 \end{document}
