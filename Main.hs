@@ -41,52 +41,64 @@ main = do
     (flip evalStateT) g $ do
         let low = 2 ^ 1000 :: Hash
             high = 2 ^ 1001 :: Hash
-        p <- nextPrime . fst $ randomR (low, high) g
-    
-        -- Currently, we are only considering not-recursive dirs
-        filesPrime1 <- mapKeysM nextShiftedPrime files1
-        let ks1 = M.keys filesPrime1
-        let pi1 = mkProduct p ks1
-
-        filesPrime2 <- mapKeysM nextShiftedPrime files2
-        let ks2 = M.keys filesPrime2 
-        let pi2 = mkProduct p ks2
+            a = 0
+            b = 0
+            modulo = 1
         
-        lift $ do 
-            putStr "p ="
-            print p
-            putStr "pi1 ="
-            print pi1
-            putStr "pi2 ="
-            print pi2
-                    
-        let d = (pi1 * modularInv p pi2) `mod` p
-        let (a, b) = minFraction d p
+        filesPrime1 <- mapKeysM nextShiftedPrime files1
+        filesPrime2 <- mapKeysM nextShiftedPrime files2
+        let ks1 = M.keys filesPrime1
+        let ks2 = M.keys filesPrime2 
+        
+        let whilenot bool n1 n2 modulo =
+              p <- nextPrime . fst $ randomR (low, high) g
+        
+            -- Currently, we are only considering not-recursive dirs
+            let pi1 = mkProduct p ks1
+            let pi2 = mkProduct p ks2
+        
+            lift $ do 
+              putStr "p ="
+                print p
+                putStr "pi1 ="
+                print pi1
+                putStr "pi2 ="
+                print pi2
+            
+            let d = (pi1 * modularInv p pi2) `mod` p
+            let (a, b) = minFraction d p
+            let (a, b) = (crt [(n1,modulo),(a,p)], crt [(n2,modulo),(b,p)])
+            
+            lift $ do
+              putStr "d ="
+                print d
+                putStr "a ="
+                print a
+                putStr "b ="
+                print b
 
-        lift $ do
-            putStr "d ="
-            print d
-            putStr "a ="
-            print a
-            putStr "b ="
-            print b
+            let newHashes = detChanges a ks1
+                deleteHashes = detChanges b ks2
+                -- TODO: cleanup
+                foldaux (bool,files) = 
+                  let b = (flip M.lookup) filesPrime1
+                      ok = isJust b
+                  (bool && ok,if ok then (fromJust b) : files else files) 
+                (oknew,newFiles) = foldl (true,[])
+                                   foldaux
+                                   newHashes
+                (okdelete,deleteFiles) = foldl (true,[])
+                                         foldaux
+                                         deleteHashes
 
-        let newHashes = detChanges a ks1
-            deleteHashes = detChanges b ks2
-            -- TODO: cleanup
-            newFiles = map 
-                (fromJust . ((flip M.lookup) filesPrime1)) 
-                newHashes
-            deleteFiles = map
-                (fromJust . ((flip M.lookup) filesPrime2))
-                deleteHashes
-    
-        lift $ do
-            putStr "NEW_HASHES ="
-            print newHashes 
-            print newFiles
-            putStr "DELETE_HASHES ="
-            print deleteHashes
-            print deleteFiles
-
-            exitSuccess
+            lift $ do
+              putStr "NEW_HASHES ="
+                print newHashes 
+                print newFiles
+                putStr "DELETE_HASHES ="
+                print deleteHashes
+                print deleteFiles
+            
+            whilenot (oknew && okdelete) a b (modulo*p)
+        whilenot false a b modulo;
+    exitSuccess
