@@ -1,6 +1,6 @@
 -- | This module takes care of parsing the command-line arguments
 -- and defines a few constants
-module Config (Config(..), Target(..), parseArgs) where
+module Config (Config(..), Target(..), Role(..), parseArgs) where
 
 import Control.Monad(unless)
 import Data.Maybe(maybe)

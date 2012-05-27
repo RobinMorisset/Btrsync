@@ -12,6 +12,7 @@ import System.Environment
 import System.Exit
 import System.Random
 import Network
+import System.IO
 
 import Config
 import Hashing
@@ -38,24 +39,23 @@ makePrime low high = do
     put g'
     nextPrime preP
 
-mainO :: Handle -> Handle -> Handle -> IO ()
-mainO input output inputEnd =
-    
+port :: PortID
+port = undefined
 
 main :: IO ()
-main = 
+main = do 
+    args <- getArgs
+    (config, t1, t2) <- parseArgs args        
     case role config of
 	Main -> do
-            args <- getArgs
-            (config, t1, t2) <- parseArgs args
             g <- case seed config of
                     Nothing -> getStdGen
                     Just s -> return $ mkStdGen s
             let low = 2 ^ (pSize config) :: Integer
                 high = 2 ^ (pSize config + 1) :: Integer
 
-            (_, files1, _) <- toDir $ dir t1
-            (_, files2, _) <- toDir $ dir t2
+            (_, files1, _) <- toDir (dir t1) ""
+            (_, files2, _) <- toDir (dir t2) ""
 
             (newFiles, deleteFiles) <- (flip evalStateT) g $ do
                 filesPrime1 <- mapKeysM nextShiftedPrime files1
@@ -97,58 +97,63 @@ main =
             print deleteFiles
             exitSuccess
 
-    Oscar -> withSocketsDo $ do
-        args <- getArgs
-        (config, t1, t2) <- parseArgs args
-        channel <- connectTo 
-        oscarg <- getStdGen
-        maybeneil <- host t1
-        let hostname = case maybeneil of
-                    Nothing -> error "no hostname for neil."
-                    Just neil -> neil
-        (_, files2, _) <- toDir $ dir t2
-        channel <- connectTo hostname
-        (flip evalStateT) oscarg $ do
-            filesPrime2 <- mapKeysM nextShiftedPrime files2
-        let ks2 = M.keys filesPrime2 
-        g <- case seed config of
-                Nothing -> error "no seed sent by Main."
-                Just s -> return $ mkStdGen s
-        let low = 2 ^ (pSize config) :: Integer
-            high = 2 ^ (pSize config + 1) :: Integer
-        hSetBuffering channel LineBuffering        
-        let dowhile =
-            (flip evalStateT) g $ do
-                p <- makePrime low high 
-            let pi2 = mkProduct p ks2
-            hPutStrLn channel $ show pi2
-            let neilData = hGetLine channel
-            if neilData == ""
-                then dowhile
-                else 
-                    
-        dowhile
- 
-    Neil -> withSocketsDo $ do 
-        args <- getArgs
-        (config, t1, t2) <- parseArgs args
-        socket <- listenOn port
-        (channel, _, _) <- accept socket
-        nielg <- getStdGen 
-        (_, files1, _) <- toDir $ dir t1
-        (flip evalStateT) nielg $ do
-            filesPrime1 <- mapKeysM nextShiftedPrime files1
-        let ks1 = M.keys filesPrime1
-        g <- case seed config of
-                Nothing -> error "no seed sent by Main."
-                Just s -> return $ mkStdGen s
-        let low = 2 ^ (pSize config) :: Integer
-            high = 2 ^ (pSize config + 1) :: Integer
-        hSetBuffering channel LineBuffering
-        p <- makePrime low high
-        
- 
-  
+        Oscar -> withSocketsDo $ do
+            oscarg <- getStdGen
+            let maybeneil = host t1
+                hostname = case maybeneil of
+                        Nothing -> error "no hostname for neil."
+                        Just neil -> neil
+            (_, files2, _) <- toDir (dir t2) ""
+            channel <- connectTo hostname port
+            filesPrime2 <- (flip evalStateT) oscarg $ mapKeysM nextShiftedPrime files2
+            let ks2 = M.keys filesPrime2 
+            g <- case seed config of
+                    Nothing -> error "no seed sent by Main."
+                    Just s -> return $ mkStdGen s
+            let low = 2 ^ (pSize config) :: Integer
+                high = 2 ^ (pSize config + 1) :: Integer
+            hSetBuffering channel LineBuffering        
+            let dowhile gen = do
+                let (r,g') = randomR (low, high) gen
+                    p = (flip evalState) oscarg $ nextPrime r
+                    pi2 = mkProduct p ks2
+                hPutStrLn channel $ show pi2
+                neilData <- hGetLine channel
+                if neilData == ""
+                    then dowhile g'
+                    else 
+                        let (b,newFiles) = read neilData :: (Hash,[File]) in
+                        undefined 
+            dowhile g
+    
+        Neil -> withSocketsDo $ do 
+            socket <- listenOn port
+            (channel, _, _) <- accept socket
+            nielg <- getStdGen 
+            (_, files1, _) <- toDir (dir t1) ""
+            filesPrime1 <- (flip evalStateT) nielg $ mapKeysM nextShiftedPrime files1
+            let ks1 = M.keys filesPrime1
+            g <- case seed config of
+                    Nothing -> error "no seed sent by Main."
+                    Just s -> return $ mkStdGen s
+            let low = 2 ^ (pSize config) :: Integer
+                high = 2 ^ (pSize config + 1) :: Integer
+            hSetBuffering channel LineBuffering
+            let dowhile oldD oldPs gen = do
+                let (r,g') = randomR (low, high) gen
+                    p = (flip evalState) nielg $ nextPrime r
+                oscarData <- hGetLine channel
+                let pi2 = read oscarData
+                    (newPs, d, x) = roundN oldD oldPs p pi2 ks1
+                case x of
+                    Nothing -> do 
+                        hPutStrLn channel ""
+                        dowhile d newPs g'
+                    Just (b, newHashes) -> 
+                        let newFiles = map ((flip M.lookup) filesPrime1) newHashes in
+                        hPutStrLn channel (show (b, newFiles))
+            dowhile 0 1 g
+
 -- | This contains all the computations on Neil side for a round
 
 roundN :: Integer -> Integer -> Integer -> Integer -> [Hash]
@@ -158,7 +163,7 @@ roundN oldD oldPs p pi2 ks1 =
         pi1 = mkProduct p ks1
         d' = (pi1 * modularInv p pi2) `mod` p
         -- TODO: we hope that p is not a factor of modulo
-        d = d' * modulo * modularInv p modulo + oldD * p * modularInv modulo p
+        d = d' * oldPs * modularInv p oldPs + oldD * p * modularInv oldPs p
         (a, b) = minFraction d newPs
         newHashes = detChanges a ks1
         okNew = (product newHashes `mod` newPs) == a
