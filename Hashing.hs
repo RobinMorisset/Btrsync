@@ -13,11 +13,12 @@ import qualified Data.Map as M
 import System.Directory
 import System.FilePath.Posix
 import System.Posix.Files
+import System.Posix.Types
 
 type Hash = Integer
 -- | The first hash only hashes the contents of the file, while the second one
 --  also hashes its path and permissions
-data File = File FilePath FilePath Hash Hash
+data File = File FilePath FilePath FileMode Hash Hash
     deriving (Eq, Show, Read)
 data Dir = Dir FilePath Hash [File] [Dir]
     deriving (Eq, Show, Read)
@@ -35,7 +36,7 @@ toFile path relPath = do
         toBeHashed = B.append (B.pack $ map Bi.c2w (show fMode ++ relPath)) f
         h1 = integerDigest $ sha1 f
         h2 = integerDigest $ sha1 toBeHashed
-    return $ File path relPath h1 h2
+    return $ File path relPath fMode h1 h2
 
 data PathValidity = PVFile FilePath | PVDir FilePath | PVFail
     deriving (Show, Eq)
@@ -52,7 +53,7 @@ getPathValidity path = do
 
 hashDir :: [File] -> [Dir] -> Hash
 hashDir files dirs =
-    let hashes = map (\ (File _ _ h) -> h) files 
+    let hashes = map (\ (File _ _ _ _ h) -> h) files 
             ++ map (\ (Dir _ h _ _) -> h) dirs in
     foldl xor 0 hashes -- TODO: replace by a true hash
 
@@ -79,7 +80,7 @@ toDir path relPath = do
     (dirs, fileHashes, dirHashes) <- addDirs ([], M.empty, M.empty) dirsP
     let h = hashDir files dirs
         d = Dir path h files dirs
-        fhs = Prelude.foldl (\ m f@(File _ _ h) -> M.insert h f m) fileHashes files
+        fhs = Prelude.foldl (\ m f@(File _ _ _ _ h) -> M.insert h f m) fileHashes files
         dhs = M.insert h d dirHashes 
     return (d, fhs, dhs)
     where
