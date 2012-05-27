@@ -21,7 +21,7 @@ data Flag =
     | Version
     | Seed Int
     | PSize Int
-    | Target Role
+    | Role Role
 
 options :: [OptDescr Flag]
 options =
@@ -33,9 +33,9 @@ options =
         "Makes the program deterministic by fixing the random number generator's seed"
     , Option "p" ["pSize"] (ReqArg (PSize . read) "NUMBER")
         "Changes the size of the prime number used at each round"
-    , Option "" ["isOrigin"] (NoArg $ Target Neil)
+    , Option "" ["isOrigin"] (NoArg $ Role Neil)
         "INTERNAL USE, for telling btrsync it is Neil in the protocol"
-    , Option "" ["isDestination"] (NoArg $ Target Oscar)
+    , Option "" ["isDestination"] (NoArg $ Role Oscar)
         "INTERNAL USE, for telling btrsync it is Oscar in the protocol"
     ]
 
@@ -60,7 +60,7 @@ actionFromFlag f c =
         Version -> putStrLn versionText >> exitSuccess
         Seed newSeed -> return c {seed = Just newSeed}
         PSize size -> return c {pSize = size}
-        Target newRole -> return c {role = newRole}
+        Role newRole -> return c {role = newRole}
 
 -- | From a list of arguments, return a configuration,
 -- the origin directory and the target directory.
