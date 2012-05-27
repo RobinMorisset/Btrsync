@@ -6,14 +6,18 @@ import Prelude hiding (readFile)
 import Control.Monad
 import Data.Bits (xor)
 import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Internal as Bi
 import Data.Digest.Pure.SHA
 import Data.List
 import qualified Data.Map as M
 import System.Directory
 import System.FilePath.Posix
+import System.Posix.Files
 
 type Hash = Integer
-data File = File FilePath Hash
+-- | The first hash only hashes the contents of the file, while the second one
+--  also hashes its path and permissions
+data File = File FilePath Hash Hash
     deriving (Eq, Show)
 data Dir = Dir FilePath Hash [File] [Dir]
     deriving (Eq, Show)
@@ -21,13 +25,16 @@ data Dir = Dir FilePath Hash [File] [Dir]
 subDirs (Dir _ _ ds _) = ds
 subFiles (Dir _ _ _ fs) = fs
 
-hashFile :: FilePath -> IO Integer
-hashFile path = B.readFile path >>= (return . integerDigest . sha1)
-
+-- | Takes a path to a file, and produces the corresponding file datastructure
 toFile :: FilePath -> IO File
 toFile path = do
-    h <- hashFile path
-    return $ File path h
+    f <- B.readFile path
+    fStatus <- getFileStatus path
+    let fMode = fileMode fStatus
+        toBeHashed = B.append (B.pack $ map Bi.c2w (show fMode ++ path)) f
+        h1 = integerDigest $ sha1 f
+        h2 = integerDigest $ sha1 toBeHashed
+    return $ File path h1 h2
 
 data PathValidity = PVFile FilePath | PVDir FilePath | PVFail
     deriving (Show, Eq)
@@ -44,7 +51,7 @@ getPathValidity path = do
 
 hashDir :: [File] -> [Dir] -> Hash
 hashDir files dirs =
-    let hashes = map (\ (File _ h) -> h) files 
+    let hashes = map (\ (File _ _ h) -> h) files 
             ++ map (\ (Dir _ h _ _) -> h) dirs in
     foldl xor 0 hashes -- TODO: replace by a true hash
 
@@ -66,7 +73,7 @@ toDir path = do
     (dirs, fileHashes, dirHashes) <- addDirs ([], M.empty, M.empty) dirsP
     let h = hashDir files dirs
         d = Dir path h files dirs
-        fhs = Prelude.foldl (\ m f@(File _ h) -> M.insert h f m) fileHashes files
+        fhs = Prelude.foldl (\ m f@(File _ _ h) -> M.insert h f m) fileHashes files
         dhs = M.insert h d dirHashes 
     return (d, fhs, dhs)
     where
