@@ -12,10 +12,11 @@ import Data.List
 import qualified Data.Map as M
 import System.Directory
 import System.FilePath.Posix
+import System.Posix.Files
 
 type Hash = Integer
 -- | The first hash only hashes the contents of the file, while the second one
---  also hashes its path
+--  also hashes its path and permissions
 data File = File FilePath Hash Hash
     deriving (Eq, Show)
 data Dir = Dir FilePath Hash [File] [Dir]
@@ -28,7 +29,9 @@ subFiles (Dir _ _ _ fs) = fs
 toFile :: FilePath -> IO File
 toFile path = do
     f <- B.readFile path
-    let toBeHashed = B.append (B.pack $ map Bi.c2w path) f
+    fStatus <- getFileStatus path
+    let fMode = fileMode fStatus
+        toBeHashed = B.append (B.pack $ map Bi.c2w (show fMode ++ path)) f
         h1 = integerDigest $ sha1 f
         h2 = integerDigest $ sha1 toBeHashed
     return $ File path h1 h2
