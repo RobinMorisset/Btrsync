@@ -25,13 +25,14 @@ data Dir = Dir FilePath Hash [File] [Dir]
 subDirs (Dir _ _ ds _) = ds
 subFiles (Dir _ _ _ fs) = fs
 
--- | Takes a path to a file, and produces the corresponding file datastructure
-toFile :: FilePath -> IO File
-toFile path = do
+-- | Takes a path to a file and its relative path, and produces the 
+-- corresponding file datastructure
+toFile :: FilePath -> String -> IO File
+toFile path relPath = do
     f <- B.readFile path
     fStatus <- getFileStatus path
     let fMode = fileMode fStatus
-        toBeHashed = B.append (B.pack $ map Bi.c2w (show fMode ++ path)) f
+        toBeHashed = B.append (B.pack $ map Bi.c2w (show fMode ++ relPath)) f
         h1 = integerDigest $ sha1 f
         h2 = integerDigest $ sha1 toBeHashed
     return $ File path h1 h2
@@ -55,21 +56,26 @@ hashDir files dirs =
             ++ map (\ (Dir _ h _ _) -> h) dirs in
     foldl xor 0 hashes -- TODO: replace by a true hash
 
+firstM :: Monad m => (a -> m c) -> (a, b) -> m (c, b)
+firstM f (x, y) = do
+    fx <- f x
+    return (fx, y)
+
 -- | This function returns both the 'Dir' tree, along
 -- with a set of all file hashes beneath it (recursively)
 -- and a set of all directory hashes beneath it (recursively, including itself)
-toDir :: FilePath -> IO (Dir, M.Map Integer File, M.Map Integer Dir)
-toDir path = do
+toDir :: FilePath -> FilePath -> IO (Dir, M.Map Integer File, M.Map Integer Dir)
+toDir path relPath = do
     contents <- getDirectoryContents path
     -- Because getDirectoryContents return file/directory names and not paths
-    let contents_absolute = map (combine path) contents
-    validPaths <- mapM getPathValidity contents_absolute
+    let contents_path = map (\n -> (combine path n, combine relPath n)) contents
+    validPaths <- mapM (firstM getPathValidity) contents_path
     let (filesP, dirsP) = Prelude.foldl (\ (fs, ds) p -> case p of
-            PVFile filepath -> (filepath : fs, ds)
-            PVDir dirpath -> (fs, dirpath : ds)
-            PVFail -> (fs, ds)
+            (PVFile filepath, rp) -> ((filepath, rp) : fs, ds)
+            (PVDir dirpath, rp) -> (fs, (dirpath, rp) : ds)
+            (PVFail, _) -> (fs, ds)
             ) ([], []) validPaths
-    files <- mapM toFile filesP
+    files <- mapM (\(p, rp) -> toFile p rp) filesP
     (dirs, fileHashes, dirHashes) <- addDirs ([], M.empty, M.empty) dirsP
     let h = hashDir files dirs
         d = Dir path h files dirs
@@ -77,9 +83,9 @@ toDir path = do
         dhs = M.insert h d dirHashes 
     return (d, fhs, dhs)
     where
-        addDirs :: ([Dir], M.Map Integer File, M.Map Integer Dir) -> [FilePath]
+        addDirs :: ([Dir], M.Map Integer File, M.Map Integer Dir) -> [(FilePath, FilePath)]
                 -> IO ([Dir], M.Map Integer File, M.Map Integer Dir)
         addDirs acc [] = return acc
-        addDirs (ds, fhs, dhs) (dPath : dPaths) = do
-            (d, fhs', dhs') <- toDir dPath
+        addDirs (ds, fhs, dhs) ((dPath, dRelPath) : dPaths) = do
+            (d, fhs', dhs') <- toDir dPath dRelPath
             addDirs (d : ds, M.union fhs fhs', M.union dhs dhs') dPaths
