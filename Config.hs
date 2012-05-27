@@ -18,6 +18,7 @@ data Flag =
       Help 
     | Version
     | Seed Int
+    | PSize Int
 
 options :: [OptDescr Flag]
 options =
@@ -27,15 +28,19 @@ options =
         "Cause the program to print its version number and exit"
     , Option "s" ["seed"] (ReqArg (Seed . read) "NUMBER")
         "Makes the program deterministic by fixing the random number generator's seed"
+    , Option "p" ["pSize"] (ReqArg (PSize . read) "NUMBER")
+        "Changes the size of the prime number used at each round"
     ]
 
 data Config = Config {
-      seed :: Maybe Int
+      seed :: Maybe Int -- ^ Seed of the random generator
+    , pSize :: Int -- ^ Size of p in bits
     }
 
 defaultConfig :: Config
 defaultConfig = Config {
       seed = Nothing
+    , pSize = 1000
     }
 
 actionFromFlag :: Flag -> (Config -> IO Config)
@@ -44,6 +49,7 @@ actionFromFlag f c =
         Help -> putStrLn helpText >> exitSuccess
         Version -> putStrLn versionText >> exitSuccess
         Seed newSeed -> return c {seed = Just newSeed}
+        PSize size -> return c {pSize = size}
 
 -- | From a list of arguments, return a configuration,
 -- the origin directory and the target directory.

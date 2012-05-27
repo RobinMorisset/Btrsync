@@ -27,6 +27,20 @@ mapKeysM f =
             return (k', v)
         ) . M.toList
 
+-- | makePrime low high returns p such that
+-- p >= low
+-- not exists p' s.t. p > p' >= high
+makePrime :: Integer -> Integer -> StateT StdGen IO Integer
+makePrime low high = do
+    g <- get
+    let (preP, g') = randomR (low, high) g
+    put g'
+    nextPrime preP
+
+mainO :: Handle -> Handle -> Handle -> IO ()
+mainO input output inputEnd =
+    
+
 main :: IO ()
 main = do
     args <- getArgs
@@ -34,13 +48,13 @@ main = do
     g <- case seed config of
             Nothing -> getStdGen
             Just s -> return $ mkStdGen s
+    let low = 2 ^ (pSize config) :: Integer
+        high = 2 ^ (pSize config + 1) :: Integer
+
     (_, files1, _) <- toDir $ dir t1
     (_, files2, _) <- toDir $ dir t2
 
     (newFiles, deleteFiles) <- (flip evalStateT) g $ do
-        let low = 2 ^ 300 :: Hash
-            high = 2 ^ 301 :: Hash
-        
         filesPrime1 <- mapKeysM nextShiftedPrime files1
         filesPrime2 <- mapKeysM nextShiftedPrime files2
         let ks1 = M.keys filesPrime1
@@ -48,10 +62,7 @@ main = do
 
         let whilenot :: Integer -> Integer -> StateT StdGen IO ([Hash], [Hash])
             whilenot oldD modulo = do
-            g <- get
-            let (preP, g') = randomR (low, high) g
-            put g'
-            p <- nextPrime preP
+            p <- makePrime low high 
             let newP = p * modulo 
 
             -- Currently, we are only considering not-recursive dirs
@@ -82,3 +93,25 @@ main = do
     print newFiles
     print deleteFiles
     exitSuccess
+
+-- | This contains all the computations on Neil side for a round
+roundN :: Integer -> Integer -> Integer -> Integer -> [Hash]
+        -> (Integer, Integer, Maybe (Integer, [Hash]))
+roundN oldD oldPs p pi2 ks1 =
+    let newPs = p * oldPs
+        pi1 = mkProduct p ks1
+        d' = (pi1 * modularInv p pi2) `mod` p
+        -- TODO: we hope that p is not a factor of modulo
+        d = d' * modulo * modularInv p modulo + oldD * p * modularInv modulo p
+        (a, b) = minFraction d newPs
+        newHashes = detChanges a ks1
+        okNew = (product newHashes `mod` newPs) == a
+    in
+    if okNew
+        then (newPs, d, Just (b, newHashes))
+        else (newPs, d, Nothing)
+
+roundO :: Integer -> [Hash] -> [Hash]
+roundO b ks2 newPs =
+    let deleteHashes = detChanges b ks2
+    in deleteHashes
