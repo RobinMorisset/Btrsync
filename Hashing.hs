@@ -17,10 +17,10 @@ import System.Posix.Files
 type Hash = Integer
 -- | The first hash only hashes the contents of the file, while the second one
 --  also hashes its path and permissions
-data File = File FilePath Hash Hash
-    deriving (Eq, Show)
+data File = File FilePath FilePath Hash Hash
+    deriving (Eq, Show, Read)
 data Dir = Dir FilePath Hash [File] [Dir]
-    deriving (Eq, Show)
+    deriving (Eq, Show, Read)
 
 subDirs (Dir _ _ ds _) = ds
 subFiles (Dir _ _ _ fs) = fs
@@ -35,7 +35,7 @@ toFile path relPath = do
         toBeHashed = B.append (B.pack $ map Bi.c2w (show fMode ++ relPath)) f
         h1 = integerDigest $ sha1 f
         h2 = integerDigest $ sha1 toBeHashed
-    return $ File path h1 h2
+    return $ File path relPath h1 h2
 
 data PathValidity = PVFile FilePath | PVDir FilePath | PVFail
     deriving (Show, Eq)
