@@ -14,11 +14,14 @@ version = "0.1"
 versionText = "btrsync, version: " ++ version
 helpText = usageInfo "Usage: btrsync [OPTION...] dir1 dir2" options
 
+data Role = Main | Neil | Oscar
+
 data Flag = 
       Help 
     | Version
     | Seed Int
     | PSize Int
+    | Target Role
 
 options :: [OptDescr Flag]
 options =
@@ -30,17 +33,24 @@ options =
         "Makes the program deterministic by fixing the random number generator's seed"
     , Option "p" ["pSize"] (ReqArg (PSize . read) "NUMBER")
         "Changes the size of the prime number used at each round"
+    , Option "" ["isOrigin"] (NoArg $ Target Neil)
+        "INTERNAL USE, for telling btrsync it is Neil in the protocol"
+    , Option "" ["isDestination"] (NoArg $ Target Oscar)
+        "INTERNAL USE, for telling btrsync it is Oscar in the protocol"
     ]
 
 data Config = Config {
       seed :: Maybe Int -- ^ Seed of the random generator
     , pSize :: Int -- ^ Size of p in bits
+    , role :: Role -- ^ whether btrsync has been directly called by the user, 
+                    -- or is performing one half of the protocol
     }
 
 defaultConfig :: Config
 defaultConfig = Config {
       seed = Nothing
     , pSize = 1000
+    , role = Main
     }
 
 actionFromFlag :: Flag -> (Config -> IO Config)
@@ -50,6 +60,7 @@ actionFromFlag f c =
         Version -> putStrLn versionText >> exitSuccess
         Seed newSeed -> return c {seed = Just newSeed}
         PSize size -> return c {pSize = size}
+        Target newRole -> return c {role = newRole}
 
 -- | From a list of arguments, return a configuration,
 -- the origin directory and the target directory.
