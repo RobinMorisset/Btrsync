@@ -104,7 +104,14 @@ data Target = Target {
     , host :: Maybe String
     , dir :: FilePath
     }
-    deriving (Show)
+
+instance Show Target where
+    show t =
+        let dirString = dir t in
+        maybe dirString (\ h -> 
+            let endString = h ++ ":" ++ dirString in
+            maybe endString (\ u -> u ++ "@" ++ endString
+            ) $ user t) $ host t
 
 parseTarget :: String -> Target
 parseTarget str =
