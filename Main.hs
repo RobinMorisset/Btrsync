@@ -29,9 +29,6 @@ mapKeysM f =
             return (k', v)
         ) . M.toList
 
-port :: PortID
-port = undefined
-
 main :: IO ()
 main = do 
     args <- getArgs
@@ -41,6 +38,7 @@ main = do
         Just s -> return $ mkStdGen s
     let low = 2 ^ (pSize config) :: Integer
         high = 2 ^ (pSize config + 1) :: Integer
+        portId = port config
     case role config of
 	Main -> undefined 
 
@@ -53,7 +51,7 @@ main = do
             (_, files2, _) <- toDir (dir t2) ""
             filesPrime2 <- (flip evalStateT) oscarg $ 
                 mapKeysM nextShiftedPrime files2
-            channel <- connectTo hostname port
+            channel <- connectTo hostname portId
             let ks2 = M.keys filesPrime2 
             hSetBuffering channel LineBuffering        
             let dowhile gen = do
@@ -70,7 +68,7 @@ main = do
             dowhile g
     
         Neil -> withSocketsDo $ do 
-            socket <- listenOn port
+            socket <- listenOn portId
             (channel, _, _) <- accept socket
             nielg <- getStdGen 
             (_, files1, _) <- toDir (dir t1) ""

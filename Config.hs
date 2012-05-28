@@ -5,6 +5,7 @@ module Config (Config(..), Target(..), Role(..), parseArgs) where
 import Control.Monad(unless)
 import Data.Maybe(maybe)
 import Data.List
+import Network
 import System.Console.GetOpt
 import System.Exit
 import System.IO
@@ -22,6 +23,7 @@ data Flag =
     | Seed Int
     | PSize Int
     | Role Role
+    | Port PortID
 
 options :: [OptDescr Flag]
 options =
@@ -33,6 +35,8 @@ options =
         "Makes the program deterministic by fixing the random number generator's seed"
     , Option "p" ["pSize"] (ReqArg (PSize . read) "NUMBER")
         "Changes the size of the prime number used at each round"
+    , Option "" ["port"] (ReqArg (Port . PortNumber . fromInteger . read) "NUMBER")
+        "Chooses the port to use for communication. Default: 1337"
     , Option "" ["isOrigin"] (NoArg $ Role Neil)
         "INTERNAL USE, for telling btrsync it is Neil in the protocol"
     , Option "" ["isDestination"] (NoArg $ Role Oscar)
@@ -44,6 +48,7 @@ data Config = Config {
     , pSize :: Int -- ^ Size of p in bits
     , role :: Role -- ^ whether btrsync has been directly called by the user, 
                     -- or is performing one half of the protocol
+    , port :: PortID
     }
 
 defaultConfig :: Config
@@ -51,6 +56,7 @@ defaultConfig = Config {
       seed = Nothing
     , pSize = 1000
     , role = Main
+    , port = PortNumber 1337
     }
 
 actionFromFlag :: Flag -> (Config -> IO Config)
@@ -61,6 +67,7 @@ actionFromFlag f c =
         Seed newSeed -> return c {seed = Just newSeed}
         PSize size -> return c {pSize = size}
         Role newRole -> return c {role = newRole}
+        Port newPort -> return c {port = newPort}
 
 -- | From a list of arguments, return a configuration,
 -- the origin directory and the target directory.
