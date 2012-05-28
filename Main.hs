@@ -7,14 +7,17 @@ import Control.Monad.Trans
 import Data.Bits
 import qualified Data.Map as M
 import Data.Maybe
+import Data.List
+import Network
 import System.Console.GetOpt
+import System.Directory
 import System.Environment
 import System.Exit
-import System.Random
-import Network
 import System.IO
-import System.Process
+import System.Posix.Files
 import System.Posix.Unistd
+import System.Process
+import System.Random
 
 import Config
 import Hashing
@@ -75,20 +78,19 @@ main = do
                                 ++ " " ++ show t1{host=Just neilmachine} ++ " " ++ show t2)
             resultneil <- waitForProcess neil
             resultosc <- waitForProcess osc
-            if resultneil /= ExitSuccess then
+            unless (resultneil == ExitSuccess) $
                 error "Neil encountered an error"
-                else return ()
-            if resultosc /= ExitSuccess then
+            unless (resultosc == ExitSuccess) $
                 error "Oscar encountered an error"
-                else return ()
+            exitSuccess
 
         Oscar -> withSocketsDo $ do
             let g = mkStdGen (seed config)
             oscarg <- getStdGen
-            let maybeneil = host t1
-                hostname = case maybeneil of
+            let hostname = case host t1 of
                     Nothing -> error "no hostname for neil."
                     Just neil -> neil
+            setCurrentDirectory $ dir t2
             (_, files2, _) <- toDir (dir t2) ""
             filesPrime2 <- (flip evalStateT) oscarg $ 
                 mapKeysM nextShiftedPrime files2
@@ -105,14 +107,15 @@ main = do
                     then dowhile g'
                     else 
                         let (b,newFiles) = read neilData :: (Hash,[File]) in
-                        oscarTerminate b newFiles filesPrime2
+                        oscarTerminate b newFiles filesPrime2 hostname (user t1)
             dowhile g
+            exitSuccess
     
         Neil -> withSocketsDo $ do
             let g = mkStdGen (seed config)
             socket <- listenOn portId
             (channel, _, _) <- accept socket
-            nielg <- getStdGen 
+            nielg <- getStdGen
             (_, files1, _) <- toDir (dir t1) ""
             filesPrime1 <- (flip evalStateT) nielg $ 
                 mapKeysM nextShiftedPrime files1
@@ -129,9 +132,11 @@ main = do
                         hPutStrLn channel ""
                         dowhile d newPs g'
                     Just (b, newHashes) -> 
-                        let newFiles = map ((flip M.lookup) filesPrime1) newHashes in
+                        let newFiles = catMaybes $ map ((flip M.lookup) filesPrime1) newHashes in
                         hPutStrLn channel (show (b, newFiles))
             dowhile 0 1 g
+            sClose socket
+            exitSuccess 
 
 -- | This contains all the computations on Neil side for a round
 roundN :: Integer -> Integer -> Integer -> Integer -> [Hash]
@@ -152,8 +157,8 @@ roundN oldD oldPs p pi2 ks1 =
 
 -- | When this function is called, all necessary information has been exchanged
 -- All that remains to do are the actual mv/cp/rm/rsync
-oscarTerminate :: Integer -> [File] -> M.Map Hash File -> IO ()
-oscarTerminate b newFiles filesPrime2 =
+oscarTerminate :: Integer -> [File] -> M.Map Hash File -> String -> Maybe String -> IO ()
+oscarTerminate b newFiles filesPrime2 hostNeil userNeil =
     -- filesPrime2 is indexed by the hashes of contents|permissions|path
     -- We first need to get a variant that is indexed by only the contents
     -- in order to find files that were just moved/copied. 
@@ -161,5 +166,37 @@ oscarTerminate b newFiles filesPrime2 =
             M.foldl' (\fbc f@(File p rp fm hc hall) -> M.insert hc f fbc) 
             M.empty filesPrime2
         deleteHashes = detChanges b $ M.keys filesPrime2
-        deleteFiles = map ((flip M.lookup) filesPrime2) deleteHashes
-    in undefined
+        deleteFiles = catMaybes $ map ((flip M.lookup) filesPrime2) deleteHashes
+    in do
+    -- If the new files are in fact old ones
+    reallyNewFiles <- filterM (\ f@(File _ rp fm hc _) -> case M.lookup hc filesByContent of
+        Nothing -> return True
+        Just fOld@(File _ oldRp oldFm _ _) -> do
+            errorCode <- system ("cp " ++ oldRp ++ " " ++ rp)
+            case errorCode of
+                ExitSuccess -> return False
+                ExitFailure _ -> error ("cp from " ++ oldRp ++ " to " ++ rp ++ " failed")
+        ) newFiles
+    -- Then we find which files were really deleted and not just modified
+    -- These we delete by calling rm
+    forM_ deleteFiles (\ f@(File _ rp fm hc _) -> 
+        case find (\newF -> fHashContent newF == hc) reallyNewFiles of
+            Nothing -> do
+                errorCode <- system ("rm " ++ rp)
+                case errorCode of
+                    ExitSuccess -> return ()
+                    ExitFailure _ -> error ("rm " ++ rp ++ " failed")
+        )
+    -- Then, we delegate to rsync for synchronising files
+    let neilOrigin = maybe 
+            (hostNeil ++ ":") 
+            (\u -> u ++ "@" ++ hostNeil ++ ":") 
+            userNeil
+    forM_ reallyNewFiles (\ f@(File p rp _ _ _) -> do
+        errorCode <- system ("rsync " ++ neilOrigin ++ p ++ " " ++ rp) 
+        case errorCode of
+            ExitSuccess -> return ()
+            ExitFailure _ -> error "rsync failed"
+        )
+    -- Finally we fix permissions
+    forM_ newFiles (\ f@(File _ rp fm _ _) -> setFileMode rp fm)

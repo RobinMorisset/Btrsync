@@ -18,7 +18,13 @@ import System.Posix.Types
 type Hash = Integer
 -- | The first hash only hashes the contents of the file, while the second one
 --  also hashes its path and permissions
-data File = File FilePath FilePath FileMode Hash Hash
+data File = File
+    { fAbsolutePath :: FilePath 
+    , fRelativePath :: FilePath 
+    , fFileMode :: FileMode 
+    , fHashContent :: Hash
+    , fHashAll :: Hash
+    }
     deriving (Eq, Show, Read)
 data Dir = Dir FilePath Hash [File] [Dir]
     deriving (Eq, Show, Read)
