@@ -64,7 +64,7 @@ main = do
                     then dowhile g'
                     else 
                         let (b,newFiles) = read neilData :: (Hash,[File]) in
-                        undefined 
+                        oscarTerminate b newFiles filesPrime2
             dowhile g
     
         Neil -> withSocketsDo $ do 
@@ -92,7 +92,6 @@ main = do
             dowhile 0 1 g
 
 -- | This contains all the computations on Neil side for a round
-
 roundN :: Integer -> Integer -> Integer -> Integer -> [Hash]
         -> (Integer, Integer, Maybe (Integer, [Hash]))
 roundN oldD oldPs p pi2 ks1 =
@@ -108,3 +107,17 @@ roundN oldD oldPs p pi2 ks1 =
     if okNew
         then (newPs, d, Just (b, newHashes))
         else (newPs, d, Nothing)
+
+-- | When this function is called, all necessary information has been exchanged
+-- All that remains to do are the actual mv/cp/rm/rsync
+oscarTerminate :: Integer -> [File] -> M.Map Hash File -> IO ()
+oscarTerminate b newFiles filesPrime2 =
+    -- filesPrime2 is indexed by the hashes of contents|permissions|path
+    -- We first need to get a variant that is indexed by only the contents
+    -- in order to find files that were just moved/copied. 
+    let filesByContent = 
+            M.foldl' (\fbc f@(File p rp fm hc hall) -> M.insert hc f fbc) 
+            M.empty filesPrime2
+        deleteHashes = detChanges b $ M.keys filesPrime2
+        deleteFiles = map ((flip M.lookup) filesPrime2) deleteHashes
+    in undefined
