@@ -44,16 +44,29 @@ options =
     ]
 
 data Config = Config {
-      seed :: Maybe Int -- ^ Seed of the random generator
+      seed :: Int -- ^ Seed of the random generator
     , pSize :: Int -- ^ Size of p in bits
     , role :: Role -- ^ whether btrsync has been directly called by the user, 
                     -- or is performing one half of the protocol
     , port :: PortID
     }
+instance Show Config where
+    show c =
+        let s = " -s " ++ show (seed c)
+            p = " -p " ++ show (pSize c)
+            r = case role c of
+                    Neil -> " --isOrigin"
+                    Oscar -> " --isDestination"
+                    Main -> ""
+            portId = case port c of
+                    PortNumber i -> " --port " ++ show (toInteger i)
+                    _ -> error "the port identifier wasn't an integer"
+        in
+        s ++ p ++ r ++ portId
 
 defaultConfig :: Config
 defaultConfig = Config {
-      seed = Nothing
+      seed = 42
     , pSize = 1000
     , role = Main
     , port = PortNumber 1337
@@ -64,7 +77,7 @@ actionFromFlag f c =
     case f of
         Help -> putStrLn helpText >> exitSuccess
         Version -> putStrLn versionText >> exitSuccess
-        Seed newSeed -> return c {seed = Just newSeed}
+        Seed newSeed -> return c {seed = newSeed}
         PSize size -> return c {pSize = size}
         Role newRole -> return c {role = newRole}
         Port newPort -> return c {port = newPort}
