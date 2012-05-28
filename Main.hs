@@ -13,6 +13,8 @@ import System.Exit
 import System.Random
 import Network
 import System.IO
+import System.Process
+import System.Posix.Unistd
 
 import Config
 import Hashing
@@ -33,21 +35,60 @@ main :: IO ()
 main = do 
     args <- getArgs
     (config, t1, t2) <- parseArgs args        
-    g <- case seed config of
-        Nothing -> error "no seed sent by Main."
-        Just s -> return $ mkStdGen s
     let low = 2 ^ (pSize config) :: Integer
         high = 2 ^ (pSize config + 1) :: Integer
         portId = port config
     case role config of
-	Main -> undefined 
+	Main -> do
+            neilmachine <- case host t1 of
+                Nothing -> do
+                    systemid <- getSystemID
+                    return $ machine systemid
+                Just neil -> return neil
+            neil <- case host t1 of
+                Nothing -> runCommand 
+                    ("btrsync " ++ show config{role=Neil}
+                        ++ " " ++ show t1 ++ " " ++ show t2)
+                Just neilmachine ->
+                    case user t1 of
+                        Nothing -> runCommand 
+                            ("ssh " ++ neilmachine 
+                                ++ " " ++ show config{role=Neil}
+                                ++ " " ++ show t1 ++ " " ++ show t2)
+                        Just neiluser -> runCommand 
+                            ("ssh " ++ neiluser ++ "@" ++ 
+                                neilmachine ++ " " ++ show config{role=Neil}
+                                ++ " "++ show t1 ++ " " ++ show t2)
+            osc <- case host t2 of
+                Nothing -> runCommand
+                    ("btrsync " ++ show config{role=Oscar}
+                        ++ " " ++ show t1{host=Just neilmachine} ++ " " ++ show t2)
+                Just oscarmachine ->
+                    case user t2 of
+                        Nothing -> runCommand                        
+                            ("ssh " ++ oscarmachine 
+                                ++ " btrsync " ++ show config{role=Oscar}
+                                ++ " " ++ show t1{host=Just neilmachine} ++ " " ++ show t2)
+                        Just oscaruser -> runCommand 
+                            ("ssh " ++ oscaruser ++ "@" ++ 
+                                oscarmachine ++ " btrsync " ++ show config{role=Oscar}
+                                ++ " " ++ show t1{host=Just neilmachine} ++ " " ++ show t2)
+            resultneil <- waitForProcess neil
+            resultosc <- waitForProcess osc
+            if resultneil /= ExitSuccess then
+                error "Neil encountered an error"
+                else return ()
+            if resultosc /= ExitSuccess then
+                error "Oscar encountered an error"
+                else return ()
 
         Oscar -> withSocketsDo $ do
+            let g = mkStdGen (seed config)
             oscarg <- getStdGen
             let maybeneil = host t1
                 hostname = case maybeneil of
-                        Nothing -> error "no hostname for neil."
-                        Just neil -> neil
+                    Nothing -> error "no hostname for neil."
+                    Just neil -> neil
             (_, files2, _) <- toDir (dir t2) ""
             filesPrime2 <- (flip evalStateT) oscarg $ 
                 mapKeysM nextShiftedPrime files2
@@ -67,7 +108,8 @@ main = do
                         undefined 
             dowhile g
     
-        Neil -> withSocketsDo $ do 
+        Neil -> withSocketsDo $ do
+            let g = mkStdGen (seed config)
             socket <- listenOn portId
             (channel, _, _) <- accept socket
             nielg <- getStdGen 
