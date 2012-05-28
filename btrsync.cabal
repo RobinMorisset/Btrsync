@@ -62,6 +62,10 @@ Executable btrsync
         , random >= 1.0
         , array >= 0.4
         , Lattices >= 0.0.1
+        , network >= 2.3
+        , unix >= 2.5
+        , mtl >= 2.0
+        , process >= 1.1
  
   -- Modules not exported by this package.
     Other-modules:       
