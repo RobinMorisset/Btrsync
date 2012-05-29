@@ -15,6 +15,7 @@ import System.Console.GetOpt
 import System.Directory
 import System.Environment
 import System.Exit
+import System.FilePath.Posix
 import System.IO
 import System.Posix.Files
 import System.Posix.Signals
@@ -126,7 +127,7 @@ main = do
                     else 
                         let (b, newDirs, newFiles) = read neilData :: (Hash,[Dir], [File]) in
                         oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 
-                            ks2 hostname (user t1)
+                            ks2 hostname (user t1) (dir t2)
             dowhile g
             exitSuccess
     
@@ -183,8 +184,8 @@ roundN oldD oldPs p pi2 ks1 =
 -- | When this function is called, all necessary information has been exchanged
 -- All that remains to do are the actual mkdir/cp/rm/rsync/..
 oscarTerminate :: Integer -> [File] -> [Dir] -> M.Map Hash File -> M.Map Hash Dir
-    -> [Hash] -> String -> Maybe String -> IO ()
-oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
+    -> [Hash] -> String -> Maybe String -> FilePath -> IO ()
+oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil dirOscar =
     -- filesPrime2 is indexed by the hashes of contents|permissions|path
     -- We first need to get a variant that is indexed by only the contents
     -- in order to find files that were just moved/copied. 
@@ -197,7 +198,7 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
     in do
     -- TODO: add new directories
     forM_ newDirs (\ d -> do
-            let instruction = "mkdir -p" ++ dAbsolutePath d
+            let instruction = "mkdir -p" ++ combine dirOscar (dRelativePath d)
             debug ("OSCAR: " ++ instruction)
             system instruction
         )
@@ -208,7 +209,7 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
     reallyNewFiles <- filterM (\ f@(File _ rp fm hc _) -> case M.lookup hc filesByContent of
         Nothing -> return True
         Just fOld@(File _ oldRp oldFm _ _) -> do
-            let instruction = "cp " ++ oldRp ++ " " ++ rp
+            let instruction = "cp " ++ combine dirOscar oldRp ++ " " ++ combine dirOscar rp
             debug ("OSCAR: " ++ instruction)
             errorCode <- system instruction 
             case errorCode of
@@ -220,7 +221,7 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
     forM_ deleteFiles (\ f@(File _ rp fm hc _) -> 
         case find (\newF -> fHashContent newF == hc) reallyNewFiles of
             Nothing -> do
-                let instruction = "rm" ++ rp
+                let instruction = "rm" ++ combine dirOscar rp
                 debug ("OSCAR: " ++ instruction)
                 errorCode <- system instruction
                 case errorCode of
@@ -233,7 +234,7 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
             (\u -> u ++ "@" ++ hostNeil ++ ":") 
             userNeil
     forM_ reallyNewFiles (\ f@(File p rp _ _ _) -> do
-        let instruction = "rsync " ++ neilOrigin ++ p ++ " " ++ rp
+        let instruction = "rsync " ++ neilOrigin ++ p ++ " " ++ combine dirOscar rp
         debug ("OSCAR: " ++ instruction)
         errorCode <- system instruction
         case errorCode of
@@ -242,13 +243,13 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
         )
     -- Finally we fix permissions
     forM_ newFiles (\ f@(File _ rp fm _ _) -> do
-            debug ("OSCAR: setFileMode " ++ rp ++ " " ++ show fm)
+            debug ("OSCAR: setFileMode " ++ combine dirOscar rp ++ " " ++ show fm)
             setFileMode rp fm
         )
 
     -- TODO: then we delete old directories
     forM_ deleteDirs (\ d -> do
-            let instruction = "rm -rf " ++ dAbsolutePath d
+            let instruction = "rm -rf " ++ combine dirOscar (dRelativePath d)
             debug ("OSCAR: " ++ instruction)
             system instruction
         ) 
