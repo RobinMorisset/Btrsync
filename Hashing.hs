@@ -1,6 +1,6 @@
 -- | This module produces the tree/set of directories and files, along with their hash,
 -- from a FilePath
-module Hashing (Dir(..), File(..), Hash(..), toDir) where
+module Hashing (Dir(..), File(..), Hash(..), crawlDir) where
 
 import Prelude hiding (readFile)
 import Control.Monad
@@ -26,11 +26,14 @@ data File = File
     , fHashAll :: Hash
     }
     deriving (Eq, Show, Read)
-data Dir = Dir FilePath Hash [File] [Dir]
-    deriving (Eq, Show, Read)
 
-subDirs (Dir _ _ ds _) = ds
-subFiles (Dir _ _ _ fs) = fs
+data Dir = Dir
+    { dAbsolutePath :: FilePath
+    , dRelativePath :: FilePath
+    , dFileMode :: FileMode
+    , dHashRelPath :: Hash
+    }
+    deriving (Eq, Show, Read)
 
 -- | Takes a path to a file and its relative path, and produces the 
 -- corresponding file datastructure
@@ -57,22 +60,20 @@ getPathValidity path = do
                     && not (isSuffixOf ".." path) -> PVDir path
         _ -> PVFail 
 
-hashDir :: [File] -> [Dir] -> Hash
-hashDir files dirs =
-    let hashes = map (\ (File _ _ _ _ h) -> h) files 
-            ++ map (\ (Dir _ h _ _) -> h) dirs in
-    foldl xor 0 hashes -- TODO: replace by a true hash
-
 firstM :: Monad m => (a -> m c) -> (a, b) -> m (c, b)
 firstM f (x, y) = do
     fx <- f x
     return (fx, y)
 
--- | This function returns both the 'Dir' tree, along
--- with a set of all file hashes beneath it (recursively)
--- and a set of all directory hashes beneath it (recursively, including itself)
-toDir :: FilePath -> FilePath -> IO (Dir, M.Map Integer File, M.Map Integer Dir)
-toDir path relPath = do
+toDir :: FilePath -> FilePath -> IO Dir
+toDir p rp = do
+    dStatus <- getFileStatus p
+    let dMode = fileMode dStatus
+        h = integerDigest . sha1 . B.pack $ map Bi.c2w (show dMode ++ rp)
+    return $ Dir p rp dMode h
+
+crawlDir :: FilePath -> FilePath -> IO (M.Map Integer File, M.Map Integer Dir)
+crawlDir path relPath = do
     contents <- getDirectoryContents path
     -- Because getDirectoryContents return file/directory names and not paths
     let contents_path = map (\n -> (combine path n, combine relPath n)) contents
@@ -83,16 +84,14 @@ toDir path relPath = do
             (PVFail, _) -> (fs, ds)
             ) ([], []) validPaths
     files <- mapM (\(p, rp) -> toFile p rp) filesP
-    (dirs, fileHashes, dirHashes) <- addDirs ([], M.empty, M.empty) dirsP
-    let h = hashDir files dirs
-        d = Dir path h files dirs
-        fhs = Prelude.foldl (\ m f@(File _ _ _ _ h) -> M.insert h f m) fileHashes files
-        dhs = M.insert h d dirHashes 
-    return (d, fhs, dhs)
-    where
-        addDirs :: ([Dir], M.Map Integer File, M.Map Integer Dir) -> [(FilePath, FilePath)]
-                -> IO ([Dir], M.Map Integer File, M.Map Integer Dir)
-        addDirs acc [] = return acc
-        addDirs (ds, fhs, dhs) ((dPath, dRelPath) : dPaths) = do
-            (d, fhs', dhs') <- toDir dPath dRelPath
-            addDirs (d : ds, M.union fhs fhs', M.union dhs dhs') dPaths
+    (dirs, rFilesAndDirs) <- liftM unzip $ mapM (\(p, rp) -> do
+            d <- toDir p rp
+            rFD <- crawlDir p rp
+            return (d, rFD)
+        ) dirsP
+    let filesMap = foldl (\ m f -> M.insert (fHashAll f) f m) M.empty files
+        dirsMap = foldl (\ m d -> M.insert (dHashRelPath d) d m) M.empty dirs
+        (rFiles, rDirs) = foldl (\ (fs, ds) (rfs, rds) -> 
+                (M.union fs rfs, M.union ds rds)
+            ) (filesMap, dirsMap) rFilesAndDirs   
+    return (rFiles, rDirs)
