@@ -2,6 +2,7 @@
 module Main (main) where
 
 import Control.Concurrent
+import Control.Exception as C
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Trans
@@ -33,8 +34,8 @@ debug s =
 
 tryWhile :: IO a -> IO a
 tryWhile action =
-    catch action
-        (\e -> tryWhile a)
+    C.catch action
+        (\(e :: IOException) -> tryWhile action)
 
 nextShiftedPrime :: (RandomGen g, MonadState g m) => Integer -> m Integer
 nextShiftedPrime = nextPrime . (flip shiftL) 16
@@ -112,7 +113,7 @@ main = do
             dirsPrime2 <- (flip evalStateT) oscarg $
                 mapKeysM nextShiftedPrime dirs2
             debug "OSCAR: before connectTo"
-            tryWhile (channel <- connectTo hostname portId) 
+            channel <- tryWhile (connectTo hostname portId) 
             let ks2 = M.keys filesPrime2 ++ M.keys dirsPrime2 
             hSetBuffering channel LineBuffering
             debug "OSCAR: before dowhile"       
@@ -122,6 +123,7 @@ main = do
                     pi2 = mkProduct p ks2
                 hPutStrLn channel $ show pi2
                 neilData <- hGetLine channel
+                debug ("OSCAR: received from Neil: " ++ neilData)
                 if neilData == ""
                     then dowhile g'
                     else 
