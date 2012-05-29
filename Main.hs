@@ -31,6 +31,11 @@ debug s =
     system ("echo " ++ show s ++ " >> ~/btrsync.log") >>=
     \ _ -> return ()
 
+tryWhile :: IO a -> IO a
+tryWhile action =
+    catch action
+        (\e -> tryWhile a)
+
 nextShiftedPrime :: (RandomGen g, MonadState g m) => Integer -> m Integer
 nextShiftedPrime = nextPrime . (flip shiftL) 16
 
@@ -81,7 +86,7 @@ main = do
                                 "ssh " ++ oscarUser ++ "@" ++ oscarMachine 
                                 ++ " " ++ show btrsyncCommandOscar
             debug ("MAIN: commandOscar: " ++ commandOscar)
-            threadDelay 10000000 -- TODO .. get cleaner solution
+--            threadDelay 10000000 -- TODO .. get cleaner solution
             osc <- runCommand commandOscar
             _ <- installHandler sigKILL (Catch (terminateProcess neil >> terminateProcess osc)) 
                 (Just (addSignal sigQUIT (addSignal sigINT emptySignalSet)))
@@ -107,8 +112,8 @@ main = do
             dirsPrime2 <- (flip evalStateT) oscarg $
                 mapKeysM nextShiftedPrime dirs2
             debug "OSCAR: before connectTo"
-            channel <- connectTo hostname portId
-            let ks2 = M.keys filesPrime2 ++ M.keys dirsPrime2
+            tryWhile (channel <- connectTo hostname portId) 
+            let ks2 = M.keys filesPrime2 ++ M.keys dirsPrime2 
             hSetBuffering channel LineBuffering
             debug "OSCAR: before dowhile"       
             let dowhile gen = do
