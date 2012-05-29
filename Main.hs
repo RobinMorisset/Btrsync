@@ -120,8 +120,9 @@ main = do
                 if neilData == ""
                     then dowhile g'
                     else 
-                        let (b,newFiles) = read neilData :: (Hash,[File]) in
-                        oscarTerminate b newFiles filesPrime2 hostname (user t1)
+                        let (b, newDirs, newFiles) = read neilData :: (Hash,[Dir], [File]) in
+                        oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 
+                            ks2 hostname (user t1)
             dowhile g
             exitSuccess
     
@@ -136,7 +137,9 @@ main = do
             (files1, dirs1) <- crawlDir (dir t1) ""
             filesPrime1 <- (flip evalStateT) nielg $ 
                 mapKeysM nextShiftedPrime files1
-            let ks1 = M.keys filesPrime1
+            dirsPrime1 <- (flip evalStateT) nielg $
+                mapKeysM nextShiftedPrime dirs1
+            let ks1 = M.keys filesPrime1 ++ M.keys dirsPrime1
             hSetBuffering channel LineBuffering
             let dowhile oldD oldPs gen = do
                 let (r,g') = randomR (low, high) gen
@@ -149,8 +152,9 @@ main = do
                         hPutStrLn channel ""
                         dowhile d newPs g'
                     Just (b, newHashes) -> 
-                        let newFiles = catMaybes $ map ((flip M.lookup) filesPrime1) newHashes in
-                        hPutStrLn channel (show (b, newFiles))
+                        let newFiles = catMaybes $ map ((flip M.lookup) filesPrime1) newHashes
+                            newDirs = catMaybes $ map ((flip M.lookup) dirsPrime1) newHashes
+                        in hPutStrLn channel (show (b, newDirs, newFiles))
             dowhile 0 1 g
             sClose socket
             exitSuccess 
@@ -173,17 +177,19 @@ roundN oldD oldPs p pi2 ks1 =
         else (newPs, d, Nothing)
 
 -- | When this function is called, all necessary information has been exchanged
--- All that remains to do are the actual mv/cp/rm/rsync
-oscarTerminate :: Integer -> [File] -> M.Map Hash File -> String -> Maybe String -> IO ()
-oscarTerminate b newFiles filesPrime2 hostNeil userNeil =
+-- All that remains to do are the actual mkdir/cp/rm/rsync/..
+oscarTerminate :: Integer -> [File] -> [Dir] -> M.Map Hash File -> M.Map Hash Dir
+    -> [Hash] -> String -> Maybe String -> IO ()
+oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
     -- filesPrime2 is indexed by the hashes of contents|permissions|path
     -- We first need to get a variant that is indexed by only the contents
     -- in order to find files that were just moved/copied. 
     let filesByContent = 
             M.foldl' (\fbc f@(File p rp fm hc hall) -> M.insert hc f fbc) 
             M.empty filesPrime2
-        deleteHashes = detChanges b $ M.keys filesPrime2
+        deleteHashes = detChanges b ks2
         deleteFiles = catMaybes $ map ((flip M.lookup) filesPrime2) deleteHashes
+        deleteDirs = catMaybes $ map ((flip M.lookup) dirsPrime2) deleteHashes
     in do
     -- TODO: add new directories
 
