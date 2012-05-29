@@ -98,7 +98,7 @@ main = do
                     Just neil -> neil
             debug "OSCAR: before setting current directory"
             setCurrentDirectory $ dir t2
-            (_, files2, _) <- toDir (dir t2) ""
+            (files2, dirs2) <- crawlDir (dir t2) ""
             filesPrime2 <- (flip evalStateT) oscarg $ 
                 mapKeysM nextShiftedPrime files2
             debug "OSCAR: before connectTo"
@@ -128,7 +128,7 @@ main = do
             (channel, _, _) <- accept socket
             debug "NEIL: after accept"
             nielg <- getStdGen
-            (_, files1, _) <- toDir (dir t1) ""
+            (files1, dirs1) <- crawlDir (dir t1) ""
             filesPrime1 <- (flip evalStateT) nielg $ 
                 mapKeysM nextShiftedPrime files1
             let ks1 = M.keys filesPrime1
@@ -180,6 +180,10 @@ oscarTerminate b newFiles filesPrime2 hostNeil userNeil =
         deleteHashes = detChanges b $ M.keys filesPrime2
         deleteFiles = catMaybes $ map ((flip M.lookup) filesPrime2) deleteHashes
     in do
+    -- TODO: add new directories
+
+    -- TODO: fix new directory permissions
+
     -- If the new files are in fact old ones
     reallyNewFiles <- filterM (\ f@(File _ rp fm hc _) -> case M.lookup hc filesByContent of
         Nothing -> return True
@@ -212,3 +216,5 @@ oscarTerminate b newFiles filesPrime2 hostNeil userNeil =
         )
     -- Finally we fix permissions
     forM_ newFiles (\ f@(File _ rp fm _ _) -> setFileMode rp fm)
+
+    -- TODO: then we delete old directories
