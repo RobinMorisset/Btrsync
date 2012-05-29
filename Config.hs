@@ -69,7 +69,7 @@ defaultConfig = Config {
       seed = 42
     , pSize = 1000
     , role = Main
-    , port = PortNumber 1337
+    , port = PortNumber 3724
     }
 
 actionFromFlag :: Flag -> (Config -> IO Config)

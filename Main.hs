@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main (main) where
 
+import Control.Concurrent
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Trans
@@ -22,6 +23,12 @@ import System.Random
 import Config
 import Hashing
 import Maths
+
+debug :: String -> IO ()
+debug s =
+    putStrLn s >>
+    system ("echo " ++ show s ++ " >> ~/btrsync.log") >>=
+    \ _ -> return ()
 
 nextShiftedPrime :: (RandomGen g, MonadState g m) => Integer -> m Integer
 nextShiftedPrime = nextPrime . (flip shiftL) 16
@@ -48,34 +55,33 @@ main = do
                     systemid <- getSystemID
                     return $ machine systemid
                 Just neil -> return neil
-            neil <- case host t1 of
-                Nothing -> runCommand 
-                    ("btrsync " ++ show config{role=Neil}
-                        ++ " " ++ show t1 ++ " " ++ show t2)
-                Just neilmachine ->
-                    case user t1 of
-                        Nothing -> runCommand 
-                            ("ssh " ++ neilmachine 
-                                ++ " " ++ show config{role=Neil}
-                                ++ " " ++ show t1 ++ " " ++ show t2)
-                        Just neiluser -> runCommand 
-                            ("ssh " ++ neiluser ++ "@" ++ 
-                                neilmachine ++ " " ++ show config{role=Neil}
-                                ++ " "++ show t1 ++ " " ++ show t2)
-            osc <- case host t2 of
-                Nothing -> runCommand
-                    ("btrsync " ++ show config{role=Oscar}
-                        ++ " " ++ show t1{host=Just neilmachine} ++ " " ++ show t2)
-                Just oscarmachine ->
-                    case user t2 of
-                        Nothing -> runCommand                        
-                            ("ssh " ++ oscarmachine 
-                                ++ " btrsync " ++ show config{role=Oscar}
-                                ++ " " ++ show t1{host=Just neilmachine} ++ " " ++ show t2)
-                        Just oscaruser -> runCommand 
-                            ("ssh " ++ oscaruser ++ "@" ++ 
-                                oscarmachine ++ " btrsync " ++ show config{role=Oscar}
-                                ++ " " ++ show t1{host=Just neilmachine} ++ " " ++ show t2)
+            let btrsyncCommandNeil = "btrsync" ++ show config{role=Neil} ++ " "
+                    ++ show t1 ++ " " ++ show t2
+                commandNeil = case host t1 of
+                    Nothing -> btrsyncCommandNeil
+                    Just neilmachine ->
+                        case user t1 of
+                            Nothing -> 
+                                "ssh " ++ neilmachine ++ " " ++ show btrsyncCommandNeil
+                            Just neiluser -> 
+                                "ssh " ++ neiluser ++ "@" ++ neilmachine 
+                                ++ " " ++ show btrsyncCommandNeil
+            debug ("MAIN: commandNeil: " ++ commandNeil)
+            neil <- runCommand commandNeil
+            let btrsyncCommandOscar = "btrsync" ++ show config{role=Oscar} ++ " "
+                    ++ show t1{host=Just neilmachine} ++ " " ++ show t2 
+                commandOscar = case host t2 of
+                    Nothing -> btrsyncCommandOscar
+                    Just oscarmachine ->
+                        case user t2 of
+                            Nothing ->
+                                "ssh " ++ oscarmachine ++ " " ++ show btrsyncCommandOscar
+                            Just oscaruser ->
+                                "ssh " ++ oscaruser ++ "@" ++ oscarmachine 
+                                ++ " " ++ show btrsyncCommandOscar
+            debug ("MAIN: commandOscar: " ++ commandOscar)
+            threadDelay 10000000 -- TODO .. get cleaner solution
+            osc <- runCommand commandOscar
             resultneil <- waitForProcess neil
             resultosc <- waitForProcess osc
             unless (resultneil == ExitSuccess) $
@@ -90,13 +96,16 @@ main = do
             let hostname = case host t1 of
                     Nothing -> error "no hostname for neil."
                     Just neil -> neil
+            debug "OSCAR: before setting current directory"
             setCurrentDirectory $ dir t2
             (_, files2, _) <- toDir (dir t2) ""
             filesPrime2 <- (flip evalStateT) oscarg $ 
                 mapKeysM nextShiftedPrime files2
+            debug "OSCAR: before connectTo"
             channel <- connectTo hostname portId
             let ks2 = M.keys filesPrime2 
-            hSetBuffering channel LineBuffering        
+            hSetBuffering channel LineBuffering
+            debug "OSCAR: before dowhile"       
             let dowhile gen = do
                 let (r,g') = randomR (low, high) gen
                     p = (flip evalState) oscarg $ nextPrime r
@@ -113,8 +122,11 @@ main = do
     
         Neil -> withSocketsDo $ do
             let g = mkStdGen (seed config)
+            debug "NEIL: before listenOn"
             socket <- listenOn portId
+            debug "NEIL: between listenOn and accept"
             (channel, _, _) <- accept socket
+            debug "NEIL: after accept"
             nielg <- getStdGen
             (_, files1, _) <- toDir (dir t1) ""
             filesPrime1 <- (flip evalStateT) nielg $ 
