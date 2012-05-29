@@ -196,7 +196,11 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
         deleteDirs = catMaybes $ map ((flip M.lookup) dirsPrime2) deleteHashes
     in do
     -- TODO: add new directories
-    forM_ newDirs (\ d -> system ("mkdir -p " ++ dAbsolutePath d))
+    forM_ newDirs (\ d -> do
+            let instruction = "mkdir -p" ++ dAbsolutePath d
+            debug ("OSCAR: " ++ instruction)
+            system instruction
+        )
 
     -- TODO: fix new directory permissions
 
@@ -204,20 +208,24 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
     reallyNewFiles <- filterM (\ f@(File _ rp fm hc _) -> case M.lookup hc filesByContent of
         Nothing -> return True
         Just fOld@(File _ oldRp oldFm _ _) -> do
-            errorCode <- system ("cp " ++ oldRp ++ " " ++ rp)
+            let instruction = "cp " ++ oldRp ++ " " ++ rp
+            debug ("OSCAR: " ++ instruction)
+            errorCode <- system instruction 
             case errorCode of
                 ExitSuccess -> return False
-                ExitFailure _ -> error ("cp from " ++ oldRp ++ " to " ++ rp ++ " failed")
+                ExitFailure _ -> error (show instruction ++ " failed")
         ) newFiles
     -- Then we find which files were really deleted and not just modified
     -- These we delete by calling rm
     forM_ deleteFiles (\ f@(File _ rp fm hc _) -> 
         case find (\newF -> fHashContent newF == hc) reallyNewFiles of
             Nothing -> do
-                errorCode <- system ("rm " ++ rp)
+                let instruction = "rm" ++ rp
+                debug ("OSCAR: " ++ instruction)
+                errorCode <- system instruction
                 case errorCode of
                     ExitSuccess -> return ()
-                    ExitFailure _ -> error ("rm " ++ rp ++ " failed")
+                    ExitFailure _ -> error (show instruction ++ " failed")
         )
     -- Then, we delegate to rsync for synchronising files
     let neilOrigin = maybe 
@@ -225,13 +233,22 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
             (\u -> u ++ "@" ++ hostNeil ++ ":") 
             userNeil
     forM_ reallyNewFiles (\ f@(File p rp _ _ _) -> do
-        errorCode <- system ("rsync " ++ neilOrigin ++ p ++ " " ++ rp) 
+        let instruction = "rsync " ++ neilOrigin ++ p ++ " " ++ rp
+        debug ("OSCAR: " ++ instruction)
+        errorCode <- system instruction
         case errorCode of
             ExitSuccess -> return ()
             ExitFailure _ -> error "rsync failed"
         )
     -- Finally we fix permissions
-    forM_ newFiles (\ f@(File _ rp fm _ _) -> setFileMode rp fm)
+    forM_ newFiles (\ f@(File _ rp fm _ _) -> do
+            debug ("OSCAR: setFileMode " ++ rp ++ " " ++ show fm)
+            setFileMode rp fm
+        )
 
     -- TODO: then we delete old directories
-    forM_ deleteDirs (\ d -> system ("rm -rf " ++ dAbsolutePath d))
+    forM_ deleteDirs (\ d -> do
+            let instruction = "rm -rf " ++ dAbsolutePath d
+            debug ("OSCAR: " ++ instruction)
+            system instruction
+        ) 

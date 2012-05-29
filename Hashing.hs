@@ -20,8 +20,9 @@ import System.Process
 debug :: String -> IO ()
 debug s = do
     putStrLn s
-    _ <- system ("echo " ++ show s ++ " >> ~/btrsync.log")
-    _ <- system "lsof -c btrsync -d \"^mem\" -a >> ~/btrsync.lsof"
+--     _ <- system ("echo " ++ show s ++ " >> ~/btrsync.log")
+-- For showing all the open file descriptors
+--     _ <- system "lsof -c btrsync -d \"^mem\" -a >> ~/btrsync.lsof"
     return ()
 
 type Hash = Integer
