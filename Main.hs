@@ -16,6 +16,7 @@ import System.Environment
 import System.Exit
 import System.IO
 import System.Posix.Files
+import System.Posix.Signals
 import System.Posix.Unistd
 import System.Process
 import System.Random
@@ -50,43 +51,45 @@ main = do
         portId = port config
     case role config of
 	Main -> do
-            neilmachine <- case host t1 of
+            neilMachine <- case host t1 of
                 Nothing -> do
-                    systemid <- getSystemID
-                    return $ machine systemid
+                    systemId <- getSystemID
+                    return $ machine systemId
                 Just neil -> return neil
             let btrsyncCommandNeil = "btrsync" ++ show config{role=Neil} ++ " "
                     ++ show t1 ++ " " ++ show t2
                 commandNeil = case host t1 of
                     Nothing -> btrsyncCommandNeil
-                    Just neilmachine ->
+                    Just neilMachine ->
                         case user t1 of
                             Nothing -> 
-                                "ssh " ++ neilmachine ++ " " ++ show btrsyncCommandNeil
-                            Just neiluser -> 
-                                "ssh " ++ neiluser ++ "@" ++ neilmachine 
+                                "ssh " ++ neilMachine ++ " " ++ show btrsyncCommandNeil
+                            Just neilUser -> 
+                                "ssh " ++ neilUser ++ "@" ++ neilMachine 
                                 ++ " " ++ show btrsyncCommandNeil
             debug ("MAIN: commandNeil: " ++ commandNeil)
             neil <- runCommand commandNeil
             let btrsyncCommandOscar = "btrsync" ++ show config{role=Oscar} ++ " "
-                    ++ show t1{host=Just neilmachine} ++ " " ++ show t2 
+                    ++ show t1{host=Just neilMachine} ++ " " ++ show t2 
                 commandOscar = case host t2 of
                     Nothing -> btrsyncCommandOscar
-                    Just oscarmachine ->
+                    Just oscarMachine ->
                         case user t2 of
                             Nothing ->
-                                "ssh " ++ oscarmachine ++ " " ++ show btrsyncCommandOscar
-                            Just oscaruser ->
-                                "ssh " ++ oscaruser ++ "@" ++ oscarmachine 
+                                "ssh " ++ oscarMachine ++ " " ++ show btrsyncCommandOscar
+                            Just oscarUser ->
+                                "ssh " ++ oscarUser ++ "@" ++ oscarMachine 
                                 ++ " " ++ show btrsyncCommandOscar
             debug ("MAIN: commandOscar: " ++ commandOscar)
             threadDelay 10000000 -- TODO .. get cleaner solution
             osc <- runCommand commandOscar
-            resultneil <- waitForProcess neil
-            resultosc <- waitForProcess osc
-            unless (resultneil == ExitSuccess) $
+            _ <- installHandler sigKILL (Catch (terminateProcess neil >> terminateProcess osc)) 
+                (Just (addSignal sigQUIT (addSignal sigINT emptySignalSet)))
+            resultNeil <- waitForProcess neil
+            resultOsc <- waitForProcess osc
+            unless (resultNeil == ExitSuccess) $
                 error "Neil encountered an error"
-            unless (resultosc == ExitSuccess) $
+            unless (resultOsc == ExitSuccess) $
                 error "Oscar encountered an error"
             exitSuccess
 
