@@ -26,19 +26,17 @@ import Config
 import Hashing
 import Maths
 
-debug :: String -> IO ()
-debug s =
-    putStrLn s >>
-    system ("echo " ++ show s ++ " >> ~/btrsync.log") >>=
-    \ _ -> return ()
-
 tryWhile :: IO a -> IO a
-tryWhile action =
-    C.catch action
-        (\(e :: IOException) -> tryWhile action)
+tryWhile action = do
+    lr <- C.try action
+    case lr of
+        Right x -> return x
+        Left (_ :: IOException) -> tryWhile action
 
-nextShiftedPrime :: (RandomGen g, MonadState g m) => Integer -> m Integer
-nextShiftedPrime = nextPrime . (flip shiftL) 16
+nextShiftedPrime :: (RandomGen g) => Integer -> StateT g IO Integer
+nextShiftedPrime i = 
+    lift (debug ("???: nextPrime " ++ show i)) >>
+    nextPrime (shiftL i 16)
 
 mapKeysM :: (Monad m, Ord key, Ord key') => 
     (key -> m key') -> M.Map key val -> m (M.Map key' val)
@@ -87,7 +85,6 @@ main = do
                                 "ssh " ++ oscarUser ++ "@" ++ oscarMachine 
                                 ++ " " ++ show btrsyncCommandOscar
             debug ("MAIN: commandOscar: " ++ commandOscar)
---            threadDelay 10000000 -- TODO .. get cleaner solution
             osc <- runCommand commandOscar
             _ <- installHandler sigKILL (Catch (terminateProcess neil >> terminateProcess osc)) 
                 (Just (addSignal sigQUIT (addSignal sigINT emptySignalSet)))
@@ -105,6 +102,8 @@ main = do
             let hostname = case host t1 of
                     Nothing -> error "no hostname for neil."
                     Just neil -> neil
+            debug "OSCAR: before connectTo"
+            channel <- tryWhile (connectTo hostname portId) 
             debug "OSCAR: before setting current directory"
             setCurrentDirectory $ dir t2
             (files2, dirs2) <- crawlDir (dir t2) ""
@@ -112,8 +111,6 @@ main = do
                 mapKeysM nextShiftedPrime files2
             dirsPrime2 <- (flip evalStateT) oscarg $
                 mapKeysM nextShiftedPrime dirs2
-            debug "OSCAR: before connectTo"
-            channel <- tryWhile (connectTo hostname portId) 
             let ks2 = M.keys filesPrime2 ++ M.keys dirsPrime2 
             hSetBuffering channel LineBuffering
             debug "OSCAR: before dowhile"       

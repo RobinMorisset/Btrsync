@@ -1,9 +1,10 @@
 -- | This module produces the tree/set of directories and files, along with their hash,
 -- from a FilePath
-module Hashing (Dir(..), File(..), Hash(..), crawlDir) where
+module Hashing (Dir(..), File(..), Hash(..), crawlDir, debug) where
 
 import Prelude hiding (readFile)
 import Control.Monad
+import Control.Exception
 import Data.Bits (xor)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Internal as Bi
@@ -14,6 +15,14 @@ import System.Directory
 import System.FilePath.Posix
 import System.Posix.Files
 import System.Posix.Types
+import System.Process
+
+debug :: String -> IO ()
+debug s = do
+    putStrLn s
+    _ <- system ("echo " ++ show s ++ " >> ~/btrsync.log")
+    _ <- system "lsof -c btrsync -d \"^mem\" -a >> ~/btrsync.lsof"
+    return ()
 
 type Hash = Integer
 -- | The first hash only hashes the contents of the file, while the second one
@@ -43,8 +52,8 @@ toFile path relPath = do
     fStatus <- getFileStatus path
     let fMode = fileMode fStatus
         toBeHashed = B.append (B.pack $ map Bi.c2w (show fMode ++ relPath)) f
-        h1 = integerDigest $ sha1 f
-        h2 = integerDigest $ sha1 toBeHashed
+    h1 <- evaluate $ integerDigest $ sha1 f
+    h2 <- evaluate $ integerDigest $ sha1 toBeHashed
     return $ File path relPath fMode h1 h2
 
 data PathValidity = PVFile FilePath | PVDir FilePath | PVFail
@@ -74,6 +83,7 @@ toDir p rp = do
 
 crawlDir :: FilePath -> FilePath -> IO (M.Map Integer File, M.Map Integer Dir)
 crawlDir path relPath = do
+    debug ("???: crawldir " ++ path)
     contents <- getDirectoryContents path
     -- Because getDirectoryContents return file/directory names and not paths
     let contents_path = map (\n -> (combine path n, combine relPath n)) contents
