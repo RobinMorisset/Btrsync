@@ -104,9 +104,11 @@ main = do
             (files2, dirs2) <- crawlDir (dir t2) ""
             filesPrime2 <- (flip evalStateT) oscarg $ 
                 mapKeysM nextShiftedPrime files2
+            dirsPrime2 <- (flip evalStateT) oscarg $
+                mapKeysM nextShiftedPrime dirs2
             debug "OSCAR: before connectTo"
             channel <- connectTo hostname portId
-            let ks2 = M.keys filesPrime2 
+            let ks2 = M.keys filesPrime2 ++ M.keys dirsPrime2
             hSetBuffering channel LineBuffering
             debug "OSCAR: before dowhile"       
             let dowhile gen = do
