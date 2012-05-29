@@ -192,6 +192,7 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
         deleteDirs = catMaybes $ map ((flip M.lookup) dirsPrime2) deleteHashes
     in do
     -- TODO: add new directories
+    forM_ newDirs (\ d -> system ("mkdir -p " ++ dAbsolutePath d))
 
     -- TODO: fix new directory permissions
 
@@ -229,3 +230,4 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil =
     forM_ newFiles (\ f@(File _ rp fm _ _) -> setFileMode rp fm)
 
     -- TODO: then we delete old directories
+    forM_ deleteDirs (\ d -> system ("rm -rf " ++ dAbsolutePath d))
