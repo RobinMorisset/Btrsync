@@ -198,7 +198,7 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil d
     in do
     -- TODO: add new directories
     forM_ newDirs (\ d -> do
-            let instruction = "mkdir -p" ++ combine dirOscar (dRelativePath d)
+            let instruction = "mkdir -p " ++ combine dirOscar (dRelativePath d)
             debug ("OSCAR: " ++ instruction)
             system instruction
         )
@@ -221,7 +221,7 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil d
     forM_ deleteFiles (\ f@(File _ rp fm hc _) -> 
         case find (\newF -> fHashContent newF == hc) reallyNewFiles of
             Nothing -> do
-                let instruction = "rm" ++ combine dirOscar rp
+                let instruction = "rm " ++ combine dirOscar rp
                 debug ("OSCAR: " ++ instruction)
                 errorCode <- system instruction
                 case errorCode of
