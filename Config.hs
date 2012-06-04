@@ -36,7 +36,7 @@ options =
     , Option "p" ["pSize"] (ReqArg (PSize . read) "NUMBER")
         "Changes the size of the prime number used at each round"
     , Option "" ["port"] (ReqArg (Port . PortNumber . fromInteger . read) "NUMBER")
-        "Chooses the port to use for communication. Default: 1337"
+        "Chooses the port to use for communication. Default: 3724"
     , Option "" ["isOrigin"] (NoArg $ Role Neil)
         "INTERNAL USE, for telling btrsync it is Neil in the protocol"
     , Option "" ["isDestination"] (NoArg $ Role Oscar)
