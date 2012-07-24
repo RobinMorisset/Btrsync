@@ -34,6 +34,11 @@ tryWhile action = do
         Right x -> return x
         Left (_ :: IOException) -> tryWhile action
 
+waitSome :: Handle -> IO ()
+waitSome channel = do
+    eof <- hIsEOF channel
+    when eof $ waitSome channel	
+
 nextShiftedPrime :: (RandomGen g) => Integer -> StateT g IO Integer
 nextShiftedPrime i = 
     lift (debug ("???: nextPrime " ++ show i)) >>
@@ -120,6 +125,7 @@ main = do
                     p = (flip evalState) oscarg $ nextPrime r
                     pi2 = mkProduct p ks2
                 hPutStrLn channel $ show pi2
+                waitSome channel
                 neilData <- hGetLine channel
                 debug ("OSCAR: received from Neil: " ++ neilData)
                 if neilData == ""
@@ -149,7 +155,8 @@ main = do
             let dowhile oldD oldPs gen = do
                 let (r,g') = randomR (low, high) gen
                     p = (flip evalState) nielg $ nextPrime r
-                oscarData <- hGetLine channel
+                waitSome channel
+		oscarData <- hGetLine channel
                 let pi2 = read oscarData
                     (newPs, d, x) = roundN oldD oldPs p pi2 ks1
                 case x of
