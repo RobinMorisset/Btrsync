@@ -1,5 +1,5 @@
 To install for the current user only:
-sudo apt-get haskell-platform (can vary depending on your package
+sudo apt-get install haskell-platform (can vary depending on your package
     manager. We actually only depend on GHC and Cabal)
 cabal update
 cabal install
