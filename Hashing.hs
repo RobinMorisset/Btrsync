@@ -20,7 +20,7 @@ import System.Process
 
 debug :: String -> IO ()
 debug s = do
-    hputStrLn stderr s
+    hPutStrLn stderr s
 --     _ <- system ("echo " ++ show s ++ " >> ~/btrsync.log")
 -- For showing all the open file descriptors
 --     _ <- system "lsof -c btrsync -d \"^mem\" -a >> ~/btrsync.lsof"
