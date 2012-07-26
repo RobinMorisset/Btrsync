@@ -22,6 +22,7 @@ data Flag =
     | Version
     | Seed Int
     | PSize Int
+    | HashSize Int
     | Role Role
     | Port PortID
 
@@ -35,6 +36,8 @@ options =
         "Makes the program deterministic by fixing the random number generator's seed"
     , Option "p" ["pSize"] (ReqArg (PSize . read) "NUMBER")
         "Changes the size of the prime number used at each round"
+    , Option "" ["hashSize"] (ReqArg (HashSize . read) "NUMBER")
+        "Put a limit to the size of the hashes"
     , Option "" ["port"] (ReqArg (Port . PortNumber . fromInteger . read) "NUMBER")
         "Chooses the port to use for communication. Default: 3724"
     , Option "" ["isOrigin"] (NoArg $ Role Neil)
@@ -46,6 +49,7 @@ options =
 data Config = Config {
       seed :: Int -- ^ Seed of the random generator
     , pSize :: Int -- ^ Size of p in bits
+    , hashSize :: Int -- ^ Max size of the hashes in bits
     , role :: Role -- ^ whether btrsync has been directly called by the user, 
                     -- or is performing one half of the protocol
     , port :: PortID
@@ -54,6 +58,7 @@ instance Show Config where
     show c =
         let s = " -s " ++ show (seed c)
             p = " -p " ++ show (pSize c)
+            hS = " --hashSize " ++ show (hashSize c)
             r = case role c of
                     Neil -> " --isOrigin"
                     Oscar -> " --isDestination"
@@ -62,12 +67,13 @@ instance Show Config where
                     PortNumber i -> " --port " ++ show (toInteger i)
                     _ -> error "the port identifier wasn't an integer"
         in
-        s ++ p ++ r ++ portId
+        s ++ p ++ hS ++ r ++ portId
 
 defaultConfig :: Config
 defaultConfig = Config {
       seed = 42
     , pSize = 1000
+    , hashSize = 160
     , role = Main
     , port = PortNumber 3724
     }
@@ -79,6 +85,7 @@ actionFromFlag f c =
         Version -> putStrLn versionText >> exitSuccess
         Seed newSeed -> return c {seed = newSeed}
         PSize size -> return c {pSize = size}
+        HashSize size -> return c {hashSize = size}
         Role newRole -> return c {role = newRole}
         Port newPort -> return c {port = newPort}
 

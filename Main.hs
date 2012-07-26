@@ -40,10 +40,11 @@ waitSome channel = do
     eof <- hIsEOF channel
     when eof $ waitSome channel
 
-nextShiftedPrime :: (RandomGen g) => Integer -> StateT g IO Integer
-nextShiftedPrime i = 
+-- | Truncate i to how many bits are specified in hS, then find the next prime.
+nextShiftedPrime :: (RandomGen g) => Int -> Integer -> StateT g IO Integer
+nextShiftedPrime hS i =
     lift (debug ("???: nextPrime " ++ show i)) >>
-    nextPrime (shiftL i 16)
+    nextPrime (i `mod` (unsafeShiftL 1 hS))
 
 mapKeysM :: (Monad m, Ord key, Ord key') => 
     (key -> m key') -> M.Map key val -> m (M.Map key' val)
@@ -115,9 +116,9 @@ main = do
             setCurrentDirectory $ dir t2
             (files2, dirs2) <- crawlDir (dir t2) ""
             filesPrime2 <- (flip evalStateT) oscarg $ 
-                mapKeysM nextShiftedPrime files2
+                mapKeysM (nextShiftedPrime $ hashSize config) files2
             dirsPrime2 <- (flip evalStateT) oscarg $
-                mapKeysM nextShiftedPrime dirs2
+                mapKeysM (nextShiftedPrime $ hashSize config) dirs2
             let ks2 = M.keys filesPrime2 ++ M.keys dirsPrime2 
             hSetBuffering channel LineBuffering
             debug "OSCAR: before dowhile"       
@@ -148,9 +149,9 @@ main = do
             nielg <- getStdGen
             (files1, dirs1) <- crawlDir (dir t1) ""
             filesPrime1 <- (flip evalStateT) nielg $ 
-                mapKeysM nextShiftedPrime files1
+                mapKeysM (nextShiftedPrime $ hashSize config) files1
             dirsPrime1 <- (flip evalStateT) nielg $
-                mapKeysM nextShiftedPrime dirs1
+                mapKeysM (nextShiftedPrime $ hashSize config) dirs1
             let ks1 = M.keys filesPrime1 ++ M.keys dirsPrime1
             hSetBuffering channel LineBuffering
             let dowhile oldD oldPs gen = do
@@ -204,7 +205,7 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil d
         deleteFiles = catMaybes $ map ((flip M.lookup) filesPrime2) deleteHashes
         deleteDirs = catMaybes $ map ((flip M.lookup) dirsPrime2) deleteHashes
     in do
-    -- TODO: add new directories
+    -- We add new directories
     forM_ newDirs (\ d -> do
             let instruction = "mkdir -p " ++ combine dirOscar (dRelativePath d)
             debug ("OSCAR: " ++ instruction)
@@ -255,7 +256,7 @@ oscarTerminate b newFiles newDirs filesPrime2 dirsPrime2 ks2 hostNeil userNeil d
             setFileMode rp fm
         )
 
-    -- TODO: then we delete old directories
+    -- Then we delete old directories
     forM_ deleteDirs (\ d -> do
             let instruction = "rm -rf " ++ combine dirOscar (dRelativePath d)
             debug ("OSCAR: " ++ instruction)
