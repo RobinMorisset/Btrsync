@@ -11,6 +11,7 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.List
 import Network
+import Network.BSD
 import System.Console.GetOpt
 import System.Directory
 import System.Environment
@@ -37,7 +38,7 @@ tryWhile action = do
 waitSome :: Handle -> IO ()
 waitSome channel = do
     eof <- hIsEOF channel
-    when eof $ waitSome channel	
+    when eof $ waitSome channel
 
 nextShiftedPrime :: (RandomGen g) => Integer -> StateT g IO Integer
 nextShiftedPrime i = 
@@ -60,11 +61,11 @@ main = do
         high = 2 ^ (pSize config + 1) :: Integer
         portId = port config
     case role config of
-	Main -> do
+        Main -> do
             neilMachine <- case host t1 of
                 Nothing -> do
-                    systemId <- getSystemID
-                    return $ machine systemId
+                    hostName <- getHostName
+                    return hostName
                 Just neil -> return neil
             let btrsyncCommandNeil = "btrsync" ++ show config{role=Neil} ++ " "
                     ++ show t1 ++ " " ++ show t2
@@ -156,7 +157,7 @@ main = do
                 let (r,g') = randomR (low, high) gen
                     p = (flip evalState) nielg $ nextPrime r
                 waitSome channel
-		oscarData <- hGetLine channel
+                oscarData <- hGetLine channel
                 let pi2 = read oscarData
                     (newPs, d, x) = roundN oldD oldPs p pi2 ks1
                 case x of
