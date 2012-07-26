@@ -1,0 +1,12 @@
+To install for the current user only:
+sudo apt-get install haskell-platform (can vary depending on your package
+    manager. We actually only depend on GHC and Cabal)
+cabal update
+cabal install
+
+To install for all users, replace "cabal install" by "sudo cabal install
+--global")
+
+To use, see btrsync --help.
+
+
