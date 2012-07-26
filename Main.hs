@@ -44,7 +44,7 @@ waitSome channel = do
 nextShiftedPrime :: (RandomGen g) => Int -> Integer -> StateT g IO Integer
 nextShiftedPrime hS i =
     lift (debug ("???: nextPrime " ++ show i)) >>
-    nextPrime (i `mod` (unsafeShiftL 1 hS))
+    nextPrime (unsafeShiftL (i `mod` (unsafeShiftL 1 hS)) 16)
 
 mapKeysM :: (Monad m, Ord key, Ord key') => 
     (key -> m key') -> M.Map key val -> m (M.Map key' val)
