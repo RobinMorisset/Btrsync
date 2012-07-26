@@ -10,7 +10,7 @@ import Data.Bits
 import qualified Data.Map as M
 import Data.Maybe
 import Data.List
-import Network
+import GHC.IO.Handle
 import Network.BSD
 import System.Console.GetOpt
 import System.Directory
@@ -44,7 +44,7 @@ waitSome channel = do
 nextShiftedPrime :: (RandomGen g) => Int -> Integer -> StateT g IO Integer
 nextShiftedPrime hS i =
     lift (debug ("???: nextPrime " ++ show i)) >>
-    nextPrime (shiftL (i `mod` (shiftL 1 hS)) 16)
+    nextPrime (unsafeShiftL (i `mod` (unsafeShiftL 1 hS)) 16)
 
 mapKeysM :: (Monad m, Ord key, Ord key') => 
     (key -> m key') -> M.Map key val -> m (M.Map key' val)
@@ -80,7 +80,7 @@ main = do
                                 "ssh " ++ neilUser ++ "@" ++ neilMachine 
                                 ++ " " ++ show btrsyncCommandNeil
             debug ("MAIN: commandNeil: " ++ commandNeil)
-            neil <- runCommand commandNeil
+            (neilStdin, neilStdout, neilStderr, neil) <- runInteractiveCommand commandNeil
             let btrsyncCommandOscar = "btrsync" ++ show config{role=Oscar} ++ " "
                     ++ show t1{host=Just neilMachine} ++ " " ++ show t2 
                 commandOscar = case host t2 of
@@ -93,9 +93,11 @@ main = do
                                 "ssh " ++ oscarUser ++ "@" ++ oscarMachine 
                                 ++ " " ++ show btrsyncCommandOscar
             debug ("MAIN: commandOscar: " ++ commandOscar)
-            osc <- runCommand commandOscar
+            (oscStdin, oscStdout, oscStderr, osc) <- runInteractiveCommand commandOscar
             _ <- installHandler sigKILL (Catch (terminateProcess neil >> terminateProcess osc)) 
                 (Just (addSignal sigQUIT (addSignal sigINT emptySignalSet)))
+            hDuplicateTo oscStdout neilStdin
+            hDuplicateTo neilStdout oscStdin
             resultNeil <- waitForProcess neil
             resultOsc <- waitForProcess osc
             unless (resultNeil == ExitSuccess) $
@@ -104,15 +106,12 @@ main = do
                 error "Oscar encountered an error"
             exitSuccess
 
-        Oscar -> withSocketsDo $ do
+        Oscar -> do
             let g = mkStdGen (seed config)
             oscarg <- getStdGen
             let hostname = case host t1 of
                     Nothing -> error "no hostname for neil."
                     Just neil -> neil
-            debug "OSCAR: before connectTo"
-            channel <- tryWhile (connectTo hostname portId) 
-            debug "OSCAR: before setting current directory"
             setCurrentDirectory $ dir t2
             (files2, dirs2) <- crawlDir (dir t2) ""
             filesPrime2 <- (flip evalStateT) oscarg $ 
@@ -120,15 +119,17 @@ main = do
             dirsPrime2 <- (flip evalStateT) oscarg $
                 mapKeysM (nextShiftedPrime $ hashSize config) dirs2
             let ks2 = M.keys filesPrime2 ++ M.keys dirsPrime2 
-            hSetBuffering channel LineBuffering
+            hSetBuffering stdin LineBuffering
+            hSetBuffering stdout LineBuffering
             debug "OSCAR: before dowhile"       
             let dowhile gen = do
                 let (r,g') = randomR (low, high) gen
                     p = (flip evalState) oscarg $ nextPrime r
                     pi2 = mkProduct p ks2
-                hPutStrLn channel $ show pi2
-                waitSome channel
-                neilData <- hGetLine channel
+                hPutStrLn stdout $ show pi2
+                debug ("OSCAR: send to Neil: " ++ show pi2)
+                waitSome stdin
+                neilData <- hGetLine stdin
                 debug ("OSCAR: received from Neil: " ++ neilData)
                 if neilData == ""
                     then dowhile g'
@@ -139,13 +140,8 @@ main = do
             dowhile g
             exitSuccess
     
-        Neil -> withSocketsDo $ do
+        Neil -> do
             let g = mkStdGen (seed config)
-            debug "NEIL: before listenOn"
-            socket <- listenOn portId
-            debug "NEIL: between listenOn and accept"
-            (channel, _, _) <- accept socket
-            debug "NEIL: after accept"
             nielg <- getStdGen
             (files1, dirs1) <- crawlDir (dir t1) ""
             filesPrime1 <- (flip evalStateT) nielg $ 
@@ -153,24 +149,24 @@ main = do
             dirsPrime1 <- (flip evalStateT) nielg $
                 mapKeysM (nextShiftedPrime $ hashSize config) dirs1
             let ks1 = M.keys filesPrime1 ++ M.keys dirsPrime1
-            hSetBuffering channel LineBuffering
+            hSetBuffering stdin LineBuffering
+            hSetBuffering stdout LineBuffering
             let dowhile oldD oldPs gen = do
                 let (r,g') = randomR (low, high) gen
                     p = (flip evalState) nielg $ nextPrime r
-                waitSome channel
-                oscarData <- hGetLine channel
+                waitSome stdin
+                oscarData <- hGetLine stdin
                 let pi2 = read oscarData
                     (newPs, d, x) = roundN oldD oldPs p pi2 ks1
                 case x of
                     Nothing -> do 
-                        hPutStrLn channel ""
+                        hPutStrLn stdout ""
                         dowhile d newPs g'
                     Just (b, newHashes) -> 
                         let newFiles = catMaybes $ map ((flip M.lookup) filesPrime1) newHashes
                             newDirs = catMaybes $ map ((flip M.lookup) dirsPrime1) newHashes
-                        in hPutStrLn channel (show (b, newDirs, newFiles))
+                        in hPutStrLn stdout (show (b, newDirs, newFiles))
             dowhile 0 1 g
-            sClose socket
             exitSuccess 
 
 -- | This contains all the computations on Neil side for a round

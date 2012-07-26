@@ -13,13 +13,14 @@ import Data.List
 import qualified Data.Map as M
 import System.Directory
 import System.FilePath.Posix
+import System.IO
 import System.Posix.Files
 import System.Posix.Types
 import System.Process
 
 debug :: String -> IO ()
 debug s = do
-    putStrLn s
+    hputStrLn stderr s
 --     _ <- system ("echo " ++ show s ++ " >> ~/btrsync.log")
 -- For showing all the open file descriptors
 --     _ <- system "lsof -c btrsync -d \"^mem\" -a >> ~/btrsync.lsof"
