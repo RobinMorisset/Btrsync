@@ -79,7 +79,8 @@ main = do
                             Just neilUser -> 
                                 "ssh " ++ neilUser ++ "@" ++ neilMachine 
                                 ++ " " ++ show btrsyncCommandNeil
-            debug ("MAIN: commandNeil: " ++ commandNeil)
+            --debug ("MAIN: commandNeil: " ++ commandNeil)
+            putStrLn commandNeil
             (neilStdin, neilStdout, neilStderr, neil) <- runInteractiveCommand commandNeil
             let btrsyncCommandOscar = "btrsync" ++ show config{role=Oscar} ++ " "
                     ++ show t1{host=Just neilMachine} ++ " " ++ show t2 
@@ -92,8 +93,9 @@ main = do
                             Just oscarUser ->
                                 "ssh " ++ oscarUser ++ "@" ++ oscarMachine 
                                 ++ " " ++ show btrsyncCommandOscar
-            debug ("MAIN: commandOscar: " ++ commandOscar)
-            (oscStdin, oscStdout, oscStderr, osc) <- runInteractiveCommand commandOscar
+            --debug ("MAIN: commandOscar: " ++ commandOscar)
+            putStrLn commandOscar
+            {-(oscStdin, oscStdout, oscStderr, osc) <- runInteractiveCommand commandOscar
             _ <- installHandler sigKILL (Catch (terminateProcess neil >> terminateProcess osc)) 
                 (Just (addSignal sigQUIT (addSignal sigINT emptySignalSet)))
             hDuplicateTo oscStdout neilStdin
@@ -103,7 +105,7 @@ main = do
             unless (resultNeil == ExitSuccess) $
                 error "Neil encountered an error"
             unless (resultOsc == ExitSuccess) $
-                error "Oscar encountered an error"
+                error "Oscar encountered an error" -}
             exitSuccess
 
         Oscar -> do
