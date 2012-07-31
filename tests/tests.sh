@@ -28,19 +28,16 @@ do
   tt="$TDIR/$t"
   mkdir "$tt"
   cp -R "$t/n" "$tt/n_btrsync"
-  cp -R "$t/n" "$tt/n_rsync"
   cp -R "$t/o" "$tt/o_btrsync"
-  cp -R "$t/o" "$tt/o_rsync"
 
   START_TIME=$SECONDS
   ../btrsync.sh "$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
   END_TIME=$SECONDS
   if [ $? -ne 0 ]; then fail 1; continue; fi
-  rsync -a "$tt/n_rsync/" "$tt/o_rsync/" > "$tt/rsync.stdout" 2> "$tt/rsync.stderr"
 
-  diff "$tt/n_btrsync" "$tt/n_rsync" > "$tt/diff_n"
+  diff "$t/n" "$tt/n_btrsync" > "$tt/diff_n_n_btrsync"
   if [ $? -ne 0 ]; then fail 2; continue; fi
-  diff "$tt/o_btrsync" "$tt/o_rsync" > "$tt/diff_o"
+  diff "$t/n" "$tt/o_btrsync" > "$tt/diff_n_o_btrsync"
   if [ $? -ne 0 ]; then fail 3; continue; fi
   success
   printf "  %3ds" $(($END_TIME-$START_TIME))
