@@ -1,6 +1,7 @@
 #!/bin/bash
 
 TDIR=`mktemp -d -t btrsync.tests.XXXXXX` || exit 1
+DIR=`pwd`
 
 fail (){
   printf "\033[1;31m[ FAIL %02d ]\033[0m" $1
@@ -39,6 +40,19 @@ do
   if [ $? -ne 0 ]; then fail 2; continue; fi
   diff "$t/n" "$tt/o_btrsync" > "$tt/diff_n_o_btrsync"
   if [ $? -ne 0 ]; then fail 3; continue; fi
+
+  cd "$tt/n_btrsync" && find . -exec stat -c "%n %a" {} \; > "$tt/perm_n_btrsync"
+  cd $DIR
+  cd "$tt/o_btrsync" && find . -exec stat -c "%n %a" {} \; > "$tt/perm_o_btrsync"
+  cd $DIR
+  cd "$t/n" && find . -exec stat -c "%n %a" {} \; > "$tt/perm_n"
+  cd $DIR
+
+  diff "$tt/perm_n" "$tt/perm_n_btrsync" > "$tt/diff_perm_n_n_btrsync"
+  if [ $? -ne 0 ]; then fail 4; continue; fi
+  diff "$tt/perm_n" "$tt/perm_o_btrsync" > "$tt/diff_perm_n_o_btrsync"
+  if [ $? -ne 0 ]; then fail 5; continue; fi
+
   success
   printf "  %3ds" $(($END_TIME-$START_TIME))
 done
