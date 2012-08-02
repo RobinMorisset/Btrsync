@@ -519,7 +519,10 @@ on each of these machines (by ssh), playing respectively Neil and Oscar's roles.
 Communication between Neil and Oscar is handled by the original instance, that
 links each agent standard output to the standard input of the other.
 
-TODO: Explain what part of the math the code does ?
+Niel does almost all computations, while Oscar send him the needed
+informations and run the effective transfer of files when the
+computations are done. Btrsync uses rsync to synchronize single files,
+because it's algorithm to detect changes in a files is very good.
 
 \subsection{Time Measurements}
 
