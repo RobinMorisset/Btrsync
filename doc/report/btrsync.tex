@@ -42,7 +42,7 @@
 \title{When File Synchronization Meets Number Theory}
 
 \author{Antoine Amarilli \and Fabrice Ben Hamouda \and Florian Bourse \and\\
-Robin Morisset \and David Naccache \and Pablo Rauzy}
+David Naccache \and Pablo Rauzy}
 
 \institute{
 \'{E}cole normale sup\'{e}rieure, D\'{e}partement d'informatique \\
@@ -509,7 +509,25 @@ The proposed process lends itself to a final fine-tuning. Capture here the three
 
 \subsection{Program Structure}
 
+A proof-of-concept called Btrsync has been implemented in Haskell and is
+available at https://github.com/RobinMorisset/Btrsync.
+
+It is intended to work as a drop-in replacement of rsync for directories, taking
+as arguments two (possibly remote) directories. It launches instances of itself
+on each of these machines (by ssh), playing respectively Neil and Oscar's roles.
+
+Communication between Neil and Oscar is handled by the original instance, that
+links each agent standard output to the standard input of the other.
+
+TODO: Explain what part of the math the code does ?
+
 \subsection{Time Measurements}
+
+Because of difficulties in linking with the GMP library the code is 
+significantly slower than it could be (especially in the computation of the
+primes from the hashes).
+
+TODO: benchmarks with time + bandwidth (our only benefit ..)
 
 \section{Conclusion and Further Improvements}
 
