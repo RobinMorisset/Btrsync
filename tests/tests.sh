@@ -11,6 +11,14 @@ success (){
   printf "\033[1;32m[ SUCCESS ]\033[0m"
 }
 
+# Print a list of all files in the current folder together with there permission
+# Output:
+#   ./a.txt 644
+#   ./a.out 755
+print_perm (){
+  find . -exec stat -c "%n %a" {} \; | grep -v -E '^\. ...$' | sort 
+}
+
 echo
 echo "Results in $TDIR"
 echo
@@ -36,18 +44,20 @@ do
   END_TIME=$SECONDS
   if [ $? -ne 0 ]; then fail 1; continue; fi
 
+  # Check files are the same in the original Neil folder and in the folders synchronized by btrsync
   diff "$t/n" "$tt/n_btrsync" > "$tt/diff_n_n_btrsync"
   if [ $? -ne 0 ]; then fail 2; continue; fi
   diff "$t/n" "$tt/o_btrsync" > "$tt/diff_n_o_btrsync"
   if [ $? -ne 0 ]; then fail 3; continue; fi
 
-  cd "$tt/n_btrsync" && find . -exec stat -c "%n %a" {} \; > "$tt/perm_n_btrsync"
+  cd "$tt/n_btrsync" && print_perm > "$tt/perm_n_btrsync"
   cd $DIR
-  cd "$tt/o_btrsync" && find . -exec stat -c "%n %a" {} \; > "$tt/perm_o_btrsync"
+  cd "$tt/o_btrsync" && print_perm > "$tt/perm_o_btrsync"
   cd $DIR
-  cd "$t/n" && find . -exec stat -c "%n %a" {} \; > "$tt/perm_n"
+  cd "$t/n" && print_perm > "$tt/perm_n"
   cd $DIR
 
+  # Idem for permissions
   diff "$tt/perm_n" "$tt/perm_n_btrsync" > "$tt/diff_perm_n_n_btrsync"
   if [ $? -ne 0 ]; then fail 4; continue; fi
   diff "$tt/perm_n" "$tt/perm_o_btrsync" > "$tt/diff_perm_n_o_btrsync"
