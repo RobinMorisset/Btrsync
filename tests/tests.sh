@@ -40,14 +40,14 @@ do
   cp -R "$t/o" "$tt/o_btrsync"
 
   START_TIME=$SECONDS
-  ../btrsync.sh "$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
+  ../btrsync-python.sh "fabrice@Euler:$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
   END_TIME=$SECONDS
   if [ $? -ne 0 ]; then fail 1; continue; fi
 
   # Check files are the same in the original Neil folder and in the folders synchronized by btrsync
-  diff "$t/n" "$tt/n_btrsync" > "$tt/diff_n_n_btrsync"
+  diff -r "$t/n" "$tt/n_btrsync" > "$tt/diff_n_n_btrsync"
   if [ $? -ne 0 ]; then fail 2; continue; fi
-  diff "$t/n" "$tt/o_btrsync" > "$tt/diff_n_o_btrsync"
+  diff -r "$t/n" "$tt/o_btrsync" > "$tt/diff_n_o_btrsync"
   if [ $? -ne 0 ]; then fail 3; continue; fi
 
   cd "$tt/n_btrsync" && print_perm > "$tt/perm_n_btrsync"

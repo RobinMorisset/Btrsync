@@ -10,6 +10,7 @@ import sys
 import time
 import shutil
 from subprocess import Popen, PIPE, STDOUT
+import re
 
 P_SIZE    = 1024
 HASH_SIZE = 160
@@ -168,29 +169,28 @@ def sync_oscar(root_neil, root_oscar, files_neil, files_oscar):
           os.unlink(path)
 
   # Synchronize the other files
-  rsync = Popen(['rsync', '--files-from=-',root_neil,root_oscar], stdout=sys.stderr, stdin=PIPE, stderr=STDOUT)
+  rsync = Popen(['rsync', '-I', '--files-from=-',root_neil,root_oscar], stdout=sys.stderr, stdin=PIPE, stderr=STDOUT)
   for (path,isdir,hcontent) in files_neil:
     if isdir==False:
+      #eprint(path)
       rsync.stdin.write(path+"\n")
   rsync.communicate()[0]
   rsync.stdin.close()
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument("--origin", help="", action="store_true")
-  parser.add_argument("--destination", help="", action="store_true")
-  parser.add_argument("root_neil", help="")
-  parser.add_argument("root_oscar", help="")
+  parser.add_argument("--origin", help="Neil role (internal use)", action="store_true")
+  parser.add_argument("--destination", help="Oscar role (internal use)", action="store_true")
+  parser.add_argument("root_neil", help="[[user@]host:]path/to/neil")
+  parser.add_argument("root_oscar", help="[[user@]host:]path/to/oscar")
   args = parser.parse_args()
-
-  root_neil = os.path.abspath(args.root_neil)
-  root_oscar = os.path.abspath(args.root_oscar)
 
   if args.origin:
     # Neil
-    eprint("start Neil")
-    os.chdir(root_neil)
+    eprint("Neil: start")
+    os.chdir(args.root_neil)
     hashes = hash_dir()
+    eprint("Neil: hash_dir finished")
 
     pp = 1
     d = 1
@@ -202,9 +202,10 @@ def main():
 
   elif args.destination:
     # Oscar
-    eprint("start Oscar")
-    os.chdir(root_oscar)
+    eprint("Oscar: start")
+    os.chdir(args.root_oscar)
     hashes = hash_dir()
+    eprint("Oscar: hash_dir finished")
 
     res_neil = None
     while res_neil==None:
@@ -216,21 +217,47 @@ def main():
     (oscar, files_neil) = res_neil
     factors_oscar = factor(oscar, hashes)
     files_oscar = [hashes[h] for h in factors_oscar]
-    eprint("Neil files:")
-    eprint(files_neil)
-    eprint("Oscar files:")
-    eprint(files_oscar)
-    sync_oscar(root_neil,root_oscar,files_neil,files_oscar)
+    #eprint("Neil files:")
+    #eprint(files_neil)
+    #eprint("Oscar files:")
+    #eprint(files_oscar)
+    sync_oscar(args.root_neil,args.root_oscar,files_neil,files_oscar)
 
 
   else:
-    print "btrsync.py --origin %s %s" % (root_neil,root_oscar)
-    print "btrsync.py --destination %s %s" % (root_neil,root_oscar)
+    regex = re.compile("^((?P<server>[^:]+):)?(?P<path>.*)$")
+    r_oscar = regex.search(args.root_oscar).groupdict()
+    r_neil = regex.search(args.root_neil).groupdict()
+
+    if r_neil["server"]==None:
+      root_neil = os.path.abspath(args.root_neil)
+      root_neil_local = root_neil
+    else:
+      root_neil = args.root_neil
+      root_neil_local = r_neil["path"]
+
+    if r_oscar["server"]==None:
+      root_oscar = os.path.abspath(args.root_oscar)
+      root_oscar_local = root_oscar
+    else:
+      root_oscar = args.root_oscar
+      root_oscar_local = r_oscar["path"]
+
+    if r_neil["server"]==None:
+      print "btrsync.py --origin %s %s" % (root_neil_local,root_oscar)
+    else:
+      print "ssh %s btrsync.py --origin %s %s" % (r_neil["server"],root_neil_local,root_oscar)
+
+    if r_oscar["server"]==None:
+      print "btrsync.py --destination %s %s" % (root_neil,root_oscar_local)
+    else:
+      print "ssh %s btrsync.py --destination %s %s" % (r_oscar["server"],root_neil,root_oscar_local)
 
 
-hashes = hash_dir()
-#print repr(product_mod(gmpy.mpz(1000),hashes))
-#print generate_next_p()
+
+
+
+#Just a Unit test
 assert make_frac(gmpy.mpz(102577),gmpy.mpz(101)*gmpy.invert(gmpy.mpz(125),102577)) == (gmpy.mpz(101),gmpy.mpz(125))
 
 if __name__=="__main__":
