@@ -2,6 +2,7 @@
 
 TDIR=`mktemp -d -t btrsync.tests.XXXXXX` || exit 1
 DIR=`pwd`
+REMOTE=$1
 
 fail (){
   printf "\033[1;31m[ FAIL %02d ]\033[0m" $1
@@ -40,7 +41,7 @@ do
   cp -R "$t/o" "$tt/o_btrsync"
 
   START_TIME=$SECONDS
-  ../btrsync-python.sh "fabrice@Euler:$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
+  ../btrsync-python.sh "$REMOTE:$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
   END_TIME=$SECONDS
   if [ $? -ne 0 ]; then fail 1; continue; fi
 
