@@ -1,3 +1,10 @@
+== Introduction ==
+
+There are two independent implementations: one in Haskell and one in Python.
+Besides, there is Python code for the move operations (algo_moves.py).
+
+== Haskell implementation ==
+
 To install for the current user only:
 sudo apt-get install haskell-platform (can vary depending on your package
     manager. We actually only depend on GHC and Cabal)
@@ -9,4 +16,7 @@ To install for all users, replace "cabal install" by "sudo cabal install
 
 To use, see btrsync --help.
 
+== Python implementation ==
+
+See the relevant files.
 
