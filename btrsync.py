@@ -43,6 +43,7 @@ def hash_file(path, other=""):
           hcontent is a classical hash of the content
       TODO: add metadata """
   f = file(path)
+  # TODO use sha1 from algo_moves.py to avoid reading the entire file in memory
   content = f.read()
   hcontent = hashlib.sha1(content).hexdigest()
   h = int(hashlib.sha1('f\0'+path+'\0'+other+'\0'+hcontent).hexdigest(), 16)
