@@ -4,7 +4,7 @@ FIFO=`mktemp -t btrsync.fifo.XXXXXX` || exit 1
 TFILE=`mktemp -t btrsync.output.XXXXXX` || { rm -f $FIFO; exit 1; }
 trap "{ rm -f $TFILE; rm -f $FIFO; }" EXIT
 
-btrsync.py $* > $TFILE
+btrsync.py "$@" > $TFILE
 if [ $? -ne 0 ]
 then
     cat $TFILE

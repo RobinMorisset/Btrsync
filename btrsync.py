@@ -19,6 +19,9 @@ SEED = 10
 gmpy.rand('init')
 gmpy.rand('seed', SEED)
 
+def shellquote(s):
+  return "'" + s.replace("'", "'\\''") + "'"
+
 def eprint(a):
   if not isinstance(a, basestring):
     a = repr(a)
@@ -78,7 +81,7 @@ def generate_next_p():
 
 def product_mod(n, l):
   """ Compute the product of the elements of l modulo n """
-  return reduce(lambda x, y: ((x * y) % n), l) % n
+  return reduce(lambda x, y: ((x * y) % n), l, 1) % n
 
 def make_frac(n, d):
   a = n
@@ -243,18 +246,15 @@ def main():
       root_oscar = args.root_oscar
       root_oscar_local = r_oscar["path"]
 
-    if r_neil["server"] == None:
-      print ("btrsync.py --origin %s %s" % (root_neil_local, root_oscar))
+    if r_neil["server"]==None:
+      print ("btrsync.py --origin %s %s" % (shellquote(root_neil_local), shellquote(root_oscar)))
     else:
-      print ("ssh %s btrsync.py --origin %s %s" % (r_neil["server"],
-          root_neil_local, root_oscar))
+      print ("ssh %s btrsync.py --origin %s %s" % (r_neil["server"], shellquote(root_neil_local), shellquote(root_oscar)))
 
-    if r_oscar["server"] == None:
-      print ("btrsync.py --destination %s %s" % (root_neil, root_oscar_local))
+    if r_oscar["server"]==None:
+      print ("btrsync.py --destination %s %s" % (shellquote(root_neil), shellquote(root_oscar_local)))
     else:
-      print ("ssh %s btrsync.py --destination %s %s" % (r_oscar["server"],
-          root_neil, root_oscar_local))
-
+      print ("ssh %s btrsync.py --destination %s %s" % (r_oscar["server"], shellquote(root_neil), shellquote(root_oscar_local)))
 
 
 #Just a Unit test

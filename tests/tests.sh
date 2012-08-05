@@ -29,18 +29,21 @@ echo
 # Use all the tests in this folder
 #
 echo "Algorithmic tests"
-TESTS=`ls -d */`
-for t2 in $TESTS
+for t2 in *
 do
-  t=`basename $t2`
-  printf "\n  %-40s" $t
+  if [ ! -d "$t2" ]
+  then
+    break
+  fi
+  t=`basename "$t2"`
+  printf "\n  %-40s" "$t"
   tt="$TDIR/$t"
   mkdir "$tt"
   cp -R "$t/n" "$tt/n_btrsync"
   cp -R "$t/o" "$tt/o_btrsync"
 
   START_TIME=$SECONDS
-  ../btrsync-python.sh "fabrice@Euler:$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
+  ../btrsync-python.sh "$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
   END_TIME=$SECONDS
   if [ $? -ne 0 ]; then fail 1; continue; fi
 
