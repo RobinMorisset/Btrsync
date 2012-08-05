@@ -40,7 +40,7 @@ def hash_file(path,other=""):
   """ Return (h,hcontents) where:
           h is a hash of the path, the string other and the content to a prime
           hcontent is a classical hash of the content
-      TODO: add permissions """
+      TODO: add metadata """
   f = file(path)
   content = f.read()
   hcontent = hashlib.sha1(content).hexdigest()
