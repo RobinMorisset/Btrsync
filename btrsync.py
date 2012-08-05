@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import hashlib
 import os
@@ -25,7 +25,7 @@ def eprint(a):
   sys.stderr.write(a+'\n')
 
 def send(a):
-  print repr(a)
+  print (repr(a))
   sys.stdout.flush()
   eprint("Send " + repr(a))
 
@@ -244,16 +244,16 @@ def main():
       root_oscar_local = r_oscar["path"]
 
     if r_neil["server"] == None:
-      print "btrsync.py --origin %s %s" % (root_neil_local, root_oscar)
+      print ("btrsync.py --origin %s %s" % (root_neil_local, root_oscar))
     else:
-      print "ssh %s btrsync.py --origin %s %s" % (r_neil["server"],
-          root_neil_local, root_oscar)
+      print ("ssh %s btrsync.py --origin %s %s" % (r_neil["server"],
+          root_neil_local, root_oscar))
 
     if r_oscar["server"] == None:
-      print "btrsync.py --destination %s %s" % (root_neil, root_oscar_local)
+      print ("btrsync.py --destination %s %s" % (root_neil, root_oscar_local))
     else:
-      print "ssh %s btrsync.py --destination %s %s" % (r_oscar["server"],
-          root_neil, root_oscar_local)
+      print ("ssh %s btrsync.py --destination %s %s" % (r_oscar["server"],
+          root_neil, root_oscar_local))
 
 
 
