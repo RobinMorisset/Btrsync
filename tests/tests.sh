@@ -11,7 +11,7 @@ success (){
   printf "\033[1;32m[ SUCCESS ]\033[0m"
 }
 
-# Print a list of all files in the current folder together with there permission
+# Print a list of all files in the current folder together with their permission
 # Output:
 #   ./a.txt 644
 #   ./a.out 755
