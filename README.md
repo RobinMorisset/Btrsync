@@ -29,3 +29,6 @@ and ensure that btrsync.py is in the PATH of both hosts.
 
 See the relevant files for usage information.
 
+Caveat: if the remote host is malicious, it may execute arbitrary commands on
+the local host with the priviledges of the user running btrsync.
+
