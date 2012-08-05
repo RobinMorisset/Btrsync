@@ -24,5 +24,8 @@ To use, see btrsync --help.
 
 ## Python implementation
 
-See the relevant files.
+To use, install python-argparse and python-gmpy, install btrsync on both hosts,
+and ensure that btrsync.py is in the PATH of both hosts.
+
+See the relevant files for usage information.
 
