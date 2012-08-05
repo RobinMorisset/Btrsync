@@ -43,8 +43,9 @@ def hash_file(path,other=""):
       TODO: add permissions """
   f = file(path)
   content = f.read()
-  h = int(hashlib.sha1('f\0'+path+'\0'+other+'\0'+content).hexdigest(), 16)
-  hcontent = int(hashlib.sha1(content).hexdigest(), 16)
+  hcontent = hashlib.sha1(content).hexdigest()
+  h = int(hashlib.sha1('f\0'+path+'\0'+other+'\0'+hcontent).hexdigest(), 16)
+  hcontent = int(hcontent, 16)
   f.close()
   return (hash_to_prime(h), hcontent)
 
