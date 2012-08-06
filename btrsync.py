@@ -1,14 +1,26 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
-import hashlib
-import os
-import gmpy
-import argparse
-import sys
-import shutil
-from gmpy import mpz
-from subprocess import Popen, PIPE, STDOUT
+"""Btrsync (python version)"""
+__author__ = "Fabrice Ben Hamouda"
+
+import os, sys, inspect
 import re
+import shutil
+from subprocess import Popen, PIPE, STDOUT
+import argparse
+import hashlib
+import gmpy
+from gmpy import mpz
+import json
+
+# Enable us to use the modules in the same folder than the script
+cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+if cmd_folder not in sys.path:
+  sys.path.insert(0, cmd_folder)
+
+from sha1 import sha1
+from algo_moves import do_moves
 
 P_SIZE = 1024
 HASH_SIZE = 160
@@ -19,18 +31,34 @@ SEED = 10
 gmpy.rand('init')
 gmpy.rand('seed', SEED)
 
+# JSON encoder for mpz (gmpy big integer)
+class MpzJSONEncoder(json.JSONEncoder):
+  def default(self, obj):
+    if obj.__class__.__name__=="mpz":
+      return {'_mpz': int(obj)}
+    else:
+      return JSONEncoder.default(self, obj)
+
+def as_python_object(dct):
+  if '_mpz' in dct:
+    return mpz(dct["_mpz"])
+  return dct
+
 def shellquote(s):
   return "'" + s.replace("'", "'\\''") + "'"
 
 def eprint(a):
-  if not isinstance(a, basestring):
-    a = repr(a)
-  sys.stderr.write(a+'\n')
+  print(a, file=sys.stderr)
 
 def send(a):
-  print (repr(a))
+  j = json.dumps(a, cls=MpzJSONEncoder)
+  print(j)
   sys.stdout.flush()
-  eprint("Send " + repr(a))
+  eprint("Send " + j)
+
+def receive():
+  j = sys.stdin.readline()
+  return json.loads(j, object_hook=as_python_object)
 
 def hash_to_prime(h):
   # TODO: improve this !
@@ -42,13 +70,9 @@ def hash_file(path, other=""):
           h is a hash of the path, the string other and the content to a prime
           hcontent is a classical hash of the content
       TODO: add metadata """
-  f = file(path)
-  # TODO use sha1 from algo_moves.py to avoid reading the entire file in memory
-  content = f.read()
-  hcontent = hashlib.sha1(content).hexdigest()
+  hcontent = sha1(path)
   h = int(hashlib.sha1('f\0'+path+'\0'+other+'\0'+hcontent).hexdigest(), 16)
   hcontent = int(hcontent, 16)
-  f.close()
   return (hash_to_prime(h), hcontent)
 
 def hash_dirname(path, other=""):
@@ -135,21 +159,42 @@ def round_neil(hashes, pi_oscar, prev_pp=1, prev_d=1):
 
 def sync_oscar(root_neil, root_oscar, files_neil, files_oscar):
   """ Actually perform the synchronisation, given a list of files in Oscar and not in Neil, and a list of files in Neil and not in Oscar """
-  # TODO: can still be optimize, we should take advantage of moves
-  # TODO: remote...
+  # TODO: manage metadata
   files_by_path_oscar = {}
   files_by_content_oscar = {} # future -> for moves
   files_by_path_neil = {}
+
+  # Do moves !
+  for (path, isdir, hcontent) in files_oscar:
+    if not isdir:
+      files_by_path_oscar[path] = hcontent
+      files_by_content_oscar[hcontent] = path
+
+  moves = {}
+  files_treated_neil = set()
+  for (path, isdir, hcontent) in files_neil:
+    if not isdir:
+      if files_by_path_oscar.get(path) != hcontent:
+        # we need to do a move if possible
+        if files_by_content_oscar.has_key(hcontent):
+          files_treated_neil.add(path)
+          orig = files_by_content_oscar[hcontent]
+          if moves.has_key(orig):
+            moves[orig].append(path)
+          else:
+            moves[orig] = [path]
+  # TODO: not optimal because do_moves recomputes hashes, but...
+  #eprint("moves")
+  #eprint(moves)
+  do_moves(root_oscar, moves)
 
   # Remove folders and create indexes...
   for (path, isdir, hcontent) in files_oscar:
     if isdir:
       if os.path.isdir(path):
-        # We may have already removed the path -> the test (can be optimize by sorting the paths maybe)
+        # We may have already removed the path or the path may have become a file, because of previous moves
+        # TODO: Metadata...
         shutil.rmtree(path)
-    else:
-      files_by_path_oscar[path] = True
-      files_by_content_oscar[hcontent] = True
 
   # Create folders and create indexes
   for (path, isdir, hcontent) in files_neil:
@@ -176,8 +221,9 @@ def sync_oscar(root_neil, root_oscar, files_neil, files_oscar):
       stdout=sys.stderr, stdin=PIPE, stderr=STDOUT)
   for (path, isdir, hcontent) in files_neil:
     if not isdir:
-      #eprint(path)
-      rsync.stdin.write(path+"\n")
+      if path not in files_treated_neil:
+        #eprint(path)
+        rsync.stdin.write(path+"\n")
   rsync.communicate()[0]
   rsync.stdin.close()
 
@@ -200,7 +246,7 @@ def main():
     d = 1
     res_neil = None
     while res_neil == None:
-      pi_oscar = eval(sys.stdin.readline())
+      pi_oscar = receive()
       (pp, d, res_neil) = round_neil(hashes, pi_oscar, pp, d)
       send(res_neil)
 
@@ -216,7 +262,7 @@ def main():
       p = generate_next_p()
       pi_oscar = product_mod(p, hashes)
       send(pi_oscar)
-      res_neil = eval(sys.stdin.readline())
+      res_neil = receive()
 
     (oscar, files_neil) = res_neil
     factors_oscar = factor(oscar, hashes)
@@ -229,6 +275,10 @@ def main():
 
 
   else:
+    # Print command to be executed for Neil and Oscar
+    # Used by btrsync-python.sh
+    print ("ok")
+
     regex = re.compile("^((?P<server>[^:]+):)?(?P<path>.*)$")
     r_oscar = regex.search(args.root_oscar).groupdict()
     r_neil = regex.search(args.root_neil).groupdict()
@@ -256,6 +306,16 @@ def main():
       print ("btrsync.py --destination %s %s" % (shellquote(root_neil), shellquote(root_oscar_local)))
     else:
       print ("ssh %s btrsync.py --destination %s %s" % (r_oscar["server"], shellquote(root_neil), shellquote(root_oscar_local)))
+
+  # Fix: http://stackoverflow.com/questions/7955138/addressing-sys-excepthook-error-in-bash-script
+  try:
+    sys.stdout.close()
+  except:
+    pass
+  try:
+    sys.stderr.close()
+  except:
+    pass
 
 
 #Just a Unit test

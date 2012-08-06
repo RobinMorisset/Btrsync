@@ -24,11 +24,18 @@ To use, see btrsync --help.
 
 ## Python implementation
 
-To use, install python-argparse and python-gmpy, install btrsync on both hosts,
-and ensure that btrsync.py is in the PATH of both hosts.
+### Installation
 
-See the relevant files for usage information.
+Install python-argparse and python-gmpy, install btrsync on both hosts,
+and ensure that:
+- either all \*.py files are in the PATH of both hosts.
+- or btrsync.py is in the PATH of both hosts and the other \*.py files are in the PYTHONPATH of both hosts
 
-Caveat: if the remote host is malicious, it may execute arbitrary commands on
-the local host with the priviledges of the user running btrsync.
+### Usage
+
+You should not run btrsync.py directly.
+Please always run btrsync-python.sh.
+
+For help, run
+    btrsync-python.sh -h
 

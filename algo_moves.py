@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
+from __future__ import print_function
 
 """Perform a series of moves in-place on a filesystem hierarchy"""
 __author__ = "Antoine Amarilli"
@@ -10,20 +11,7 @@ import shutil
 import sys
 import tempfile
 
-def sha1(f):
-  """return the sha1 hash of f"""
-  sha1 = hashlib.sha1()
-  fp = open(f, 'rb')
-  try:
-    while True:
-      buf = fp.read(16*1024*1024)
-      if not buf:
-        break
-      sha1.update(buf)
-  finally:
-    fp.close()
-  return sha1.hexdigest()
-
+from sha1 import sha1
 
 def do_moves(base, moves):
   """Perform moves in base
