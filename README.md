@@ -49,6 +49,33 @@ Unit tests are provided. To run them:
     cd tests
     ./tests.sh
 
+## Benchmarking
+
+You can benchmark btrsync against rsync with the benchmark.sh script. Run it
+thus:
+
+    ./benchmark.sh FROM TO >> results
+
+This will run btrsync and rsync, compare their results, and write to results a
+line with the following format:
+
+FROM TO txbtrsync rxbtrsync txrsync rxrsync diff tbtrsync trsync
+
+The two first columns are the source and destination, the four next columns are
+the number of bytes sent and received by btrsync and rsync, the diff column is
+the total number of bytes exchanged by rsync minus the total number of bytes
+exchanged by btrsync, the two last columns are the total running times in
+seconds.
+
+If btrsync and rsync fail to yield the same result, benchmark.sh will exit.
+
+## Testing
+
+Unit tests are provided. To run them:
+
+    cd tests
+    ./tests.sh
+
 ## Haskell implementation
 
 Remember that this implementation is not stable and should not be used directly.
