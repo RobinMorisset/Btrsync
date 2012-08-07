@@ -33,8 +33,13 @@ for t2 in *
 do
   if [ ! -d "$t2" ]
   then
-    break
+    continue
   fi
+  if [[ "$t2" == *-disable ]]
+  then
+    continue
+  fi
+
   t=`basename "$t2"`
   printf "\n  %-40s" "$t"
   tt="$TDIR/$t"
