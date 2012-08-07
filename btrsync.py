@@ -55,10 +55,11 @@ def send(a):
   print(j)
   sys.stdout.flush()
   eprint("Send " + j)
+  return len(j)
 
 def receive():
   j = sys.stdin.readline()
-  return json.loads(j, object_hook=as_python_object)
+  return json.loads(j, object_hook=as_python_object), len(j)
 
 def hash_to_prime(h):
   # TODO: improve this !
@@ -217,8 +218,8 @@ def sync_oscar(root_neil, root_oscar, files_neil, files_oscar):
           os.unlink(path)
 
   # Synchronize the other files
-  rsync = Popen(['rsync', '-I', '--files-from=-', root_neil, root_oscar],
-      stdout=sys.stderr, stdin=PIPE, stderr=STDOUT)
+  rsync = Popen(['rsync', '-Iv', '--files-from=-', root_neil, root_oscar],
+      stdout=sys.stderr, stdin=PIPE, stderr=PIPE)
   for (path, isdir, hcontent) in files_neil:
     if not isdir:
       if path not in files_treated_neil:
@@ -226,6 +227,22 @@ def sync_oscar(root_neil, root_oscar, files_neil, files_oscar):
         rsync.stdin.write(path+"\n")
   rsync.communicate()[0]
   rsync.stdin.close()
+  last1 = None
+  last2 = None
+  line = None
+  while True:
+    last1, last2 = line, last1
+    line = rsync.stdout.readline()
+    if not line:
+      break
+  fields = last2.split(' ')
+  assert(fields[0] == 'sent' and fields[2] == 'bytes'
+      and fields[4] == 'received' and fields[6] == 'bytes')
+  sent = int(fields[1])
+  received = int(fields[5])
+  return sent, received
+
+
 
 def main():
   parser = argparse.ArgumentParser()
@@ -246,7 +263,7 @@ def main():
     d = 1
     res_neil = None
     while res_neil == None:
-      pi_oscar = receive()
+      pi_oscar, size = receive()
       (pp, d, res_neil) = round_neil(hashes, pi_oscar, pp, d)
       send(res_neil)
 
@@ -258,11 +275,15 @@ def main():
     eprint("Oscar: hash_dir finished")
 
     res_neil = None
+    my_sent = 0
+    my_received = 0
+
     while res_neil == None:
       p = generate_next_p()
       pi_oscar = product_mod(p, hashes)
-      send(pi_oscar)
-      res_neil = receive()
+      my_sent += send(pi_oscar)
+      res_neil, my_nreceived = receive()
+      my_received += my_nreceived
 
     (oscar, files_neil) = res_neil
     factors_oscar = factor(oscar, hashes)
@@ -271,8 +292,8 @@ def main():
     #eprint(files_neil)
     #eprint("Oscar files:")
     #eprint(files_oscar)
-    sync_oscar(args.root_neil, args.root_oscar, files_neil, files_oscar)
-
+    sent, received = sync_oscar(args.root_neil, args.root_oscar, files_neil, files_oscar)
+    # TODO print ("sent %d bytes  received %d bytes" % (sent + my_sent, received + my_received))
 
   else:
     # Print command to be executed for Neil and Oscar
@@ -316,6 +337,7 @@ def main():
     sys.stderr.close()
   except:
     pass
+
 
 
 #Just a Unit test
