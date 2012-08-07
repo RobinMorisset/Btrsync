@@ -36,11 +36,11 @@ and ensure that:
 
 ## Usage
 
-You should not run btrsync.py directly. Please always run btrsync-python.sh.
+You should not run btrsync.py directly. Please always run btrsync.sh.
 
 For help, run:
 
-    btrsync-python.sh -h
+    btrsync.sh -h
 
 ## Testing
 

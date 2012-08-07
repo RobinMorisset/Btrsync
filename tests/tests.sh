@@ -48,7 +48,7 @@ do
   cp -R "$t/o" "$tt/o_btrsync"
 
   START_TIME=$SECONDS
-  ../btrsync-python.sh "$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
+  ../btrsync.sh "$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
   END_TIME=$SECONDS
   if [ $? -ne 0 ]; then fail 1; continue; fi
 

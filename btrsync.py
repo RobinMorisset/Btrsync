@@ -297,7 +297,7 @@ def main():
 
   else:
     # Print command to be executed for Neil and Oscar
-    # Used by btrsync-python.sh
+    # Used by btrsync.sh
     print ("ok")
 
     regex = re.compile("^((?P<server>[^:]+):)?(?P<path>.*)$")
