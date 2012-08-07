@@ -4,7 +4,6 @@ from __future__ import print_function
 """Perform a series of moves in-place on a filesystem hierarchy"""
 __author__ = "Antoine Amarilli"
 
-import hashlib
 import os
 import os.path
 import shutil
