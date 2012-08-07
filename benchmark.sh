@@ -5,10 +5,10 @@
 
 set -x
 
-FROM="$1"
-TO="$2"
+FROM=$(echo "$1" | sed 's![^/]$!&/!')
+TO=$(echo "$2" | sed 's![^/]$!&/!')
 TDIR=`mktemp -d` || exit 1
-TDIR2=`mktemp -d` || exit 1
+TDIR2=`mktemp -d` || { rm -Rf $TDIR; exit 1; }
 
 trap "{ rm -Rf $TDIR; rm -Rf $TDIR2; }" EXIT
 
