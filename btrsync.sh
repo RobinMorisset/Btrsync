@@ -2,9 +2,10 @@
 
 FIFO=`mktemp -t btrsync.fifo.XXXXXX` || exit 1
 TFILE=`mktemp -t btrsync.output.XXXXXX` || { rm -f $FIFO; exit 1; }
-trap "{ rm -f $TFILE; rm -f $FIFO; }" EXIT
+SFILE=`mktemp -t btrsync.status.XXXXXX` || { rm -f $FIFO; rm -f $TFILE; exit 1; }
+trap "{ rm -f $TFILE; rm -f $SFILE; rm -f $FIFO; }" EXIT
 
-btrsync.py "$@" > $TFILE
+btrsync.py --status=$SFILE "$@" > $TFILE
 if [ $? -ne 0 ]
 then
   cat $TFILE
@@ -25,3 +26,4 @@ echo "Oscar command: $cmdOscar"
 rm -f $FIFO
 mkfifo $FIFO
 eval $cmdOscar < $FIFO | eval $cmdNeil > $FIFO
+cat $SFILE

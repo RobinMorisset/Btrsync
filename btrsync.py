@@ -219,13 +219,12 @@ def sync_oscar(root_neil, root_oscar, files_neil, files_oscar):
 
   # Synchronize the other files
   rsync = Popen(['rsync', '-Iv', '--files-from=-', root_neil, root_oscar],
-      stdout=sys.stderr, stdin=PIPE, stderr=PIPE)
+      stdin=PIPE, stdout=PIPE)
   for (path, isdir, hcontent) in files_neil:
     if not isdir:
       if path not in files_treated_neil:
         #eprint(path)
         rsync.stdin.write(path+"\n")
-  rsync.communicate()[0]
   rsync.stdin.close()
   last1 = None
   last2 = None
@@ -248,6 +247,7 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--origin", help="Neil role (internal use)", action="store_true")
   parser.add_argument("--destination", help="Oscar role (internal use)", action="store_true")
+  parser.add_argument("--status", help="Status file to write (internal use)")
   parser.add_argument("root_neil", help="[[user@]host:]path/to/neil")
   parser.add_argument("root_oscar", help="[[user@]host:]path/to/oscar")
   args = parser.parse_args()
@@ -293,7 +293,13 @@ def main():
     #eprint("Oscar files:")
     #eprint(files_oscar)
     sent, received = sync_oscar(args.root_neil, args.root_oscar, files_neil, files_oscar)
-    # TODO print ("sent %d bytes  received %d bytes" % (sent + my_sent, received + my_received))
+    if args.status:
+      status = open(args.status, 'w')
+      print ("accounting_btrsync: sent %d bytes  received %d bytes" % (my_sent, my_received), file=status)
+      print ("accounting_rsync: sent %d bytes  received %d bytes" % (sent, received), file=status)
+      print ("accounting_total: sent %d bytes  received %d bytes" % (
+        sent + my_sent, received + my_received), file=status)
+      status.close()
 
   else:
     # Print command to be executed for Neil and Oscar
@@ -323,10 +329,13 @@ def main():
     else:
       print ("ssh %s btrsync.py --origin %s %s" % (r_neil["server"], shellquote(root_neil_local), shellquote(root_oscar)))
 
+    # if a status file is provided, pass it to the destination:
+    invocation = "btrsync.py %s --destination" % ("--status=" + args.status if
+        args.status else "")
     if r_oscar["server"]==None:
-      print ("btrsync.py --destination %s %s" % (shellquote(root_neil), shellquote(root_oscar_local)))
+      print ("%s %s %s" % (invocation, shellquote(root_neil), shellquote(root_oscar_local)))
     else:
-      print ("ssh %s btrsync.py --destination %s %s" % (r_oscar["server"], shellquote(root_neil), shellquote(root_oscar_local)))
+      print ("ssh %s %s %s %s" % (r_oscar["server"], invocation, shellquote(root_neil), shellquote(root_oscar_local)))
 
   # Fix: http://stackoverflow.com/questions/7955138/addressing-sys-excepthook-error-in-bash-script
   try:
