@@ -10,6 +10,22 @@ There are two independent implementations: one in Haskell and one in Python. The
 Haskell implementation is not stable and is documented in its own section. The
 rest of this document describes the Python implementation.
 
+## Credits and license
+
+The Python implementation of btrsync is (C) 2012 Fabrice Ben Hamouda and
+Antoine Amarilli.
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, version 3.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program (see file "COPYING").  If not, see <http://www.gnu.org/licenses/>.
+
 ## Installation
 
 Install python-argparse and python-gmpy, install btrsync on both hosts,
