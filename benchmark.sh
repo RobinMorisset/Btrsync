@@ -14,9 +14,13 @@ trap "{ rm -Rf $TDIR; rm -Rf $TDIR2; }" EXIT
 
 rsync -a "$TO" "$TDIR/"
 rsync -a "$TO" "$TDIR2/"
-# compare btrsync and rsync invocations
+T1=$(date +%s%N | cut -b1-13)
 BTRSYNC=$(time ./btrsync.sh "$FROM" "$TDIR/" | tail -1)
+T2=$(date +%s%N | cut -b1-13)
 RSYNC=$(time rsync --delete -Iav "$FROM" "$TDIR2/" | tail -2 | head -1)
+T3=$(date +%s%N | cut -b1-13)
+TBTRSYNC=$(($T2 - $T1))
+TRSYNC=$(($T3 - $T2))
 diff -r "$TDIR/" "$TDIR2/" || { echo 'ERROR: result mismatch'; exit 1; }
 
 echo -n "$FROM "
@@ -24,4 +28,4 @@ echo -n "$TO "
 echo "$BTRSYNC" | awk '{printf "%d %d ", $3, $6}'
 echo "$RSYNC" | awk '{printf "%d %d ", $2, $5}'
 DIFFERENCE=$(echo "$BTRSYNC $RSYNC" | awk '{print $3 + $6 - $9 - $12}')
-echo $DIFFERENCE
+echo "$DIFFERENCE $TBTRSYNC $TRSYNC"

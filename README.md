@@ -65,7 +65,7 @@ The two first columns are the source and destination, the four next columns are
 the number of bytes sent and received by btrsync and rsync, the diff column is
 the total number of bytes exchanged by rsync minus the total number of bytes
 exchanged by btrsync, the two last columns are the total running times in
-seconds.
+milliseconds.
 
 If btrsync and rsync fail to yield the same result, benchmark.sh will exit.
 
