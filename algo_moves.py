@@ -41,18 +41,18 @@ def do_moves(base, moves):
       if not isdir(target):
         mkdir(target)
   def copy(f, t):
-    print("copy %s %s" % (f, t))
+    print("copy %s %s" % (f, t), file=sys.stderr)
     mkdirs(t)
     shutil.copy(rebase(f), rebase(t))
   def move(f, t):
-    print("move %s %s" % (f, t))
+    print("move %s %s" % (f, t), file=sys.stderr)
     mkdirs(t)
     shutil.move(rebase(f), rebase(t))
   def unlink(f):
-    print("unlink %s" % f)
+    print("unlink %s" % f, file=sys.stderr)
     os.unlink(rebase(f))
   def exists(f):
-    print("exists %s" % (f))
+    print("exists %s" % (f), file=sys.stderr)
     return os.path.exists(rebase(f))
   def isdir(f):
     return os.path.isdir(rebase(f))
@@ -77,7 +77,7 @@ def do_moves(base, moves):
     it instead of copying it)"""
 
     b = blocker(destination)
-    print ("blocker %s %s" % (destination, b))
+    print ("blocker %s %s" % (destination, b), file=sys.stderr)
     dummy = False
     if b:
       if b not in moves.keys():
