@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # benchmark.sh FROM TO
-# run btrsync $FROM $TO and rsync --delete -av $FROM $TO and show the data transferred
+# run btrsync $FROM $TO and rsync --delete -Iav $FROM $TO and show the data transferred
 
 set -x
 
@@ -16,7 +16,7 @@ rsync -a "$TO" "$TDIR/"
 rsync -a "$TO" "$TDIR2/"
 # compare btrsync and rsync invocations
 BTRSYNC=$(time ./btrsync.sh "$FROM" "$TDIR/" | tail -1)
-RSYNC=$(time rsync --delete -av "$FROM" "$TDIR2/" | tail -2 | head -1)
+RSYNC=$(time rsync --delete -Iav "$FROM" "$TDIR2/" | tail -2 | head -1)
 diff -r "$TDIR/" "$TDIR2/" || { echo 'ERROR: result mismatch'; exit 1; }
 
 echo -n "$FROM "
