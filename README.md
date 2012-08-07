@@ -46,8 +46,8 @@ For help, run:
 
 Unit tests are provided. To run them:
 
-   cd tests
-   ./tests.sh
+    cd tests
+    ./tests.sh
 
 ## Haskell implementation
 
