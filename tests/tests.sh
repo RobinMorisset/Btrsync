@@ -48,9 +48,10 @@ do
   cp -R "$t/o" "$tt/o_btrsync"
 
   START_TIME=$SECONDS
-  ../btrsync.sh "$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
-  END_TIME=$SECONDS
+  ../btrsync.sh --status="$tt/btrsync.status" "$tt/n_btrsync" "$tt/o_btrsync" > "$tt/btrsync.stdout" 2> "$tt/btrsync.stderr"
   if [ $? -ne 0 ]; then fail 1; continue; fi
+  # TODO: correct btrsync.sh to output a correct return value !
+  END_TIME=$SECONDS
 
   # Check files are the same in the original Neil folder and in the folders synchronized by btrsync
   diff -r "$t/n" "$tt/n_btrsync" > "$tt/diff_n_n_btrsync"

@@ -226,6 +226,7 @@ def sync_oscar(root_neil, root_oscar, files_neil, files_oscar):
         #eprint(path)
         rsync.stdin.write(path+"\n")
   rsync.stdin.close()
+  # Parse rsync statistics !
   last1 = None
   last2 = None
   line = None
@@ -330,8 +331,7 @@ def main():
       print ("ssh %s btrsync.py --origin %s %s" % (r_neil["server"], shellquote(root_neil_local), shellquote(root_oscar)))
 
     # if a status file is provided, pass it to the destination:
-    invocation = "btrsync.py %s --destination" % ("--status=" + args.status if
-        args.status else "")
+    invocation = "btrsync.py %s --destination" % ("--status=" + shellquote(args.status) if args.status else "")
     if r_oscar["server"]==None:
       print ("%s %s %s" % (invocation, shellquote(root_neil), shellquote(root_oscar_local)))
     else:
