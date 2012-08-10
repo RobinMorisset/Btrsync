@@ -66,15 +66,20 @@ In this work we [to be completed by David]
 
 We model the directory synchronization problem as follows: Oscar possesses an old version of a directory $\mathfrak{D}$ that he wishes to update. Neil has the up-to-date version $\mathfrak{D}'$. The challenge faced by Oscar and Neil\footnote{Oscar and Neil will respectively stand for {\sl \underline{o}ld} and {\sl \underline{n}ew}.} is that of {\sl exchanging as little data as possible} during the synchronization process. In reality $\mathfrak{D}$ and $\mathfrak{D}'$ may differ both in their files and in their tree structure.\smallskip
 
-In tackling this problem this paper separates the {\sl ``what''} from the {\sl ``where''}: namely, we disregard the relative position of files in subdirectories. Let $\mathfrak{F}$ and $\mathfrak{F}'$ denote the multisets of files contained in $\mathfrak{D}$ and $\mathfrak{D}'$. We denote $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$ and $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
+In tackling this problem this paper separates the {\sl ``what''} from the {\sl ``where''}: namely, we disregard the relative position of files in subdirectories and model directories as multisets of files. Let $\mathfrak{F}$ and $\mathfrak{F}'$ denote the multisets of files contained in $\mathfrak{D}$ and $\mathfrak{D}'$. We denote $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$ and $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
 
 Let $\mbox{{\tt Hash}}$ denote a collision-resistant hash function\footnote{{\sl e.g.} SHA-1} and let $F$ be a file. Let $\mbox{{\tt NextPrime}}(F)$ be the prime immediately larger than $\mbox{{\tt Hash}}(F)$ and let $u$ denote the size of {\tt NextPrime}'s output in bits. Define the shorthand notations: $h_i=\mbox{{\tt NextPrime}}(F_i)$ and $h'_i=\mbox{{\tt NextPrime}}(F'_i)$.\smallskip
+
+TODO(amarilli): use the uniform nextprime (discussion of relative costs with respect to (1.) hashing costs and (2.) finding the next prime costs)
 
 \section{The Content Synchronization Protocol}
 
 To efficiently synchronize directories, we propose a new protocol based on modular arithmetic. In terms of asymptotic complexity, the proposed procedure is comparable to prior publications \cite{} (that anyhow reached optimality) but its interest lies in its simplicity, novelty and the possibility that specific implementations would offer a {\sl constant}-factor gain over alternative asymptotically-equivalent solutions.\smallskip
 
+TODO(amarilli) we need a real analysis of the expected quantity of information transferred. Since apparently there is a hope that we are better than them (because we can adapt the size of the hashes), we should really make this clearer than what the previous paragraph says, ie. reformulate the problem as a synchronization problem where hash sizes are unknown so that we are better than them.
+
 \subsection{Description of the Basic Exchanges}
+\label{basic}
 
 Let $t$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ that we wish to spot, {\sl i.e.}:
 
@@ -108,7 +113,7 @@ b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox
 \right.
 $$
 
-Note that since $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements, $a$ and $b$ are strictly lesser than $2^{ut}$. Theorem \ref{theo} (see \cite{cryptorational}) guarantees that given $s$ one can recover $a$ and $b$ efficiently (this problem is known as {\sl Rational Number Reconstruction} \cite{pan2004rational} and \cite{wang2003acceleration}). The algorithm is based on Gauss' algorithm for finding the shortest vector in a bi-dimensional lattice \cite{vallee}.
+Note that since $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements, $a$ and $b$ are strictly lesser than $2^{ut}$. Theorem \ref{theo} (see \cite{cryptorational}) guarantees that given $s$ one can recover $a$ and $b$ efficiently (this problem is known as {\sl Rational Number Reconstruction} \cite{pan2004rational,wang2003acceleration}). The algorithm is based on Gauss' algorithm for finding the shortest vector in a bi-dimensional lattice \cite{vallee}.
 
 \begin{theorem}
 \label{theo}
@@ -136,17 +141,17 @@ Formally, this is done as follows:\smallskip
 \end{tabular}
 \end{center}
 
-As we have just seen, the ``output $\bot$ and halt'' should actually never occur as long as bounds on parameter sizes are respected. However, a file synchronization procedure that works {\sl only} for a limited number of differences is not of real practical usefulness. In the next subsection we will explain how to extend the protocol even when the differences exceed the informational capacity of the modulus $p$ used.
+As we have just seen, the ``output $\bot$ and halt'' should actually never occur as long as bounds on parameter sizes are respected. However, a file synchronization procedure that works {\sl only} for a limited number of differences is not useful in practice. In the next subsection we will explain how to extend the protocol even when the differences exceed the informational capacity of the modulus $p$ used.
 
 \subsection{The Case of Insufficient Information}
-
+\label{insuf}
 To extend the protocol to an arbitrary number of differences, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails, Neil will keep accumulating information about the difference as shown in appendix A. Note that no information is lost and that the stockpiled information adds up until it reaches a threshold that suffices to identify the difference.\smallskip
 
 To determine after each $p_i$ round if the synchronization is over, as the interaction starts Neil will send to Oscar $\mbox{{\tt Hash}}(\mathfrak{F}')$. As long as Oscar's state does not match the target hash $\mbox{{\tt Hash}}(\mathfrak{F}')$, Oscar continues the interaction.
 
 \section{Efficiency Considerations}
 
-In this section we explore two strategies to reduce the size of $p$ and hence improve transmission by {\sl constant factors} (from an asymptotic complexity standpoint, nothing can be done as the protocol already transmits information proportional in size to the difference to settle).
+In this section we explore two strategies to reduce the size of $p$ and hence improve transmission by {\sl constant factors} (note that from an asymptotic complexity standpoint, nothing can be done as the protocol already transmits information proportional in size to the difference to settle).
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
@@ -156,7 +161,7 @@ Generate a prime $p$ smaller than previously, namely:
 2^{ut+w-1}<p \leq 2^{ut+w}
 \end{equation}
 
-for some small integer $w \geq 1$ (say $w=50$). For large $\eta=\max(n,n')$ and $t$, the size of the new prime $p$ will be approximately half the size of the prime $p$ generated in section X. The resulting redundancy $c$ is calculated as previously but is approximately two times smaller. As previously, we have:
+for some small integer $w \geq 1$ (say $w=50$). For large $\eta=\max(n,n')$ and $t$, the size of the new prime $p$ will be approximately half the size of the prime $p$ generated in section \ref{basic}. The resulting redundancy $c$ is calculated as previously but is approximately twice smaller. As previously, we have:
 
 $$
 s=\frac{a}{b} \bmod p{~~~\mbox{and~}}
@@ -175,19 +180,21 @@ and since there are at most $t$ differences, we must have:
 a b \leq 2^{ut}
 \end{equation}
 
-The difference with respect to the basic protocol is that we do not have a fixed bound for $a$ and $b$ anymore; equation (\ref{eqab}) only provides a bound for the product $a b$. Therefore, we define a finite sequence of integers:
+The difference with respect to the basic protocol is that we do not have a fixed bound for $a$ and $b$ anymore; equation (\ref{eqab}) only provides a bound for the {\sl product} $a b$. Therefore, we define a finite sequence of integers:
 
-$$(A_i=2^{wi},B_i=\lfloor \frac{p-1}/{2 A_i} \rfloor)\mbox{~~where~~}B_i>1$$.
+$$(A_i=2^{wi},B_i=\lfloor \frac{p-1}{2 A_i} \rfloor)\mbox{~~where~~}B_i>1$$
 
-For all $i>0$ we have $2 A_i B_i<p$. Moreover, from equations (\ref{eqnewp}) and (\ref{eqab}) there must be at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, given $(A_i,B_i,p,s)$ one can recover $a$ and $b$, and eventually the difference.\smallskip
+For all $i>0$ we have $2 A_i B_i<p$. Moreover, from equations (\ref{eqnewp}) and (\ref{eqab}) there must be at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, given $(A_i,B_i,p,s)$ one can recover $a$ and $b$, and eventually determine the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
 
 The problem is that (by opposition to the basic protocol) we have no guarantee that such an $(a,b)$ is unique. Namely we could (in theory) stumble upon another $(a',b')$ satisfying (\ref{eqab}) for some index $i' \neq i$. We expect this to happen with negligible probability for large enough $w$, but this makes the modified protocol heuristic only.\smallskip
 
-To make the heuristic synchronization deterministic, the parties can can use the $\mbox{{\tt Hash}}(\mathfrak{F}')$ protocol preamble explained before.
+To make the heuristic synchronization deterministic, the parties can can use the $\mbox{{\tt Hash}}(\mathfrak{F}')$ protocol preamble mentioned in section \ref{insuf}.
 
 \subsection{The File Laundry: Reducing $u$}
 
 What happens if we shorten $u$ in the basic protocol?\smallskip
+
+TODO(amarilli): I find it hard to understand what we are studying, and why we are interested in the probability of a file to collide in all rounds. I get it now, but maybe we can improve the writing.
 
 As illustrated by the birthday paradox, we should start seeing collisions. Let us analyze the statistics governing their appearance.
 
@@ -258,17 +265,21 @@ TODO: verify I have not made a mistake and compare with using a bigger u (maybe 
 
 In this section, we analyse the theoretical costs of our algorithms and propose some algorithmic improvements.
 
+TODO(amarilli): we should compare the time complexity to that of the other
+paper, and, if we are better, insist on it. If we can combine this to
+``Practical set reconciliation'', we should.
+
 \subsection{Theoretical complexity}
 
 Let $M(k)$ be the time required to multiply two numbers of $k$ bits.
 We suppose $M(k+k') \ge M(k) + M(k')$, for any $k,k'$.
-We know that the division and the modular reduction of two numbers of $k$ bits modulo a number of $k$ bits costs about $\Oapp(M(k))$ \cite{burnikel1998fast}.
+We know that the division and the modular reduction of two numbers of $k$ bits modulo a number of $k$ bits costs $\Oapp(M(k))$ \cite{burnikel1998fast}.
 %The gcd computation also costs $\Oapp(M(k))$~\cite{moller2008schonhage}.
 Furthermore, using naive algorithms, $M(k) = O(k^2)$, but using fast algorithms such as FFT~\cite{schonhage1971schnelle}, $M(k) = \Oapp(k)$.
 We note that the FFT multiplication is faster than the other methods (naive or Karatsuba) for number of about $10^4 \cdot 64$ bits (from gmp sources -- if you find any better sources, it would be interesting...).
 And using such big numbers, the division and the modulo reduction algorithms used in gmp are also the ones with complexity $\Oapp(M(k))$.
 
-Since $p$ has $2 u t$ bits and, here are the costs:
+Since $p$ has $2 u t$ bits, here are the costs:
 \begin{enumerate}
 \item (Neil) computation of the redundancy $c=\prod_{i=1}^n h_i \bmod p$, cost: $O(n M(u t))$, $\Oapp(n u t)$ with FFT
 \item (Oscar) computation of the redundancy $c'=\prod_{i=1}^n h_i \bmod p$, cost: $O(n M(u t))$, $\Oapp(n u t)$ with FFT
@@ -290,6 +301,7 @@ Each of these products can be computed in $\Oapp(M(u t))$ using a standard metho
 And all these $n / t$ products can be computed in $\Oapp(n/t M(u t))$.
 Then, one can compute $c$ by multiplying these products $H_j$ together, modulo $p$, which costs $\Oapp(n/t M(u t))$.
 
+\ignore{
 \begin{figure}[t]
 \centering
 \centerline{
@@ -359,6 +371,7 @@ Then, one can compute $c$ by multiplying these products $H_j$ together, modulo $
 \end{tikzpicture}}
 \caption{Product tree}\label{fig:prod-tree}
 \end{figure}
+}
 
 \begin{algorithm}
 \newcommand{\vstart}{\ensuremath{\mathrm{start}}}
@@ -386,13 +399,13 @@ Then, one can compute $c$ by multiplying these products $H_j$ together, modulo $
 \end{algorithm}
 
 The same technique applies for the factorization, but this time, we have to be a little more careful.
-After computing the tree product, we can compute the residues of $a$ (or $b$) modulo $H_j$, then we can compute the residues of these new elements modulo the two children of $H_j$ in the product tree ($\prod_{i=j t}{j t + t/2 - 1} h_i$ and $\prod_{i=j t}{j t + t/2 - 1} h_i$), and then compute the residues of these two new values modulo the children of the previous children, and so on.
+After computing the tree product, we can compute the residues of $a$ (or $b$) modulo $H_j$, then we can compute the residues of these new elements modulo the two children of $H_j$ in the product tree ($\prod_{i=j t}^{j t + t/2 - 1} h_i$ and $\prod_{i=j t}^{j t + t/2 - 1} h_i$), and then compute the residues of these two new values modulo the children of the previous children, and so on.
 Intuitively, we go down the product tree doing modulo reduction.
 At the end (i.e., at the leaves), we obtain the residues of $a$ modulo each of the $h_i$.
 This algorithm is depicted in Algorithm~\ref{fig:div-prod-tree} and in Figure~\ref{fig:div-prod-tree} (for $j=1$).
 The complexity of the algorithm is $\Oapp(M(u t))$, for each $j$.
 So the total complexity is $\Oapp(n/t \Oapp(M(u t))$.
-
+\ignore{
 \begin{figure}[t]
 \centering
 \centerline{
@@ -462,6 +475,7 @@ So the total complexity is $\Oapp(n/t \Oapp(M(u t))$.
 \end{tikzpicture}}
 \caption{Division from product tree}\label{fig:div-prod-tree}
 \end{figure}
+}
 
 \begin{algorithm}
 \newcommand{\vstart}{\ensuremath{\mathrm{start}}}
@@ -487,15 +501,75 @@ So the total complexity is $\Oapp(n/t \Oapp(M(u t))$.
 
 \section{Optimizing Parameters}
 
-The proposed process lends itself to a final fine-tuning. Capture here the three remarks of Fabrice:
+The proposed process lends itself to a final fine-tuning. We list here some of the proposed research directions that could be investigated to that end:
+
+\subsection{Using a Smooth $p$}
+
+Comme explique dans un ancien email, je pense que l'on devrait utiliser un produit de petits nombres premiers au lieu d'un grand nombre premier $p$. Des l'instant que ces petits nombres premiers sont plus grands que les hashes, cela fonctionne. L'interêt est que l'on peut travailler modulo ces "petits nombres premiers" avec le CRT. Et en plus, la generation de ce modulo $p$ (pas premier) est beaucoup plus rapide.
 
 \begin{itemize}
 \item The fact that there are not $2^u$ but $\frac{2^u}{u}$ primes.
+\item Faster hashing into the primes using $h-h \bmod \pi + k \pi$ where $\pi$ is a product of small primes
 \item The fact that in the probability formulae $t_1+t_2$ can be used instead of $\eta$
 \item The fact that the parameter $u$ can be optimized in an adaptive way. As we go in rounds (i.e. generating a sequence $u_1,u_2,...$)
 \end{itemize}
 
 \section{Implementation}
+
+To illustrate the concept, the authors has coded and evaluated the proof of concept described in this section.\smallskip
+
+The executable and source codes of the program, called {\sf btrsync}, can be downloaded from: \url{https://github.com/RobinMorisset/Btrsync}.\smallskip
+
+The synchronisation is unidirectional (clearer). The program consist in two subprograms: a bash script and a python script:
+
+\subsection{The Bash Script}
+
+A bash script runs a python script (describe below) on the two computers to be synchronized. If the computer is not the one running the bash script, the python script is executed through ssh. The bash scripts also creates two pipes: one from Neil stdin to Oscar stdout and one from Oscar stdin to Neil stdout. Data exchanged during the protocol transits {\sl via} these two pipes.
+
+\subsection{The Python Script}
+
+The python script uses gmp which implements all the number theory operations required by Oscar and Neil, and does the actual synchronization. This script works in two phases:
+
+\subsubsection{Finding Different Files}
+
+\begin{enumerate}
+\item Compute the hashes of all files concatenated with thier paths, type (folder/file), and permissions (not supported yet).
+\item Implement the protocol proposed in Section \ref{} [add here a reference to the appropriate section in the paper] with input data comeing from stdin and output data going to stdout.
+\end{enumerate}
+      
+More precisely:
+\begin{itemize}
+\item Oscar sends it product of hashes modulo a first prime number $p_1$.
+\item Neil receives the product, divides by its own product of hashes, reconstructs the fraction modulo $p_1$ [can we elaborate more on what happens here? which functions in GMP are used to do the reconstruction?] and checks if he can factor the denominator using his hashes base. If he can, he stops and sends the numerator and the list of tuples (path, type, hash of content of the file) corresponding to the denominator's factors. Otherwise he sends "None" [is this the ASCII string "None"? if not what does he send precisely?].
+\item If Neil sent "None", Oscar computes the product of hashes modulo another prime $p_2$, sends it... CRT mechanism... [can we elaborate more on what happens here? which functions in GMP are used to do the CRT?]
+\item If Neil sent the numerator and a list of tuples, then Oscar factors the numerator over his own hash values. Now each party (Neil, Oscar) knows precisely the list of files (path + type + hash of content) that differs from the over party.
+\end{itemize}
+
+[please structure the following:]\smallskip
+
+2. synchronize all the stuff [this is not an expression we can use in a paper...]. This part is not completely optimized.\smallskip
+
+We just remove all folders Oscar should not have and create new folders.\smallskip
+
+Then we remove all files Oscar should not have and synchronize using rsync the last files.\smallskip
+
+We could check for move (since we have the list of hash of contents of files) and do moves locally.\smallskip
+
+We can even try to detect moves of complete subtrees...\smallskip
+
+
+Capture the following: \smallskip
+
+
+integration de tout le code d'Antoine qui permet de deplacer les fichiers du cote de Neil, et evite des synchronisations inutiles de fichiers deja presents du cote de Neil. L'algorithme est plus complexe qu'il n'en a l'air car il faut gerer les cycles de deplacements, ("a" renomme en "b" lui-meme renomme en "a")... On notera que le code Haskell ne prenait pas en compte les cycles notamment (et donc etait buggue).
+D'une maniere tres amusante, on peut voir l'algo propose par Antoine comme une decomposition en composantes fortement connexes du graphe des deplacements (si on oublie le cas des repertoires – les noeuds sont les fichiers, les aretes sont les deplacements a effectuer). Et l'algorithme consiste a effectuer d'abord les deplacements des composantes filles avant ceux des composantes parentes...
+On remarquera que comme chaque noeud a au plus un antecedent, on peut montrer tres facilement que les composantes fortement connexes sont des noeuds seuls ou des cycles.
+Pour traiter les cycles, l'algorithme stocke un des fichier dans un repertoire temporaire.
+utilisation du json pour l'envoi des messages entre Neil et Oscar (beaucoup plus sur que les eval que je faisais – cependant, cela fait perdre quelques octets vu la maniere dont j'ai code...)
+TODO:
+benchmarks
+meilleure integration du code d'Antoine pour eviter le recalcul des hashes
+gestion des fichiers identiques du cote de Neil (l'algo des deplacements ne gere que le cote d'Oscar): si deux fichiers sont identiques du cote de Neil, il est inutile de transferer les deux. C'est trivial a implementer, mais il est tard
 
 \subsection{Program Structure}
 
@@ -506,6 +580,8 @@ The proposed process lends itself to a final fine-tuning. Capture here the three
 In this work we [to be completed by David]\smallskip
 
 Mention that the determination of the optimal $u$ is an interesting open question
+
+
 
 \section{Acknowledgment}
 
@@ -532,17 +608,17 @@ todo: Merge two reference files rsynch and wagner.\smallskip
                                    &~~{{\LARGE $\stackrel{c_1}{\longrightarrow}$}}~~      &   \\
                                    &                                                      &computes $a,b$ using $p_1$~\\
                                    &                                                      &if $a$ factors properly then {\sf Final Phase}\\
-                                   &                                                      &~~~~~~else switch to $p_2$~~\\
+                                   &                                                      &~~~~~~else perform protocol with $p_2$~~\\
                                    &~~{{\LARGE $\stackrel{c_2}{\longrightarrow}$}}~~      &   \\
                                    &                                                      &computes $c \bmod p_1 p_2=\mbox{CRT}_{p_1,p_2}(c_1,c_2)$~~\\
                                    &                                                      &computes $a,b$ using $p_1 p_2$~\\
                                    &                                                      &if $a$ factors properly then {\sf Final Phase}\\
-                                   &                                                      &~~~~~~else switch to $p_3$~~\\
+                                   &                                                      &~~~~~~else perform protocol with $p_3$~~\\
                                    &~~{{\LARGE $\stackrel{c_3}{\longrightarrow}$}}~~      &   \\
                                    &                                                      &computes $c \bmod p_1 p_2 p_3=\mbox{CRT}_{p_1,p_2,p_3}(c_1,c_2,c_3)$~~\\
                                    &                                                      &computes $a,b$ using $p_1 p_2 p_3$~\\
                                    &                                                      &if $a$ factors properly then {\sf Final Phase}\\
-                                   &                                                      &~~~~~~else switch to $p_4$ ~~\\
+                                   &                                                      &~~~~~~else perform protocol with $p_4$ ~~\\
                                    &                  $\vdots$                            & \\\hline\hline
 \multicolumn{3}{|c|}{{\sf Final Phase~~}} \\\hline
                                    &                                                      & \\
@@ -553,7 +629,6 @@ todo: Merge two reference files rsynch and wagner.\smallskip
 \end{tabular}
 \end{center}
 
-Note that the parties do not need to store the $p_i$'s in full. Indeed, the bits of each $p_i$ could be generated using a pseudo-random number generator and a small corrected additive constant
-$ \cong \mbox{ln}(p_i) \cong \mbox{ln}(2^{2tu+2}) \cong 1.39(tu+1)$ whose storage requires essentially $\log_2(tu)$ bits per prime.
+Note that the parties do not need to store the $p_i$'s in full. Indeed, the $p_i$ could be subsequent primes sharing their most significant bits. This reduces storage per prime to a small corrected additive constant $ \cong \mbox{ln}(p_i) \cong \mbox{ln}(2^{2tu+2}) \cong 1.39(tu+1)$ whose storage requires essentially $\log_2(tu)$ bits.
 
 \end{document}
