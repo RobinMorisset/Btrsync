@@ -571,6 +571,13 @@ benchmarks
 meilleure integration du code d'Antoine pour eviter le recalcul des hashes
 gestion des fichiers identiques du cote de Neil (l'algo des deplacements ne gere que le cote d'Oscar): si deux fichiers sont identiques du cote de Neil, il est inutile de transferer les deux. C'est trivial a implementer, mais il est tard
 
+
+
+\section{Haskell implementation}
+
+(Antoine: je range ça dans sa propre section, mais j'imagine qu'on va le couper
+ou juste dire que ça existe.)
+
 \subsection{Program Structure}
 
 A proof-of-concept called Btrsync has been implemented in Haskell and is
@@ -595,6 +602,9 @@ significantly slower than it could be (especially in the computation of the
 primes from the hashes).
 
 TODO: benchmarks with time + bandwidth (our only benefit ..)
+
+
+
 
 \section{Conclusion and Further Improvements}
 
