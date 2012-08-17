@@ -65,23 +65,27 @@ In this work we [to be completed by David]
 
 \section{Introduction}
 
-In this work we [to be completed by David]
+This work revisits {\sl set reconciliation}, a problem consisting in reconciling two multisets whiles minimizing communication complexity. Set reconciliation has many practical applications the most typical of which is the efficient incremental backup of hard drives.\smallskip.
 
-\section{A Few Notations}
+Set reconciliation admits already efficient and elegant solutions. For instance, \cite{PSRec} presents a reconciliation protocol whose expected computational and communication complexities are linear in the number of differences in the reconciling hosts. Note that computation must also be at least be linear in the size of the reconciled multisets.\smallskip
 
-We model the directory synchronization problem as follows: Oscar possesses an old version of a directory $\mathfrak{D}$ that he wishes to update. Neil has the up-to-date version $\mathfrak{D}'$. The challenge faced by Oscar and Neil\footnote{Oscar and Neil will respectively stand for {\sl \underline{o}ld} and {\sl \underline{n}ew}.} is that of {\sl exchanging as little data as possible} during the synchronization process. In reality $\mathfrak{D}$ and $\mathfrak{D}'$ may differ both in their files and in their tree structure.\smallskip
+We refer the reader to \cite{PSRec,Mins1,Whats} (to quote only a few references) for more on the problem's history and existing solutions.\smallskip
+
+To efficiently synchronize directories, we propose a new protocol based on number theory. In terms of asymptotic complexity, the proposed procedure is comparable to prior publications \cite{PSRec} (that anyhow reached optimality) but its interest lies in its simplicity, novelty and the possibility that specific implementations would offer {\sl constant}-factor gains over alternative asymptotically-equivalent solutions.\smallskip
+
+Interestingly, using the approach described in \cite{comparing} the correctness of the protocols proposed in this paper is reducible to the cryptographic security of specific signature padding schemes.
+
+\section{The Content Synchronization Protocol}
+
+\subsection{A Few Notations}
+
+We model the directory synchronization problem as follows: Oscar possesses an old version of a directory $\mathfrak{D}$ that he wishes to update. Neil has the up-to-date version $\mathfrak{D}'$. The challenge faced by Oscar and Neil\footnote{Oscar and Neil will respectively stand for {\sl \underline{o}ld} and {\sl \underline{n}ew}.} is that of {\sl exchanging as little data as possible} during the synchronization process. In reality $\mathfrak{D}$ and $\mathfrak{D}'$ usually differ both in their files and in their tree structure.\smallskip
 
 In tackling this problem this paper separates the {\sl ``what''} from the {\sl ``where''}: namely, we disregard the relative position of files in subdirectories and model directories as multisets of files. Let $\mathfrak{F}$ and $\mathfrak{F}'$ denote the multisets of files contained in $\mathfrak{D}$ and $\mathfrak{D}'$. We denote $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$ and $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
 
 Let $\mbox{{\tt Hash}}$ denote a collision-resistant hash function\footnote{{\sl e.g.} SHA-1} and let $F$ be a file. Let $\mbox{{\tt NextPrime}}(F)$ be the prime immediately larger than $\mbox{{\tt Hash}}(F)$ and let $u$ denote the size of {\tt NextPrime}'s output in bits. Define the shorthand notations: $h_i=\mbox{{\tt NextPrime}}(F_i)$ and $h'_i=\mbox{{\tt NextPrime}}(F'_i)$.\smallskip
 
 TODO(amarilli): use the uniform nextprime (discussion of relative costs with respect to (1.) hashing costs and (2.) finding the next prime costs)
-
-\section{The Content Synchronization Protocol}
-
-To efficiently synchronize directories, we propose a new protocol based on modular arithmetic. In terms of asymptotic complexity, the proposed procedure is comparable to prior publications \cite{} (that anyhow reached optimality) but its interest lies in its simplicity, novelty and the possibility that specific implementations would offer a {\sl constant}-factor gain over alternative asymptotically-equivalent solutions.\smallskip
-
-TODO(amarilli) we need a real analysis of the expected quantity of information transferred. Since apparently there is a hope that we are better than them (because we can adapt the size of the hashes), we should really make this clearer than what the previous paragraph says, ie. reformulate the problem as a synchronization problem where hash sizes are unknown so that we are better than them.
 
 \subsection{Description of the Basic Exchanges}
 \label{basic}
@@ -118,7 +122,7 @@ b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox
 \right.
 $$
 
-Note that since $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements, $a$ and $b$ are strictly lesser than $2^{ut}$. Theorem \ref{theo} (see \cite{cryptorational}) guarantees that given $s$ one can recover $a$ and $b$ efficiently (this problem is known as {\sl Rational Number Reconstruction} \cite{pan2004rational,wang2003acceleration}). The algorithm is based on Gauss' algorithm for finding the shortest vector in a bi-dimensional lattice \cite{vallee}.
+Note that since $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements, $a$ and $b$ are strictly lesser than $2^{ut}$. Theorem \ref{theo} (see \cite{cryptorational}) guarantees that given $s$ one can recover $a$ and $b$ efficiently (this problem is known as {\sl Rational Number Reconstruction} \cite{pan2004rational,wang2003acceleration}). This is done using Gauss' algorithm for finding the shortest vector in a bi-dimensional lattice \cite{vallee}.
 
 \begin{theorem}
 \label{theo}
@@ -128,7 +132,7 @@ Then given $A,B,s,p$, one can recover $a$ and $b$ in polynomial time.
 
 Taking $A=B=2^{ut}-1$, (\ref{equp}) implies that $2AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can
 recover $a$ and $b$ from $s$ in polynomial time. By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can
-easily identify the discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ and settle them.\smallskip
+precisely and deterministically identify the discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ and settle them.\smallskip
 
 Formally, this is done as follows:\smallskip
 
@@ -146,13 +150,13 @@ Formally, this is done as follows:\smallskip
 \end{tabular}
 \end{center}
 
-As we have just seen, the ``output $\bot$ and halt'' should actually never occur as long as bounds on parameter sizes are respected. However, a file synchronization procedure that works {\sl only} for a limited number of differences is not useful in practice. In the next subsection we will explain how to extend the protocol even when the differences exceed the informational capacity of the modulus $p$ used.
+As we have just seen, the ``output $\bot$ and halt'' should actually never occur as long as bounds on parameter sizes are respected. However, a file synchronization procedure that works {\sl only} for a limited number of differences is not very useful in practice. In the next subsection we will explain how to extend the protocol even when differences exceed $t$, the informational capacity of the modulus $p$ used.
 
 \subsection{The Case of Insufficient Information}
 \label{insuf}
-To extend the protocol to an arbitrary number of differences, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails, Neil will keep accumulating information about the difference as shown in appendix A. Note that no information is lost and that the stockpiled information adds up until it reaches a threshold that suffices to identify the difference.\smallskip
+To extend the protocol to an arbitrary number of differences, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails, Neil will keep accumulating information about the difference as shown in appendix A. Note that no information is lost and that  stockpiled information adds up until it reaches a threshold that suffices to identify the difference.\smallskip
 
-To determine after each $p_i$ round if the synchronization is over, as the interaction starts Neil will send to Oscar $\mbox{{\tt Hash}}(\mathfrak{F}')$. As long as Oscar's state does not match the target hash $\mbox{{\tt Hash}}(\mathfrak{F}')$, Oscar continues the interaction.
+To determine after each $p_i$ round if the synchronization is over, as the interaction starts Neil will send to Oscar $\mbox{{\tt Hash}}(\mathfrak{F}')$. As long as Oscar's state does not match this target hash $\mbox{{\tt Hash}}(\mathfrak{F}')$, Oscar will continue the interaction.
 
 \section{Efficiency Considerations}
 
@@ -166,7 +170,7 @@ Generate a prime $p$ smaller than previously, namely:
 2^{ut+w-1}<p \leq 2^{ut+w}
 \end{equation}
 
-for some small integer $w \geq 1$ (say $w=50$). For large $\eta=\max(n,n')$ and $t$, the size of the new prime $p$ will be approximately half the size of the prime $p$ generated in section \ref{basic}. The resulting redundancy $c$ is calculated as previously but is approximately twice smaller. As previously, we have:
+where $w \geq 1$ is some small integer (say $w=50$). For large $\eta=\max(n,n')$ and $t$, the size of the new prime $p$ used in this section will be approximately half the size of the prime $p$ generated in section \ref{basic}. The new redundancy $c$ is calculated as previously and is hence approximately twice smaller. As previously, we have:
 
 $$
 s=\frac{a}{b} \bmod p{~~~\mbox{and~}}
@@ -185,13 +189,13 @@ and since there are at most $t$ differences, we must have:
 a b \leq 2^{ut}
 \end{equation}
 
-The difference with respect to the basic protocol is that we do not have a fixed bound for $a$ and $b$ anymore; equation (\ref{eqab}) only provides a bound for the {\sl product} $a b$. Therefore, we define a finite sequence of integers:
+The difference with respect to the protocol of section \ref{basic} is that we do not have a fixed bound for $a$ and $b$ anymore; equation (\ref{eqab}) only provides a bound for the {\sl product} $a b$. Therefore, we define a finite sequence of couples of integers:
 
-$$(A_i=2^{wi},B_i=\lfloor \frac{p-1}{2 A_i} \rfloor)\mbox{~~where~~}B_i>1$$
+$$(A_i,B_i)=(2^{wi},\lfloor \frac{p-1}{2 A_i} \rfloor)\mbox{~~where~~}B_i>1$$
 
-For all $i>0$ we have $2 A_i B_i<p$. Moreover, from equations (\ref{eqnewp}) and (\ref{eqab}) there must be at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, given $(A_i,B_i,p,s)$ one can recover $a$ and $b$, and eventually determine the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
+For all $i>0$ we have $2 A_i B_i<p$. Moreover, from equations (\ref{eqnewp}) and (\ref{eqab}) there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, given $(A_i,B_i,p,s)$ one can recover $a$ and $b$, and eventually determine the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
 
-The problem is that (by opposition to the basic protocol) we have no guarantee that such an $(a,b)$ is unique. Namely we could (in theory) stumble upon another $(a',b')$ satisfying (\ref{eqab}) for some index $i' \neq i$. We expect this to happen with negligible probability for large enough $w$, but this makes the modified protocol heuristic only.\smallskip
+The problem is that (by opposition to the basic protocol) we have no guarantee that such an $(a,b)$ is unique. Namely we could (in theory) stumble by sheer bad luck upon another $(a',b')$ satisfying (\ref{eqab}) for some index $i' \neq i$. We expect this to happen with negligible probability for large enough $w$, but this makes the modified protocol heuristic only.\smallskip
 
 To make the heuristic synchronization deterministic, the parties can can use the $\mbox{{\tt Hash}}(\mathfrak{F}')$ protocol preamble mentioned in section \ref{insuf}.
 
@@ -199,44 +203,44 @@ To make the heuristic synchronization deterministic, the parties can can use the
 
 What happens if we shorten $u$ in the basic protocol?\smallskip
 
-TODO(amarilli): I find it hard to understand what we are studying, and why we are interested in the probability of a file to collide in all rounds. I get it now, but maybe we can improve the writing.
-
 As illustrated by the birthday paradox, we should start seeing collisions. Let us analyze the statistics governing their appearance.
 
 Regard $\mbox{{\tt Hash}}$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^u-1\}$.
 Let $X^1_i$ be the random variable equal to $1$ when the file $F_i$ collides with another file, and equal to $0$ otherwise.
 Clearly, we have $\Prob{X_i = 1} \le \frac{\eta -1}{2^u}$.
-The number of files which collide is, on average:
+The average number of files which collide is hence:
 \[ \EE{\sum_{i=0}^{\eta-1} X_i} \le \sum_{i=0}^{\eta-1} \frac{\eta -1}{2^u} = \frac{\eta (\eta - 1)}{2^u}. \]
-For instance, for $\eta=10^6$ files and 32-bit hash values, the expected number of colliding files is less than $233$.\smallskip
+For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of colliding files is less than $233$.\smallskip
 
-That being said, a collision can only yield a {\sl false positive} and never a {\sl false negative}. In other words, while a collision may make the parties blind to a difference\footnote{{\sl e.g.} result in confusing {\tt index.htm} and {\tt iexplore.exe}.} a collision can never create an nonexistent difference {\sl ex nihilo}.\smallskip
+That being said, note that a collision can only yield a {\sl false positive} and never a {\sl false negative}. In other words, while a collision may obliviate (make the parties blind to) a difference\footnote{{\sl e.g.} result in confusing {\tt index.htm} and {\tt iexplore.exe}.} a collision can never create an nonexistent difference {\sl ex nihilo}.\smallskip
 
-Hence, it suffices to replace the function $\mbox{{\tt Hash}}(F)$ by a chopped $\mbox{{\tt MAC}}_k(F) \bmod 2^u$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each round the parties will detect new files and deletions, fix these and ``launder'' again the remaining files.\smallskip
+Hence, it suffices to replace $\mbox{{\tt Hash}}(F)$ by a chopped $\mbox{{\tt MAC}}_k(F) \bmod 2^u$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each round the parties will detect new files and new deletions, fix these and ``launder'' again the remaining files.\smallskip
 
-Indeed, the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $k$, if the MACs are random and independent for each iteration.
+Indeed, the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $k$, if the MACs are random and independent between iterations.
 Assume that $\eta$ remains invariant between iterations.
-Let $X^l_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file during iteration $l$, and equal to $0$ otherwise. Let $Y_i$ be the random variable equal to $1$ when the file number $i$ has a collision with another file for all the $k$ iterations, and equal to $0$ otherwise, ie. $Y_i = \prod_{l=1}^k X^l_i$.
+Let $X^{\ell}_i$ be the random variable equal to $1$ if the $i$-th file collides with another file during iteration $\ell$, and equal to $0$ otherwise. Let $Y_i$ be the random variable equal to $1$ when the $i$-th file collides with another file for all the $k$ iterations, and equal to $0$ otherwise, {\sl i.e.} $Y_i = \prod_{l=1}^k X^{\ell}_i$.
 
-By independence, we have
+By independence, we have:
+
  \[ \Prob{Y_i = 1} = \Prob{X^1_i = 1} \dots \Prob{X^k_i = 1} \le \left( \frac{\eta -1}{2^u} \right)^k. \]
-Therefore the number of files which collide is, on average:
+Therefore the average number of colliding files is:
 \[
  \EE{\sum_{i=0}^{\eta-1} Y_i} \le \sum_{i=0}^{\eta-1} \left( \frac{\eta -1}{2^u} \right)^k =  \eta \left(\frac{\eta - 1}{2^u}\right)^k.
 \]
-Hence the probability that after $k$ rounds at least one false positive will survive is
+Hence the probability that least one false positive will survive $k$ rounds is:
+
 \[
 \epsilon_k \le \eta \left(\frac{\eta - 1}{2^u}\right)^k
 \]
 
-For the $(\eta=10^6,u=32)$ instance considered previously we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3} \%$.
+For the previously considered instance\footnote{$\eta=10^6$,$u=32$.} we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3}\%$.
 
-\subsubsection{Improvement}
+\subsubsection{A more refined (but somewhat technical) analysis}
 
-As mentioned previously, the parties can remove the files revealed as different during the first possible iteration and only work with common and colliding files. Now, the only collision which can be bad for round $k$, are the collisions of a file $i$ with a file $j$ such that $i$ and $j$ both have collided at all the previous iterations. And let write $Z^\ell_i$ the random variable equal to $1$ when the file $i$ has a bad collisions for all the $\ell$ first iterations.
+As mentioned previously, the parties can remove the files detected as different during the first possible iteration and work only with common and colliding files. Now, the only collisions which can fool round $k$, are the collisions of a files $i$ and $j$ such that files $i$ and $j$ have both already collided during all the previous iterations. We call such collisions ``stutters''. Let $Z^\ell_i$ be the random variable equal to $1$ when file $i$ has stutters during the $\ell$ first iterations.
 
-Suppose $\eta > 1$.
-Let us set $Z^0_i = 1$ and let us write $p_\ell = \Prob{Z^{\ell-1}_{i} = 1 \text{ and } Z^{\ell-1}_{j} = 1} $ for all $l$ and $i \neq j$.
+Suppose that $\eta > 1$.
+Set $Z^0_i = 1$ and write $p_\ell = \Prob{Z^{\ell-1}_{i} = 1 \text{ and } Z^{\ell-1}_{j} = 1} $ for all $\ell$ and $i \neq j$.
 For $k \ge 1$, we have
 \begin{align*}
 \Prob{Z^k_i=1} &= \Prob{\exists j\neq i \text{, } X^k_{i,j} = 1 \text{, } Z^{k-1}_{i} = 1  \text{ and } Z^{\ell-1}_{j} = 1}  \\
@@ -257,16 +261,18 @@ hence:
 \[ p_\ell \le \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^\ell, \]
 and
 \[ \Prob{Z^\ell_i=1} \le \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{k-1} \]
-And finally, the probability that after $k$ rounds at least one false positive will survive is
+And finally, the survival probability of at least one false positive after $k$ rounds:
 \[
 \epsilon'_k \le \frac{\eta(\eta-1)}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{k-1}
 \]
 
-For the $(\eta=10^6,u=32,k=2)$ instance considered previously we get $\epsilon_2 \le 0.013\%$.
+For the $(\eta=10^6,u=32,k=2)$ instance considered previously we get $\epsilon'_2 \le 0.013\%$.\smallskip
 
-TODO: verify I have not made a mistake and compare with using a bigger u (maybe using example... and timing...)
+As one can see for a fixed $k$, $\epsilon'_k$ is a decreasing function of $u$. For a fixed $u$, $\epsilon'_k$ is also a decreasing function of $k$. Transmission, however, grows with $u$ (bigger digests) and with $k$ (more iterations). Hence, to optimize transmission, a careful determination of the
 
-\section{Theoretical time complexity and algorithmic improvements}
+
+
+\section{Theoretical Complexity and Algorithmic Improvements}
 
 In this section, we analyse the theoretical costs of our algorithms and propose some algorithmic improvements.
 
@@ -306,10 +312,10 @@ Each of these products can be computed in $\Oapp(M(u t))$ using a standard metho
 And all these $n / t$ products can be computed in $\Oapp(n/t M(u t))$.
 Then, one can compute $c$ by multiplying these products $H_j$ together, modulo $p$, which costs $\Oapp(n/t M(u t))$.
 
-\ignore{
 \begin{figure}[t]
 \centering
 \centerline{
+\begin{turn}{90}
 \begin{tikzpicture}[level/.style={sibling distance=60mm/#1}]
 \node (z){$\displaystyle \pi=\pi_1=\prod_{i=0}^{t-1} h_i$}
   child {node (a) {$\displaystyle \pi_2=\prod_{i=0}^{t/2-1} h_i$}
@@ -373,10 +379,13 @@ Then, one can compute $c$ by multiplying these products $H_j$ together, modulo $
 %\path (y) -- (w) node [midway] {$\displaystyle \longrightarrow$};
 %\path (v) -- (w) node [midway] {$\Leftrightarrow$};
 %\path (r) -- (c) node [midway] {$\cdots$};
-\end{tikzpicture}}
+\end{tikzpicture}
+\end{turn}{30}
+}
 \caption{Product tree}\label{fig:prod-tree}
 \end{figure}
-}
+
+
 
 \begin{algorithm}
 \newcommand{\vstart}{\ensuremath{\mathrm{start}}}
@@ -410,7 +419,7 @@ At the end (i.e., at the leaves), we obtain the residues of $a$ modulo each of t
 This algorithm is depicted in Algorithm~\ref{fig:div-prod-tree} and in Figure~\ref{fig:div-prod-tree} (for $j=1$).
 The complexity of the algorithm is $\Oapp(M(u t))$, for each $j$.
 So the total complexity is $\Oapp(n/t \Oapp(M(u t))$.
-\ignore{
+
 \begin{figure}[t]
 \centering
 \centerline{
@@ -480,7 +489,7 @@ So the total complexity is $\Oapp(n/t \Oapp(M(u t))$.
 \end{tikzpicture}}
 \caption{Division from product tree}\label{fig:div-prod-tree}
 \end{figure}
-}
+
 
 \begin{algorithm}
 \newcommand{\vstart}{\ensuremath{\mathrm{start}}}
@@ -541,7 +550,7 @@ The python script uses gmp which implements all the number theory operations req
 \item Compute the hashes of all files concatenated with thier paths, type (folder/file), and permissions (not supported yet).
 \item Implement the protocol proposed in Section \ref{} [add here a reference to the appropriate section in the paper] with input data comeing from stdin and output data going to stdout.
 \end{enumerate}
-      
+
 More precisely:
 \begin{itemize}
 \item Oscar sends it product of hashes modulo a first prime number $p_1$.
@@ -718,6 +727,20 @@ todo: Merge two reference files rsynch and wagner.\smallskip
 \bibliographystyle{splncs03}
 \bibliography{btrsync}
 
+\begin{thebibliography}{30}
+
+\bibitem{PSRec} Y. Minsky, A. Trachtenberg, {\sl Scalable Set Reconciliation}, 40th Annual Allerton Conference on Communications, Control and Computing, Monticello, IL, October 2002. A full version entitled {\sl Practical Set Reconciliation} can be downloaded from \url{http://ipsit.bu.edu/documents/BUTR2002-01.ps}
+
+\bibitem{Mins1} Y. Minsky, A. Trachtenberg, R. Zippel, (2003). {\sl Set reconciliation with nearly optimal communication complexity}. IEEE Transactions on Information Theory, 49(9), pp. 2213–2218.
+
+\bibitem{comparing} Julien Cathalo, David Naccache, Jean-Jacques Quisquater, Comparing with RSA, Cryptography and Coding, Lecture Notes in Computer Science Volume 5921, 2009, pp 326-335, Cryptography and Coding, 12th IMA International Conference, Cryptography and Coding 2009, Cirencester, UK, December 15-17, 2009. Proceedings. Springer-Verlag Berlin Heidelberg
+    
+\bibitem{Whats} D. Eppstein, M. Goodrich, F. Uyeda, G. Varghese What's the difference?: efficient set reconciliation without prior context
+ACM SIGCOMM Computer Communication Review - SIGCOMM '11, 41(4), pp. 218-229, 2011.
+
+
+\end{thebibliography}
+
 \appendix
 
 \section{Extended Protocol}
@@ -729,17 +752,17 @@ todo: Merge two reference files rsynch and wagner.\smallskip
                                    &                                                      &start protocol with $p_1$~\\
                                    &~~{{\LARGE $\stackrel{c_1}{\longrightarrow}$}}~~      &   \\
                                    &                                                      &computes $a,b$ using $p_1$~\\
-                                   &                                                      &if $a$ factors properly then {\sf Final Phase}\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}\\
                                    &                                                      &~~~~~~else perform protocol with $p_2$~~\\
                                    &~~{{\LARGE $\stackrel{c_2}{\longrightarrow}$}}~~      &   \\
                                    &                                                      &computes $c \bmod p_1 p_2=\mbox{CRT}_{p_1,p_2}(c_1,c_2)$~~\\
                                    &                                                      &computes $a,b$ using $p_1 p_2$~\\
-                                   &                                                      &if $a$ factors properly then {\sf Final Phase}\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}\\
                                    &                                                      &~~~~~~else perform protocol with $p_3$~~\\
                                    &~~{{\LARGE $\stackrel{c_3}{\longrightarrow}$}}~~      &   \\
                                    &                                                      &computes $c \bmod p_1 p_2 p_3=\mbox{CRT}_{p_1,p_2,p_3}(c_1,c_2,c_3)$~~\\
                                    &                                                      &computes $a,b$ using $p_1 p_2 p_3$~\\
-                                   &                                                      &if $a$ factors properly then {\sf Final Phase}\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}\\
                                    &                                                      &~~~~~~else perform protocol with $p_4$ ~~\\
                                    &                  $\vdots$                            & \\\hline\hline
 \multicolumn{3}{|c|}{{\sf Final Phase~~}} \\\hline
