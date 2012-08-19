@@ -14,6 +14,7 @@
 
 \makeitbig
 
+\usepackage{algorithmicx}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath, amsfonts, amssymb, graphicx, rotating, epsfig}
@@ -24,6 +25,10 @@
 \usepackage{tikz}
 \usepackage{tabularx,multirow}
 \usepackage{xspace}
+
+\newcommand*\Let[2]{\State #1 $\gets$ #2}
+%\algrenewcommand\alglinenumber[1]{
+%    {\sf\footnotesize\addfontfeatures{Colour=888888,Numbers=Monospaced}#1}}
 
 \newcommand{\ignore}[1]{}
 \newcommand{\btr}{{\tt btrsync}}
@@ -575,15 +580,103 @@ We can even try to detect moves of complete subtrees...\smallskip
 Capture the following: \smallskip
 
 
-integration de tout le code d'Antoine qui permet de deplacer les fichiers du cote de Neil, et evite des synchronisations inutiles de fichiers deja presents du cote de Neil. L'algorithme est plus complexe qu'il n'en a l'air car il faut gerer les cycles de deplacements, ("a" renomme en "b" lui-meme renomme en "a")... On notera que le code Haskell ne prenait pas en compte les cycles notamment (et donc etait buggue).
-D'une maniere tres amusante, on peut voir l'algo propose par Antoine comme une decomposition en composantes fortement connexes du graphe des deplacements (si on oublie le cas des repertoires – les noeuds sont les fichiers, les aretes sont les deplacements a effectuer). Et l'algorithme consiste a effectuer d'abord les deplacements des composantes filles avant ceux des composantes parentes...
-On remarquera que comme chaque noeud a au plus un antecedent, on peut montrer tres facilement que les composantes fortement connexes sont des noeuds seuls ou des cycles.
-Pour traiter les cycles, l'algorithme stocke un des fichier dans un repertoire temporaire.
-utilisation du json pour l'envoi des messages entre Neil et Oscar (beaucoup plus sur que les eval que je faisais – cependant, cela fait perdre quelques octets vu la maniere dont j'ai code...)
-TODO:
-benchmarks
-meilleure integration du code d'Antoine pour eviter le recalcul des hashes
-gestion des fichiers identiques du cote de Neil (l'algo des deplacements ne gere que le cote d'Oscar): si deux fichiers sont identiques du cote de Neil, il est inutile de transferer les deux. C'est trivial a implementer, mais il est tard
+\subsection{Move Resolution Algorithm}
+
+To reproduce the structure of Oscar on Neil, we have a list of file moves to
+apply. Sadly, it is not straightforward to apply the moves, because, if we take
+a file to move, its destination might be blocked, either because a file already
+exists (we want to move $a$ to $b$, $b$ already exists), or because a folder
+cannot be created (we want to move $a$ to $b/c$, $b$ already exists but is a
+file and not a folder). Note that for a move operation $a \rightarrow b$, there
+is at most one file blocking the location $b$: we will call it the
+\emph{blocker}.
+
+If the blocker is not present on Oscar, then we can just delete. However, if it
+exists, then we might need to move it somewhere else before we solve the move we
+are interested in. This move itself might have a blocker, and so on. It seems
+that we just need to continue until we reach a move which has no blocker or
+where the blocker can be deleted, but we can get caught in a cycle: if we must
+move $a$ to $b$, $b$ to $c$ and $c$ to $a$, then we will not be able to perform
+anything without using a temporary location.
+
+How can we perform the moves? A simple way would be to move each file to a
+unique temporary location and then rearrange files to our liking: however, this
+performs many unnecessary moves and will result in problems if the program is
+interrupted. We can do something more clever so by performing a decomposition in
+strongly connected components of the \emph{move graph} (with one vertex per file
+and one edge per move operation going from to the file to its blocker or to its
+destination if no blocker exists). The computation of the SCC decomposition is
+simplified by the observation that because two files being moved to the same
+destination must be equal, we can only keep one arbitrary in-edge per node, and
+look at the graph pruned in this fashion: its nodes have in-degree at most one,
+so the strongly connected components are either single nodes or cycles. Once the
+SCC decomposition is known, the moves can be applied by applying each SCC in a
+bottom-up fashion, an SCC's moves being solved either trivially (for single
+files) or using one intermediate location (for cycles).
+
+The detailed algorithm is implemented as two mutually recursive functions and
+presented as Algorithm~\ref{alg:moves}.
+
+% TODO check this algo
+\begin{algorithm}
+  \caption{Perform moves}
+  \label{alg:moves}
+  \begin{algorithmic}[1]
+    \Require{$D$ is a dictionary where $D[f]$ denotes the intended destinations of $f$}
+    \Statex
+    \Let{$M$}{[]}
+    \Let{$T$}{[]}
+    \For{$f$ in $D$'s keys}
+      \Let{$M[f]$}{not\_done}
+    \EndFor
+    \Function{unblock\_copy}{$f, t$}
+      \If{$t$ is blocked by some $b$}
+        \If{$b$ is not in $D$'s keys}
+          \State unlink($b$) \Comment{We don't need $b$}
+        \Else
+          \State \Call{resolve}{$b$} \Comment{Take care of $b$ and make it go away}
+        \EndIf
+      \EndIf
+      \If{$T[f]$ was set}
+        \Let{$f$}{$T[f]$}
+      \EndIf
+      \State copy($f$, $d$)
+    \EndFunction
+    \Function{resolve}{$f$}
+      \If{$M[f] =$ done}
+        \State \Return \Comment{Already managed by another in-edge}
+      \EndIf
+      \If{$M[f] =$ doing}
+        \Let{$T[f]$}{mktemp()}
+        \State move($f$, $T[f]$)
+        \Let{$M[f]$}{done}
+        \State \Return \Comment{We found a loop, moved $f$ out of the way}
+      \EndIf
+      \Let{$M[f]$}{doing}
+      \For{$d \in D[f]$}
+        \If{$d \neq f$}
+          \State unblock\_copy($f$, $d$) \Comment{Perform all the moves}
+        \EndIf
+      \EndFor
+      \If{$f \notin D[f]$ and $T[f]$ was not set}
+        \State unlink($f$)
+      \EndIf
+      \If{$T[f]$ was set}
+        \State unlink($T[f]$)
+      \EndIf
+    \EndFunction
+
+    \For{$f$ in $D$'s keys}
+      \State \Call{resolve}{$f$}
+    \EndFor
+  \end{algorithmic}
+\end{algorithm}
+
+An optimization implemented by \btrsync over the algorithm described here is to
+move files instead of copying them and then removing the original file, because
+moves are faster than copies on most filesystems as they don't need to copy the
+file contents.
+
 
 
 \subsection{Experimental Comparison to \rsync}
