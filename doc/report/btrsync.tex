@@ -22,6 +22,8 @@
 \usepackage[noend]{algpseudocode}
 \usepackage{url}
 \usepackage{tikz}
+\usepackage{tabularx,multirow}
+\usepackage{xspace}
 
 \newcommand{\ignore}[1]{}
 \newcommand{\btr}{{\tt btrsync}}
@@ -35,6 +37,9 @@
 \newcommand{\EE}[1]{{\mathbb{E}\left[{#1}\right]}}
 \newcommand{\Oapp}{\ensuremath{\tilde{O}}}
 
+\newcommand{\btrsync}{\texttt{btrsync}\xspace}
+\newcommand{\rsync}{\texttt{rsync}\xspace}
+
 \usepackage{hyperref}
 
 \begin{document}
@@ -42,7 +47,7 @@
 \title{When File Synchronization Meets Number Theory}
 
 \author{Antoine Amarilli \and Fabrice Ben Hamouda \and Florian Bourse \and\\
-Robin Morisset \and David Naccache \and Pablo Rauzy}
+David Naccache \and Pablo Rauzy}
 
 \institute{
 \'{E}cole normale sup\'{e}rieure, D\'{e}partement d'informatique \\
@@ -580,9 +585,126 @@ benchmarks
 meilleure integration du code d'Antoine pour eviter le recalcul des hashes
 gestion des fichiers identiques du cote de Neil (l'algo des deplacements ne gere que le cote d'Oscar): si deux fichiers sont identiques du cote de Neil, il est inutile de transferer les deux. C'est trivial a implementer, mais il est tard
 
+
+\subsection{Experimental Comparison to \rsync}
+
+To demonstrate the benefits of our approach, we compared our \btrsync
+implementation to the standard \rsync on the following datasets:
+
+\begin{description}
+  \item[\texttt{synthetic}] A directory containing 1000 very small files
+    containing the numbers from 1 to 1000.
+  \item[\texttt{synthetic\_shuffled}] The result of applying a few operations to
+    \texttt{synthetic}: 10 files were deleted, 10 files were renamed, and the
+    contents of 10 files was changed.
+  \item[\texttt{source}] A snapshot of the \btrsync source tree.
+  \item[\texttt{source\_moved}] The result of renaming a big folder (several
+    hundred of kilobytes) in \texttt{source}.
+  \item[\texttt{firefox-13.0}] The source archive of Mozilla Firefox 13.0.
+  \item[\texttt{firefox-13.0.1}] The source archive of Mozilla Firefox 13.0.1.
+  \item[\texttt{empty}] An empty folder.
+\end{description}
+
+We performed the measurements with \rsync version 3.0.9 (used both
+as the standalone \rsync and for the underlying call to \rsync in
+\btrsync). The standalone \rsync was given the \texttt{--delete} flag to delete
+existing files on Oscar which do not exist on Neil. We passed the \texttt{-I}
+flag to ensure that \rsync did not cheat by looking at the file modification
+times (which \btrsync does not do), and \texttt{--chmod="a=rx,u+w"} as an
+attempt to disable the transfer of file permissions (which \btrsync does not
+transfer). Although these settings ensure that \rsync does not need to transfer
+the permissions, verbose logging suggests that it transfers them anyway, so
+\rsync must lose a few bytes per file as compared to \btrsync for this reason.
+
+Bandwidth accounting was performed with the \texttt{-v} flag for \rsync
+invocations (which report the number of sent and received bytes), and by
+counting the amount of data transmitted for \btrsync's own negociations. The
+experiment was performed between two remote hosts on a high-speed link. The time
+measurements account both for CPU time and for transfer time and are just given
+as a general indication.
+
+The results are given in table~\ref{tab:results}. The timing results show that
+\btrsync is slower than \rsync, especially when the number of files is high
+(i.e., the synthetic datasets). The bandwidth results, however, are more
+satisfactory. It is true that the trivial datasets where either Oscar or Neil
+have no data, \rsync outperforms \btrsync: this is especially clear in the case
+where Neil has no data: \rsync immediately notices that there is nothing to
+transfer, whereas \btrsync transfers information to determine the symmetric
+difference. On the non-trivial datasets, however, \btrsync outperforms \rsync.
+This is the case on the synthetic datasets, where \btrsync does not have to
+transfer information about all the files which were not modified, and even more
+so on the case where there are no modifications at all. On the Firefox source
+code dataset, \btrsync saves a very small amount of bandwidth, presumably
+because of unmodified files. For the \btrsync source code dataset, we notice
+that \btrsync, unlike \rsync, was able to detect the move and to avoid
+retransferring the moved folder.
+
+\begin{figure}
+  \begin{tabularx}{\textwidth}{|X|X||c c|c c|c c|c c|}
+    \hline
+    \multicolumn{2}{|c||}{\bf Datasets} &
+    \multicolumn{6}{c|}{\bf Bandwidth (bytes)} &
+    \multicolumn{2}{c|}{\bf Time (s)} \\
+    \hline {\bf \hfill Neil \hfill \null} & {\bf \hfill Oscar \hfill \null}
+    & {\bf TX$_r$} & {\bf RX$_r$} & {\bf TX$_b$}
+    & {\bf RX$_b$} & {\bf abs} & {\bf rel} & {\bf t$_r$} & {\bf t$_b$} \\
+
+    \hline & &&&&&&&&\\[-1em]
+
+
+\texttt{source} & \texttt{empty} & 1613 & 778353 & 1846 & 788357 & 10237 & +2 \% & 0.2 & 7.7 \\
+\texttt{empty} & \texttt{source} & 11 & 29 & 12436 & 6120 & 18516 & +46305 \% & 0.1 & 5.5 \\
+\texttt{empty} & \texttt{empty} & 11 & 29 & 19 & 28 & 7 & +32 \% & 0.1 & 0.3 \\
+\texttt{synthetic} & \texttt{synthetic\_shuffled} & 24891 & 51019 & 3638 & 4147 & -68125 & -57 \% & 0.2 & 26.8 \\
+\texttt{synthetic\_shuffled} & \texttt{synthetic} & 24701 & 50625 & 3443 & 3477 & -68406 & -58 \% & 0.2 & 26.6 \\
+\texttt{synthetic} & \texttt{synthetic} & 25011 & 50918 & 327 & 28 & -75574 & -67 \% & 0.1 & 25.7 \\
+\texttt{firefox-13.0.1} & \texttt{firefox-13.0} & 90598 & 28003573 & 80895 & 27995969 & -17307 & +0 \% & 2.6 & 4.2 \\
+\texttt{source\_moved} & \texttt{source} & 2456 & 694003 & 1603 & 1974 & -692882 & -99 \% & 0.2 & 2.5 \\
+\hline
+
+  \end{tabularx}
+  \caption{Experimental results. The two first columns indicate the datasets,
+    synchronization is performed \emph{from} Neil \emph{to} Oscar. RX and TX are
+    received and sent byte counts, $r$ and $b$ are \rsync and \btrsync, we also
+    provide the absolute difference in exchanged data (positive when \btrsync
+    transfers more data than \rsync) and the relative amount of data sent by
+    \btrsync compared to \rsync (over $100\%$ when \btrsync transfers more data
+    than $\rsync$). The last two columns show timing results.}
+  \label{tab:results}
+\end{figure}
+
+\section{Haskell Implementation}
+
+(Antoine: je range ça dans sa propre section, mais j'imagine qu'on va le couper
+ou juste dire que ça existe.)
+
 \subsection{Program Structure}
 
+A proof-of-concept called Btrsync has been implemented in Haskell and is
+available at https://github.com/RobinMorisset/Btrsync.
+
+It is intended to work as a drop-in replacement of rsync for directories, taking
+as arguments two (possibly remote) directories. It launches instances of itself
+on each of these machines (by ssh), playing respectively Neil and Oscar's roles.
+
+Communication between Neil and Oscar is handled by the original instance, that
+links each agent standard output to the standard input of the other.
+
+Niel does almost all computations, while Oscar send him the needed
+informations and run the effective transfer of files when the
+computations are done. Btrsync uses rsync to synchronize single files,
+because it's algorithm to detect changes in a files is very good.
+
 \subsection{Time Measurements}
+
+Because of difficulties in linking with the GMP library the code is 
+significantly slower than it could be (especially in the computation of the
+primes from the hashes).
+
+TODO: benchmarks with time + bandwidth (our only benefit ..)
+
+
+
 
 \section{Conclusion and Further Improvements}
 

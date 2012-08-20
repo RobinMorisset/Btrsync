@@ -1,10 +1,11 @@
 -- | This module takes care of parsing the command-line arguments
 -- and defines a few constants
-module Config (Config(..), Target(..), parseArgs) where
+module Config (Config(..), Target(..), Role(..), parseArgs) where
 
 import Control.Monad(unless)
 import Data.Maybe(maybe)
 import Data.List
+import Network
 import System.Console.GetOpt
 import System.Exit
 import System.IO
@@ -14,10 +15,16 @@ version = "0.1"
 versionText = "btrsync, version: " ++ version
 helpText = usageInfo "Usage: btrsync [OPTION...] dir1 dir2" options
 
+data Role = Main | Neil | Oscar
+
 data Flag = 
       Help 
     | Version
     | Seed Int
+    | PSize Int
+    | HashSize Int
+    | Role Role
+    | Port PortID
 
 options :: [OptDescr Flag]
 options =
@@ -27,15 +34,48 @@ options =
         "Cause the program to print its version number and exit"
     , Option "s" ["seed"] (ReqArg (Seed . read) "NUMBER")
         "Makes the program deterministic by fixing the random number generator's seed"
+    , Option "p" ["pSize"] (ReqArg (PSize . read) "NUMBER")
+        "Changes the size of the prime number used at each round"
+    , Option "" ["hashSize"] (ReqArg (HashSize . read) "NUMBER")
+        "Put a limit to the size of the hashes"
+    , Option "" ["port"] (ReqArg (Port . PortNumber . fromInteger . read) "NUMBER")
+        "Chooses the port to use for communication. Default: 3724"
+    , Option "" ["isOrigin"] (NoArg $ Role Neil)
+        "INTERNAL USE, for telling btrsync it is Neil in the protocol"
+    , Option "" ["isDestination"] (NoArg $ Role Oscar)
+        "INTERNAL USE, for telling btrsync it is Oscar in the protocol"
     ]
 
 data Config = Config {
-      seed :: Maybe Int
+      seed :: Int -- ^ Seed of the random generator
+    , pSize :: Int -- ^ Size of p in bits
+    , hashSize :: Int -- ^ Max size of the hashes in bits
+    , role :: Role -- ^ whether btrsync has been directly called by the user, 
+                    -- or is performing one half of the protocol
+    , port :: PortID
     }
+instance Show Config where
+    show c =
+        let s = " -s " ++ show (seed c)
+            p = " -p " ++ show (pSize c)
+            hS = " --hashSize " ++ show (hashSize c)
+            r = case role c of
+                    Neil -> " --isOrigin"
+                    Oscar -> " --isDestination"
+                    Main -> ""
+            portId = case port c of
+                    PortNumber i -> " --port " ++ show (toInteger i)
+                    _ -> error "the port identifier wasn't an integer"
+        in
+        s ++ p ++ hS ++ r ++ portId
 
 defaultConfig :: Config
 defaultConfig = Config {
-      seed = Nothing
+      seed = 42
+    , pSize = 1000
+    , hashSize = 160
+    , role = Main
+    , port = PortNumber 3724
     }
 
 actionFromFlag :: Flag -> (Config -> IO Config)
@@ -43,7 +83,11 @@ actionFromFlag f c =
     case f of
         Help -> putStrLn helpText >> exitSuccess
         Version -> putStrLn versionText >> exitSuccess
-        Seed newSeed -> return c {seed = Just newSeed}
+        Seed newSeed -> return c {seed = newSeed}
+        PSize size -> return c {pSize = size}
+        HashSize size -> return c {hashSize = size}
+        Role newRole -> return c {role = newRole}
+        Port newPort -> return c {port = newPort}
 
 -- | From a list of arguments, return a configuration,
 -- the origin directory and the target directory.
@@ -67,7 +111,14 @@ data Target = Target {
     , host :: Maybe String
     , dir :: FilePath
     }
-    deriving (Show)
+
+instance Show Target where
+    show t =
+        let dirString = dir t in
+        maybe dirString (\ h -> 
+            let endString = h ++ ":" ++ dirString in
+            maybe endString (\ u -> u ++ "@" ++ endString
+            ) $ user t) $ host t
 
 parseTarget :: String -> Target
 parseTarget str =
