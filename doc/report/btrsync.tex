@@ -277,22 +277,27 @@ For the previously considered instance\footnote{$\eta=10^6$,$u=32$.} we get $\ep
 
 \subsubsection{A more refined (but somewhat technical) analysis}
 
-As mentioned previously, the parties can remove the files confirmed as different during iteration $k$ and work during iteration $k+1$ only with common and colliding files. Now, the only collisions that can fool round $k$, are the collisions of a file-pairs $(F_i,F_j)$ such that $F_i$ and $F_j$ have both already collided during {\sl all the previous iterations}\footnote{Note that we \underline{do not} require that $F_i$ and $F_j$ repeatedly collide {\sl which each other}. {\sl e.g.} we may witness during the first round $\hbar_{1,u}(F_1)=\hbar_{1,u}(F_2)$ and $\hbar_{1,u}(F_3)=\hbar_{1,u}(F_4)$ while during the second round $\hbar_{2,u}(F_1)=\hbar_{2,u}(F_4)$ and $\hbar_{2,u}(F_2)=\hbar_{2,u}(F_3)$.}. We call such collisions ``masquerade balls''. Define the random variable:
+As mentioned previously, the parties can remove the files confirmed as different during iteration $k$ and work during iteration $k+1$ only with common and colliding files. Now, the only collisions that can fool round $k$, are the collisions of a file-pairs $(F_i,F_j)$ such that $F_i$ and $F_j$ have both already collided during {\sl all the previous iterations}\footnote{Note that we \underline{do not} require that $F_i$ and $F_j$ repeatedly collide {\sl which each other}. {\sl e.g.} we may witness during the first round $\hbar_{1,u}(F_1)=\hbar_{1,u}(F_2)$ and $\hbar_{1,u}(F_3)=\hbar_{1,u}(F_4)$ while during the second round $\hbar_{2,u}(F_1)=\hbar_{2,u}(F_4)$ and $\hbar_{2,u}(F_2)=\hbar_{2,u}(F_3)$.}. We call such collisions ``masquerade balls''. Define the two random variables:
 
-$$
-Z^\ell_i =
+\begin{align*}
+Z^\ell_i &=
 \left\{
 \begin{array}{lcl}
 1 & ~~~~&  \mbox{if $F_i$ participated in masquerade balls during all $\ell$ first protocol iterations.}\\
 \\
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
+\right. \\
+X^{\ell}_{i,j} &=
+\left\{
+\begin{array}{lcl}
+1 & ~~~~&  \mbox{if file $F_i$ collides with file $F_k$ during iteration $\ell$.}\\
+\\
+0 & ~~~~&  \mbox{otherwise.}
+\end{array}
 \right.
-$$
-
+\end{align*}
 \comm{Inclure ici image du bal masque}
-
-\comm{Fabrice tu utilises la notation non definie $X^k_{i,j}$ peux-tu la preciser stp?\smallskip}
 
 Set $Z^0_i = 1$ and write $p_\ell = \Prob{Z^{\ell-1}_{i} = 1 \text{ and } Z^{\ell-1}_{j} = 1} $ for all $\ell$ and $i \neq j$.
 For $k \ge 1$, we have:
