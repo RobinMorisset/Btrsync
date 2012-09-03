@@ -25,6 +25,7 @@
 \usepackage{tikz}
 \usepackage{tabularx,multirow}
 \usepackage{xspace}
+\usepackage{booktabs}
 
 \newcommand*\Let[2]{\State #1 $\gets$ #2}
 %\algrenewcommand\alglinenumber[1]{
@@ -375,13 +376,16 @@ The modular division of two $k$-bit numbers and the reduction of $2k$-bit number
 For na\"{i}ve ({\sl i.e.} convolutive) algorithms $\mu(k) = O(k^2)$, but using {\sc fft} multiplication strategies \cite{schonhage1971schnelle}, $\mu(k) = \Oapp(k)$. {\sc fft} is experimentally faster than convolutive methods from $k \sim 10^6$ and on. For such sizes, in packages such as {\sf gmp}, division and modular reduction also run in $\Oapp(\mu(k))$. For $p \sim 2^{ut}$ we get the following complexity analysis:
 
 \begin{figure}
-  \begin{tabularx}{\textwidth}{|l|X|p{1.2cm}p{2.3cm}|p{1.2cm}p{2.3cm}|}\hline
-{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} & \multicolumn{4}{c|}{{\bf Complexity expressed in $\Oapp$ of}} \\\hline\hline
-Both  & redundancies $c$ and $c'$                                        & $n \cdot \mu(u t)$  & na\"{i}ve product & $n u t$  & using {\sc fft}             \\\hline
-Oscar & $s = c' / c \bmod p$                                             & $\mu(u t)$    & na\"{i}ve inversion& $u t$    & using {\sc fft}               \\\hline
-Oscar & $a,b$ such that $s = a / b \bmod p$                              & $(u t)^2$   & na\"{i}ve ext. {\sc gcd} & $\mu(u t)$ &  using \cite{pan2004rational,wang2003acceleration} \\\hline
-Both  & factorization of $a$ (resp. $b$) by modular reductions           & $n \cdot \mu(u t)$  & na\"{i}ve reduction & $n u t$  & using {\sc fft}             \\\hline
-      & {\bf Overwhelming complexity:}                                   & \multicolumn{2}{c|}{$\max((u t)^2,n \cdot \mu(ut))$ }    & \multicolumn{2}{c|}{$n u t$}              \\\hline
+  \begin{tabularx}{\textwidth}{lXp{1.2cm}p{2.3cm}p{1.2cm}p{2.3cm}}\toprule
+{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &
+    \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\\midrule
+Both  & redundancies $c$ and $c'$                                        & $n \cdot \mu(u t)$  & na\"{i}ve product & $n u t$  & using {\sc fft}             \\
+Oscar & $s = c' / c \bmod p$                                             & $\mu(u t)$    & na\"{i}ve inversion& $u t$    & using {\sc fft}               \\
+Oscar & $a,b$ such that $s = a / b \bmod p$                              & $(u t)^2$   & na\"{i}ve ext. {\sc gcd} & $\mu(u t)$ &  using \cite{pan2004rational,wang2003acceleration} \\
+Both  & factorization of $a$ (resp. $b$) by modular reductions           & $n \cdot \mu(u t)$  & na\"{i}ve reduction & $n u t$  & using {\sc fft}             \\
+      & {\bf Overwhelming complexity:}                                   &
+    \multicolumn{2}{c}{$\max((u t)^2,n \cdot \mu(ut))$ }    &
+    \multicolumn{2}{c}{$n u t$}              \\\bottomrule
   \end{tabularx}
   \caption{Global Protocol Complexity.}
   \label{tab:workload}
@@ -749,19 +753,19 @@ and our Divide \& Factor implementation called \btrsync under the following expe
 
 \begin{figure}
 \begin{center}
-\begin{tabular}{|l|l|}\hline
-~~{\bf Directory}              ~~&~~{\bf Description}\\\hline\hline
+\begin{tabular}{ll}\toprule
+~~{\bf Directory}              ~~&~~{\bf Description}\\\midrule
 ~~{\tt synthetic}              ~~&~~A directory containing 1000 very small files containing~~\\
-~~                             ~~&~~the numbers $1,2,\ldots,1000$. \\\hline
+~~                             ~~&~~the numbers $1,2,\ldots,1000$. \\
 ~~{\tt synthetic\_shuffled}    ~~&~~{\tt synthetic} with:\\
                              ~~& ~~~~~10 deleted files\\
                              ~~& ~~~~~10 renamed files \\
-                             ~~& ~~~~~10 modified files \\\hline
-~~{\tt source}                 ~~& ~~A snapshot of \btrsync's own source tree \\\hline
-~~{\tt source\_moved}          ~~& ~~{\tt source} with one big folder (a few megabits) renamed.~~\\\hline
-~~{\tt firefox-13.0}           ~~& ~~The source archive of Mozilla Firefox 13.0.\\\hline
-~~{\tt firefox-13.0.1}         ~~& ~~The source archive of Mozilla Firefox 13.0.1\\\hline
-~~{\tt empty}                  ~~& ~~An empty folder.\\\hline
+                             ~~& ~~~~~10 modified files \\
+~~{\tt source}                 ~~& ~~A snapshot of \btrsync's own source tree \\
+~~{\tt source\_moved}          ~~& ~~{\tt source} with one big folder (a few megabits) renamed.~~\\
+~~{\tt firefox-13.0}           ~~& ~~The source archive of Mozilla Firefox 13.0.\\
+~~{\tt firefox-13.0.1}         ~~& ~~The source archive of Mozilla Firefox 13.0.1\\
+~~{\tt empty}                  ~~& ~~An empty folder.\\\bottomrule
 \end{tabular}\smallskip
   \caption{Test Directories.}
   \label{tab:benchdirec}
@@ -791,11 +795,12 @@ In the trivial experiments where either Oscar or Neil have no data at all, \rsyn
 On the non-trivial datasets, however, \btrsync outperforms \rsync. This is the case on the {\tt synthetic} datasets, where \btrsync does not have to transfer information about all the files which were not modified, and even more so on the case where there are no modifications at all. In the case of Firefox source code datasets, \btrsync saves a very small amount of bandwidth, presumably because of unmodified files. For the \btrsync source code dataset, we notice that \btrsync, unlike \rsync, was able to detect the move and avoid retransferring the moved folder.
 
 \begin{figure}
-  \begin{tabularx}{\textwidth}{|X|X||c c|c c|c c||c c|}
-    \hline
-    \multicolumn{2}{|c||}{\bf Entities and Datasets} & \multicolumn{6}{c|}{\bf Transmission (Bytes)} & \multicolumn{2}{c|}{\bf Time (s)} \\
-    \hline {\bf \hfill Neil's $\mathfrak{F}'$ \hfill \null} & {\bf \hfill Oscar's $\mathfrak{F}$ \hfill \null}
-    & {\bf TX$_r$} & {\bf RX$_r$} & {\bf TX$_b$} & {\bf RX$_b$} & {\bf abs} & {\bf rel} & {\bf t$_r$} & {\bf t$_b$} \\\hline
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}ll c c c c c c c c }
+    \toprule
+    \multicolumn{2}{c}{\bf Entities and Datasets} & \multicolumn{6}{c}{\bf Transmission (Bytes)} & \multicolumn{2}{c}{\bf Time (s)} \\
+    \midrule {\bf \hfill Neil's $\mathfrak{F}'$ \hfill \null} & {\bf \hfill Oscar's $\mathfrak{F}$ \hfill \null}
+    & {\bf TX$_r$} & {\bf RX$_r$} & {\bf TX$_b$} & {\bf RX$_b$} & {\bf abs} &
+    {\bf rel} & {\bf t$_r$} & {\bf t$_b$} \\\midrule
     &&&&&&&&&\\[-1em]
 \texttt{source} & \texttt{empty} & 1613 & 778353 & 1846 & 788357 & 10237 & +2 \% & 0.2 & 7.7 \\
 \texttt{empty} & \texttt{source} & 11 & 29 & 12436 & 6120 & 18516 & +46305 \% & 0.1 & 5.5 \\
@@ -805,9 +810,9 @@ On the non-trivial datasets, however, \btrsync outperforms \rsync. This is the c
 \texttt{synthetic} & \texttt{synthetic} & 25011 & 50918 & 327 & 28 & -75574 & -67 \% & 0.1 & 25.7 \\
 \texttt{firefox-13.0.1} & \texttt{firefox-13.0} & 90598 & 28003573 & 80895 & 27995969 & -17307 & +0 \% & 2.6 & 4.2 \\
 \texttt{source\_moved} & \texttt{source} & 2456 & 694003 & 1603 & 1974 & -692882 & -99 \% & 0.2 & 2.5 \\
-\hline
+\bottomrule
 
-  \end{tabularx}
+  \end{tabular*}
   \caption{Experimental results. The two first columns indicate the datasets,
     synchronization is performed \emph{from} Neil \emph{to} Oscar. RX and TX are
     received and sent byte counts, $r$ and $b$ are \rsync and \btrsync, we also
@@ -886,8 +891,9 @@ ACM SIGCOMM Computer Communication Review - SIGCOMM '11, 41(4), 2011, pp. 218-22
 \section{Extended Protocol}
 
 \begin{center}
-\begin{tabular}{|lcl|}\hline
-\multicolumn{3}{|c|}{{\sf First phase during which Neil amasses modular information on the difference~~}} \\\hline
+\begin{tabular}{lcl}\toprule
+\multicolumn{3}{c}{{\sf First phase during which Neil amasses modular
+information on the difference~~}} \\\midrule
 ~~{\bf Oscar}                      &                                                      &   {\bf Neil}~\\
                                    &                                                      &start the protocol with $p_1$~\\
                                    &~~{{\LARGE $\stackrel{c_1}{\longrightarrow}$}}~~      &   \\
@@ -904,13 +910,16 @@ ACM SIGCOMM Computer Communication Review - SIGCOMM '11, 41(4), 2011, pp. 218-22
                                    &                                                      &computes $a,b$ using $p_1 p_2 p_3$~\\
                                    &                                                      &if $a$ factors properly then go to {\sf Final Phase}\\
                                    &                                                      &~~~~~~else perform the protocol with $p_4$ ~~\\
-                                   &                  $\vdots$                            & \\\hline\hline
-\multicolumn{3}{|c|}{{\sf Final Phase~~}} \\\hline
+                                   &                  $\vdots$
+& \\\midrule
+\multicolumn{3}{c}{{\sf Final Phase~~}} \\\midrule
                                    &                                                      & \\
                                    &                                                      &Let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod h'_i =0\}$~~\\
                                    &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
                                    ~~deletes files s.t. $b \bmod h_i =0$&                                                      &\\
-                                   ~~adds $\mathfrak{S}$ to the disk    &                                                      &\\\hline
+                                   ~~adds $\mathfrak{S}$ to the disk
+                                   &
+                                   &\\\bottomrule
 \end{tabular}
 \end{center}
 
