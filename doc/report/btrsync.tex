@@ -621,7 +621,7 @@ Fabrice: Je comprends que ca marche si $p$ est le produit de $p_i$ immediatement
 
 To illustrate the concept, the authors has coded and evaluated the proof of concept described in this section.\smallskip
 
-The executable and source codes of the program, called {\sf btrsync}, can be downloaded from \cite{Robin}.\smallskip
+The executable and source codes of the program, called \btrsync, can be downloaded from \cite{Robin}.\smallskip
 
 The synchronization is unidirectional (clearer). The program consist in two subprograms: a bash script and a python script:
 
@@ -837,7 +837,7 @@ On the non-trivial datasets, however, \btrsync outperforms \rsync. This is the c
 (Antoine: je range ça dans sa propre section, mais j'imagine qu'on va le couper
 ou juste dire que ça existe.)
 
-A proof-of-concept called Btrsync has been implemented in Haskell and is
+A proof-of-concept called \btrsync has been implemented in Haskell and is
 available at 
 
 It is intended to work as a drop-in replacement of rsync for directories, taking
@@ -849,7 +849,7 @@ links each agent standard output to the standard input of the other.
 
 Neil does almost all computations, while Oscar send him the needed
 informations and run the effective transfer of files when the
-computations are done. Btrsync uses rsync to synchronize single files,
+computations are done. \btrsync uses \rsync to synchronize single files,
 because it's algorithm to detect changes in a files is very good.
 
 \section{Conclusion and Further Improvements}
