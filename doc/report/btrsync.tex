@@ -71,7 +71,7 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 
 \begin{abstract}
 This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets whiles minimizing communication.
-We propose a new number theoretic reconciliation protocol called ``Divide \& Factor''. In terms of asymptotic  transmission complexity, Divide \& Factor is comparable to prior proposals (that anyhow reached optimality). Nonetheless, this new protocol offers interesting parameter trade-offs resulting in experimentally measured {\sl constant}-factor transmission gains over the popular software \rsync.\smallskip
+We propose a new number theoretic reconciliation protocol called ``Divide \& Factor''. In terms of asymptotic  transmission complexity, Divide \& Factor is comparable to prior proposals (that anyhow reached optimality). Nonetheless, this new protocol offers interesting parameter trade-offs resulting in experimentally measured {\sl constant-factor} transmission gains over the popular software \rsync.\smallskip
 
 Reconciliation experiments show that the new protocol usually transmits less data than \rsync\ but requires lengthier calculations.\smallskip
 \end{abstract}
@@ -84,11 +84,11 @@ Set reconciliation has already several efficient and elegant solutions. For inst
 
 We refer the reader to \cite{PSRec,Mins1,Whats} (to quote a few references) for more on the problem's history and its existing solutions.\smallskip
 
-This article proposes a new reconciliation protocol based on number theory. In terms of asymptotic  transmission complexity, the proposed procedure is comparable to prior proposals (that anyhow reached optimality). Nonetheless, the new protocols offer interesting parameter trade-offs resulting in experimentally measured {\sl constant}-factor gains over the popular software \rsync.\smallskip
+This article proposes a new reconciliation protocol based on number theory. In terms of asymptotic  transmission complexity, the proposed procedure is comparable to prior proposals (that anyhow reached optimality). Nonetheless, the new protocols offer interesting parameter trade-offs resulting in experimentally measured {\sl constant-factor} gains over the popular software \rsync.\smallskip
 
 We observed during most of our reconciliation experiments that the new protocol transmitted less bytes than \rsync\ but required lengthier calculations.\smallskip
 
-Beyond these constant-factor gains, the mathematical ideas underlying this work seem new and interesting as such.
+Beyond these practical concerns the mathematical ideas underlying this work seem new and interesting as such.
 
 \section{``Divide \& Factor'' Set Reconciliation}
 
@@ -102,7 +102,7 @@ Let $t$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'
 
 $$t=\#\mathfrak{F}+\#\mathfrak{F}'-2 \#\left(\mathfrak{F} \bigcap \mathfrak{F}'\right)=\#\left(\mathfrak{F}\bigcup\mathfrak{F}'\right)-\#\left(\mathfrak{F}\bigcap\mathfrak{F}'\right)$$
 
-Let $\mbox{{\tt Hash}}(F)$ be a collision-resistant hash function\footnote{{\sl e.g.} SHA-1} where $F$ is a file. Let $\mbox{{\tt HashPrime}}(F)$ be a function hashing (uniformly) files into primes smaller than $2^u$. Define the shorthand notations: $h_i=\mbox{{\tt HashPrime}}(F_i)$ and $h'_i=\mbox{{\tt HashPrime}}(F'_i)$.\smallskip
+Let $\mbox{{\tt Hash}}(F)$ be a collision-resistant hash function\footnote{{\sl e.g.} SHA-1} where $F$ is a file. Let $\mbox{{\tt HashPrime}}(F)$ be a function hashing files (uniformly) into primes smaller than $2^u$. Define the shorthand notations: $h_i=\mbox{{\tt HashPrime}}(F_i)$ and $h'_i=\mbox{{\tt HashPrime}}(F'_i)$.\smallskip
 
 \subsection{Description of the Basic Exchanges}
 \label{basic}
@@ -169,9 +169,9 @@ As we have just seen, the ``output $\bot$ and halt'' protocol interruption shoul
 \label{insuf}
 To extend the protocol to an arbitrary $t$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails, Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in appendix A. Note that no information is lost and that the transmitted modular knowledge about the difference adds-up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
 
-\section{Efficiency Considerations}
+\section{Transmission Complexity}
 
-This section explores two strategies to reduce the size of $p$ and hence improve transmission by {\sl constant factors} (from an asymptotic communication standpoint, nothing can be done as the protocol already transmits information proportional to $t$, the difference to settle).
+This section explores two strategies to reduce the size of $p$ and hence improve transmission by {\sl constant factors} (from an asymptotic communication standpoint, improvements cannot be expected as the protocol already transmits information proportional to $t$, the difference to settle).
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
@@ -236,7 +236,7 @@ However, it is important to note that a collision can only yield a {\sl false po
 
 Thus, it suffices to replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\mbox{{\tt HashPrime}}(k|F)$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each iteration the parties will detect new files and new deletions, fix these and ``launder'' again the remaining multisets.\smallskip
 
-Assume that diversified $\mbox{{\tt HashPrime}}(k|F)$'s are random and independent. To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $k$ let us assume that $\eta$ remains invariant between iterations and define the following random variables:\smallskip
+Assume that the diversified $\mbox{{\tt HashPrime}}(k|F)$'s are random and independent. To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $k$, assume that $\eta$ remains invariant between iterations and define the following random variables:\smallskip
 
 $$
 \begin{array}{rcl}
@@ -275,24 +275,27 @@ And the probability that at least one false positive will survive $k$ rounds is:
 
 For the previously considered instance\footnote{$\eta=10^6$,$u=32$.} we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3}\%$.
 
-\subsubsection{A more refined (but somewhat technical) analysis}
+\subsubsection{A more refined (but somewhat technical) analysis.} As mentioned previously, the parties can remove the files confirmed as different during iteration $k$ and work during iteration $k+1$ only with common and colliding files. Now, the only collisions that can fool round $k$, are the collisions of file-pairs $(F_i,F_j)$ such that $F_i$ and $F_j$ have both already collided during {\sl all the previous iterations}\footnote{Note that we \underline{do not} require that $F_i$ and $F_j$ repeatedly collide {\sl which each other}. {\sl e.g.} we may witness during the first round $\hbar_{1,u}(F_1)=\hbar_{1,u}(F_2)$ and $\hbar_{1,u}(F_3)=\hbar_{1,u}(F_4)$ while during the second round $\hbar_{2,u}(F_1)=\hbar_{2,u}(F_4)$ and $\hbar_{2,u}(F_2)=\hbar_{2,u}(F_3)$.}. We call such collisions ``masquerade balls''. Define the two random variables:
 
-As mentioned previously, the parties can remove the files confirmed as different during iteration $k$ and work during iteration $k+1$ only with common and colliding files. Now, the only collisions that can fool round $k$, are the collisions of a file-pairs $(F_i,F_j)$ such that $F_i$ and $F_j$ have both already collided during {\sl all the previous iterations}\footnote{Note that we \underline{do not} require that $F_i$ and $F_j$ repeatedly collide {\sl which each other}. {\sl e.g.} we may witness during the first round $\hbar_{1,u}(F_1)=\hbar_{1,u}(F_2)$ and $\hbar_{1,u}(F_3)=\hbar_{1,u}(F_4)$ while during the second round $\hbar_{2,u}(F_1)=\hbar_{2,u}(F_4)$ and $\hbar_{2,u}(F_2)=\hbar_{2,u}(F_3)$.}. We call such collisions ``masquerade balls''. Define the random variable:
-
-$$
-Z^\ell_i =
+\begin{align*}
+Z^\ell_i &=
 \left\{
 \begin{array}{lcl}
 1 & ~~~~&  \mbox{if $F_i$ participated in masquerade balls during all $\ell$ first protocol iterations.}\\
 \\
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
+\right. \\
+X^{\ell}_{i,j} &=
+\left\{
+\begin{array}{lcl}
+1 & ~~~~&  \mbox{if files $F_i$ and $F_j$ collide during iteration $\ell$.}\\
+\\
+0 & ~~~~&  \mbox{otherwise.}
+\end{array}
 \right.
-$$
-
+\end{align*}
 \comm{Inclure ici image du bal masque}
-
-\comm{Fabrice tu utilises la notation non definie $X^k_{i,j}$ peux-tu la preciser stp?\smallskip}
 
 Set $Z^0_i = 1$ and write $p_\ell = \Prob{Z^{\ell-1}_{i} = 1 \text{ and } Z^{\ell-1}_{j} = 1} $ for all $\ell$ and $i \neq j$.
 For $k \ge 1$, we have:
@@ -354,25 +357,27 @@ $\phi_{10^6}(u)$ admits an optimum for $u=19$.
 
 Given that, after all, optimization may only result in constant-factor improvements, we suggest to optimize $t$ and $u$ experimentally, {\sl e.g.} using the open source program \btrsync\ developed by the authors ({\sl cf.} section  \ref{program}).
 
-\subsection{How to Stop a Probabilistic Washing Machine?} We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a shortened $p$. Unlike section \ref{basic}, confirming correct protocol termination is now non-trivial.\smallskip
+\subsection{How to Stop a Probabilistic Washing Machine?} We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a half-sized $p$. By opposition to section \ref{basic}, confirming correct protocol termination is now non-trivial.\smallskip
 
 Let the round failure probability\footnote{{\sl i.e.} that probability that a round resulted in an $(a',b')\neq (a,b)$ satisfying equation (\ref{eqab}).} be some function $\upsilon(w)$ (that we did not estimate). If $w$ is kept small (for efficiency reasons), the probability $\left(1-\upsilon(w)\right)^{\ell}$ that the protocol will properly terminate may dangerously drift away from one.\smallskip
 
 If $v$ of $\ell+v$ rounds fail, Oscar needs to solve a problem called {\sl Chinese Remaindering With Errors}:\smallskip
 
-\begin{problem}{\sl (Chinese Remaindering With Errors: CRWE).} Given as input integers $v$, $B$ and $\ell+v$ points $(s_1,p_1),\ldots,(s_{\ell+v},p_{\ell+v})\in \mathbb{N}^2$ where the $p_i$'s are coprime, output all numbers $0 \leq s < B$ such that $s \equiv s_i \bmod p_i$ for at least $v$ values of $i$.
+\begin{problem}{\sl (Chinese Remaindering With Errors Problem: {\sc crwep} \cite{phong}).} Given as input integers $v$, $B$ and $\ell+v$ points $(s_1,p_1),\ldots,(s_{\ell+v},p_{\ell+v})\in \mathbb{N}^2$ where the $p_i$'s are coprime, output all numbers $0 \leq s < B$ such that $s \equiv s_i \bmod p_i$ for at least $v$ values of $i$.
 \end{problem}
 
-We refer the reader to \cite{phong} for more on this problem, which is beyond the scope of this article and note that Boneh \cite{boneh} provides a polynomial-time algorithm for solving the {\sc crwe} problem under certain conditions satisfied by our setting.\smallskip
+We refer the reader to \cite{phong} for more on this problem, which is beyond the scope of this article. Boneh \cite{boneh} provides a polynomial-time algorithm for solving the {\sc crwep} under certain conditions satisfied by our setting.\smallskip
 
-To detect that reconciliation succeeded, Neil will send to Oscar $\mbox{{\tt Hash}}(\mathfrak{F}')$ as soon as the interaction starts. As long as Oscar's {\sc crwe} resolution does not result in a state matching $\mbox{{\tt Hash}}(\mathfrak{F}')$, the parties will continue the interaction.
+To detect that reconciliation succeeded, Neil will send to Oscar $\mbox{{\tt Hash}}(\mathfrak{F}')$ as soon as the interaction starts. As long as Oscar's {\sc crwep} resolution does not result in a state matching $\mbox{{\tt Hash}}(\mathfrak{F}')$, the parties will continue the interaction.
 
-\section{Asymptotic Computational Complexity}
+\section{Computational Complexity}
 
-Let $\mu(k)$ be the time required to multiply two $k$-bit numbers\footnote{We suppose that $\forall k,k', \mu(k+k') \ge \mu(k) + \mu(k')$}.
+Let $\mu(k)$ be the time required to multiply two $k$-bit numbers\footnote{We suppose that $\forall k,k', \mu(k+k') \ge \mu(k) + \mu(k')$.}.
 The modular division of two $k$-bit numbers and the reduction of $2k$-bit number modulo a $k$-bit number are known to cost $\Oapp(\mu(k))$ \cite{burnikel1998fast}.\smallskip
 
-For na\"{i}ve ({\sl i.e.} convolutive) algorithms $\mu(k) = O(k^2)$, but using {\sc fft} multiplication strategies \cite{schonhage1971schnelle}, $\mu(k) = \Oapp(k)$. {\sc fft} is experimentally faster than convolutive methods from $k \sim 10^6$ and on. For such sizes, in packages such as {\sf gmp}, division and modular reduction also run in $\Oapp(\mu(k))$. For $p \sim 2^{ut}$ we get the following complexity analysis:
+For na\"{i}ve ({\sl i.e.} convolutive) algorithms $\mu(k) = O(k^2)$, but using {\sc fft} multiplication strategies \cite{schonhage1971schnelle}, $\mu(k) = \Oapp(k)$. {\sc fft} is experimentally faster than convolutive methods for $k \sim 10^6$ and on. For such sizes, in packages such as {\sf gmp}, division and modular reduction also run in $\Oapp(\mu(k))$. Given that $p \sim 2^{ut}$, we get the following complexity analysis:
+
+\comm{"reduction also run in $\Oapp(\mu(k))$"}
 
 \begin{figure}
   \begin{tabularx}{\textwidth}{|l|X|p{1.2cm}p{2.3cm}|p{1.2cm}p{2.3cm}|}\hline
@@ -383,19 +388,19 @@ Oscar & $a,b$ such that $s = a / b \bmod p$                              & $(u t
 Both  & factorization of $a$ (resp. $b$) by modular reductions           & $n \cdot \mu(u t)$  & na\"{i}ve reduction & $n u t$  & using {\sc fft}             \\\hline
       & {\bf Overwhelming complexity:}                                   & \multicolumn{2}{c|}{$\max((u t)^2,n \cdot \mu(ut))$ }    & \multicolumn{2}{c|}{$n u t$}              \\\hline
   \end{tabularx}
-  \caption{Global Protocol Complexity.}
+  \caption{Global Protocol Complexity. In practice $\max((u t)^2,n \cdot \mu(ut))=n(u t)^2$ because $(u t)^2 \ll n \cdot \mu(ut)=n(u t)^2$}
   \label{tab:workload}
 \end{figure}
 
 
 \subsection{Improvements}
 
-It is possible to reduce the overwhelming complexities of the computation of $c,c'$ and the factorization to $\Oapp(n/t \mu(u t)$ using convolutive methods and to $\Oapp(n u)$ with {\sc fft} \cite{schonhage1971schnelle}. To simplify explanations, assume that $t$ is a power of two and $t=2^\tau$ divides $n$.
+The overwhelming complexities of the computations of $(c,c')$ and of the factorizations can be reduced to $\Oapp(\frac{n}{t} \mu(u t))$ using convolutive methods and to $\Oapp(n u)$ with {\sc fft} \cite{schonhage1971schnelle}. To simplify explanations, assume that $t=2^\tau$ is a power of two dividing $n$.
 
-The idea is the following: we group $h_i$ by group of $t$ elements and compute the product of each such group in $\mathbb{N}$.
+The idea is the following: group $h_i$s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$.
 \[ H_j = \prod_{i=j t}^{j t + t - 1} h_i. \]
 
-Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method given in Algorithm \ref{alg:prod-tree} (for $j=0$) and shown in Figure \ref{fig:prod-tree}. And all these $n / t$ products can be computed in $\Oapp(n/t \mu(u t))$. Then, one can compute $c$ by multiplying the $H_j$ modulo $p$, which costs $\Oapp(n/t \mu(u t))$.
+Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm \ref{alg:prod-tree} (for $j=0$) and illustrated in Figure \ref{fig:prod-tree}. And all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu(u t))$. Then, one can compute $c$ by multiplying the $H_j$ modulo $p$, which costs $\Oapp(\frac{n}{t} \mu(u t))$.
 
 \newpage
 
@@ -408,68 +413,55 @@ Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree 
   child {node (a) {$\displaystyle \pi_2=\prod_{i=0}^{t/2-1} h_i$}
     child {node (b) {$\displaystyle \pi_4=\prod_{i=0}^{t/4-1} h_i$}
       child {node {$\vdots$}
-        child {node (d) {$\displaystyle \pi_t=h_0$}}
-        child {node (e) {$\displaystyle \pi_{t+1}=h_1$}}
+        child {node (d) {\begin{turn}{270}{$\displaystyle \pi_t=h_0$}\end{turn}}}
+        child {node (e) {\begin{turn}{270}{$\displaystyle \pi_{t+1}=h_1$}\end{turn}}}
       }
       child {node {$\vdots$}}
     }
-    child {node (g) {$\displaystyle \pi_5=\prod_{i=t/4}^{t/2-1} h_i$}
+    child {node (g) {$\displaystyle \pi_5=\prod_{i=t/4}^{2t/4-1} h_i$}
       child {node {$\vdots$}}
       child {node {$\vdots$}}
     }
   }
-  child {node (j) {$\displaystyle \pi_3=\prod_{i=t/2}^{t-1} h_i$}
+  child {node (j) {$\displaystyle \pi_3=\prod_{i=t/2}^{2t/2-1} h_i$}
     child {node (k) {$\displaystyle \pi_6=\prod_{i=t/2}^{3t/4-1} h_i$}
       child {node {$\vdots$}}
       child {node {$\vdots$}}
     }
-    child {node (l) {$\displaystyle \pi_7=\prod_{i=3t/4}^{t-1} h_i$}
+    child {node (l) {$\displaystyle \pi_7=\prod_{i=3t/4}^{4t/4-1} h_i$}
       child {node {$\vdots$}}
       child {node (c){$\vdots$}
-        child {node (o) {$\displaystyle h_{t-2}$}}
-        child {node (p) {$\displaystyle \pi_{2t-1}=h_{t-1}$}
+        child {node (o) {\begin{turn}{270}{$\displaystyle \pi_{2t-2}=h_{t-2}$}\end{turn}}}
+        child {node (p) {\begin{turn}{270}{$\displaystyle \pi_{2t-1}=h_{t-1}$}\end{turn}}
 %
 %
           child [grow=right] {node (qe) {} edge from parent[draw=none]
-            child [grow=right] {node (q) {$2^\tau \mu(u) \le \mu(u t)$} edge from parent[draw=none]
+            child [grow=right] {node (q) {$2^\tau \times \mu(\frac{ut}{2^\tau}) \le \mu(u t)$} edge from parent[draw=none]
             child [grow=up] {node (r) {$\vdots$} edge from parent[draw=none]
-            child [grow=up] {node (s) {$4 \mu(u t/4) \le \mu(u t)$} edge from parent[draw=none]
-            child [grow=up] {node (t) {$2 \mu(u t/2) \le \mu(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (s) {$4\times\mu(\frac{u t}4) \le \mu(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (t) {$2\times\mu(\frac{u t}2) \le \mu(u t)$} edge from parent[draw=none]
             child [grow=up] {node (u) {$\mu(u t)$} edge from parent[draw=none]}
           }}}
-          child [grow=down] {node (v) {$\tau \mu(u t) = \Oapp(\mu(u t))$}edge from parent[draw=none]}
+          child [grow=down] {node (v) {$\tau \times \mu(u t) = \Oapp(\mu(u t))$}edge from parent[draw=none]}
             }
           }
         }
     }
   }
 };
-%\path (o) -- (e) node (x) [midway] {$\cdots$}
-%  child [grow=down] {
-%    node (y) {$O\left(\displaystyle\sum_{i = 0}^k 2^i \cdot \frac{n}{2^i}\right)$}
-%    edge from parent[draw=none]
-%  };
 \path (q) -- (r) node [midway] {+};
 \path (s) -- (r) node [midway] {+};
 \path (s) -- (t) node [midway] {+};
-\path (s) -- (l) node [midway] {$\displaystyle \longrightarrow$};
+\draw[->,>=latex,dashed] (l) to (s);
 \path (t) -- (u) node [midway] {+};
-\path (z) -- (u) node [midway] {$\displaystyle \longrightarrow$};
-\path (j) -- (t) node [midway] {$\displaystyle \longrightarrow$};
-\path (p) -- (q) node [midway] {$\displaystyle \longrightarrow$};
-%\path (y) -- (x) node [midway] {$\Downarrow$};
-%\path (v) -- (y)
-%  node (w) [midway] {$\tau \mu(u t) = \Oapp(\mu(u t))$};
+\draw[->,>=latex,dashed] (z) to (u);
+\draw[->,>=latex,dashed] (j) to (t);
+\draw[->,>=latex,dashed] (p) to (q);
 \path (q) -- (v) node [midway] {$\displaystyle \le$};
-%\path (e) -- (x) node [midway] {+};
-%\path (o) -- (x) node [midway] {+};
-%\path (y) -- (w) node [midway] {$\displaystyle \longrightarrow$};
-%\path (v) -- (w) node [midway] {$\Leftrightarrow$};
-%\path (r) -- (c) node [midway] {$\cdots$};
 \end{tikzpicture}
 \end{turn}
 }
-\caption{Product tree}\label{fig:prod-tree}
+\caption{Product Tree}\label{fig:prod-tree}
 \end{figure}
 
 \newpage
@@ -479,30 +471,33 @@ Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree 
 \newcommand{\vmid}{\ensuremath{\mathrm{mid}}}
 \newcommand{\vend}{\ensuremath{\mathrm{end}}}
 \begin{algorithmic}[1]
-\Require{a table $h$ such that $h[i] = h_i$}
-\Ensure{$\pi = \pi_1 = \prod_0^{t-1} h_i$, and $\pi[i] = \pi_i$ for $i \in \{1,\dots,2t-1\}$ as in Figure~\ref{fig:prod-tree}}
+\Require{the set $h_i$}
+\Ensure{$\pi = \pi_1 = \prod_0^{t-1} h_i$, and $\pi_i$ for $i \in \{1,\dots,2t-1\}$ as in Figure~\ref{fig:prod-tree}}
 \State $\pi \gets $ array of size $t$
 \Function{prodTree}{$i$,$\vstart$,$\vend$}
   \If{$\vstart = \vend$}
     \State \Return $1$
   \ElsIf{$\vstart+1 = \vend$}
-    \State \Return $h[\vstart]$
+    \State \Return $h_{\mbox{\tiny \vstart}}$
   \Else
-    \State $\vmid \gets \lfloor (\vstart+\vend)/2 \rfloor$
-    \State $\pi[i] \gets $\Call{prodTree}{$2\times i$,$\vstart$,$\vmid$}
-    \State $\pi[i+1] \gets $\Call{prodTree}{$2\times i+1$,$\vstart$,$\vmid$}
+    \State $\vmid \gets \lfloor \frac{\vstart+\vend}{2} \rfloor$
+    \State $\pi_i \gets $\Call{prodTree}{$2i$,$\vstart$,$\vmid$}
+    \State $\pi_{i+1} \gets $\Call{prodTree}{$2i+1$,$\vstart$,$\vmid$}
     \State \Return  $\times$ \Call{prodTree}{$\vmid$,$\vend$}
   \EndIf
 \EndFunction
-\State $\pi[1] \gets $\Call{prodTree}{$1,0,t$}
+\State $\pi_1 \gets $\Call{prodTree}{$1,0,t$}
 \end{algorithmic}
 \caption{Product Tree Algorithm}\label{alg:prod-tree}
 \end{algorithm}
 
-The same technique applies to factorization\footnote{We illustrate the process with $a$, this is applicable {\sl ne variatur} to $b$ as well.} with a slight {\sl caveat}.\smallskip
+\comm{Fabrice il y a un $\times$ orphelin dans l'algo à l'étape 11, peux tu STP clarifier ?}
 
-After computing the tree product we can compute the residues of $a$ modulo $H_j$. Then we can compute the residues of $a \mod H_j$ modulo the two children of $H_j$ in the product tree (Namely: $\prod_{i=j t}^{j t + t/2 - 1} h_i$ and $\prod_{i=j t}^{j t + t/2 - 1} h_i$). Then we can compute the residues of these two values modulo the children of the previous children, and so on. Intuitively, we descend the product tree doing modulo reduction.
-At the end ({\sl i.e.}, at the leaves), we obtain the residues of $a$ modulo each of the $h_i$. This is illustrated in Algorithm \ref{fig:div-prod-tree} and Figure \ref{fig:div-prod-tree} (for $j=1$). Complexity is $\Oapp(\mu(u t))$, for each $j$ summing-up to a total complexity of $\Oapp(n/t \Oapp(\mu(u t))$.
+The same technique applies to factorization\footnote{We explain the process with $a$, this is applicable {\sl ne variatur} to $b$ as well.}, but with a slight {\sl caveat}.\smallskip
+
+After computing the tree product we can compute the residues of $a$ modulo $H_j$. Then we can compute the residues of $a \mod H_j$ modulo the two children of $H_j$ in the product tree (namely: $\prod_{i=j t}^{j t + t/2 - 1} h_i$ and $\prod_{i=j t}^{j t + t/2 - 1} h_i$), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end ({\sl i.e.}, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$. This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree} (for $j=1$). Complexity is $\Oapp(\mu(u t))$ for each $j$, summing-up to a total complexity of $\Oapp(\frac{n}{t} \Oapp(\mu(u t)))$.
+
+\comm{Fabrice, peux tu stp verifier tous ces $\Oapp$s? je crains qu'en editant j'ai fais des erreurs}
 
 \newpage
 \begin{figure}[t]
@@ -514,8 +509,8 @@ At the end ({\sl i.e.}, at the leaves), we obtain the residues of $a$ modulo eac
   child {node (a) {$\displaystyle a \bmod \pi_2$}
     child {node (b) {$\displaystyle a \bmod \pi_3$}
       child {node {$\vdots$}
-        child {node (d) {$\displaystyle a \bmod h_{0}$}}
-        child {node (e) {$\displaystyle a \bmod h_{1}$}}
+        child {node (d) {\begin{turn}{270}{$\displaystyle a \bmod h_{0}$}\end{turn}}}
+        child {node (e) {\begin{turn}{270}{$\displaystyle a \bmod h_{1}$}\end{turn}}}
       }
       child {node {$\vdots$}}
     }
@@ -532,49 +527,36 @@ At the end ({\sl i.e.}, at the leaves), we obtain the residues of $a$ modulo eac
     child {node (l) {$\displaystyle a \bmod \pi_7$}
       child {node {$\vdots$}}
       child {node (c){$\vdots$}
-        child {node (o) {$ $}}
-        child {node (p) {$\displaystyle a \bmod h_{t-1}$}
+        child {node (o) {\begin{turn}{270}{$\displaystyle a \bmod h_{t-2}$}\end{turn}}}
+        child {node (p) {\begin{turn}{270}{$\displaystyle a \bmod h_{t-1}$}\end{turn}}
 %
 %
           child [grow=right] {node (qe) {} edge from parent[draw=none]
-            child [grow=right] {node (q) {$2^\tau O(\mu(u)) = O(\mu(u t))$} edge from parent[draw=none]
+            child [grow=right] {node (q) {$2^{\tau} \times O(\mu(\frac{ut}{2^{\tau}}))= O(\mu(u t))$} edge from parent[draw=none]
             child [grow=up] {node (r) {$\vdots$} edge from parent[draw=none]
-            child [grow=up] {node (s) {$4 O(\mu(u t/4)) = O(\mu(u t))$} edge from parent[draw=none]
-            child [grow=up] {node (t) {$2 O(\mu(u t/2)) = O(\mu(u t))$} edge from parent[draw=none]
-            child [grow=up] {node (u) {$O(\mu(u t))$} edge from parent[draw=none]}
+            child [grow=up] {node (s) {$4 \times O(\mu(\frac{u t}4)) = O(\mu(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (t) {$2 \times O(\mu(\frac{u t}2)) = O(\mu(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (u) {$1 \times O(\mu(u t))$} edge from parent[draw=none]}
           }}}
-          child [grow=down] {node (v) {$\tau O(\mu(u t)) = \Oapp(\mu(u t))$}edge from parent[draw=none]}
+          child [grow=down] {node (v) {$\sum_{i=1}^\tau 2^{i} \times O(\mu(\frac{ut}{2^i})) = \tau O(\mu(u t)) = \Oapp(\mu(u t))$}edge from parent[draw=none]}
             }
           }
         }
     }
   }
 };
-%\path (o) -- (e) node (x) [midway] {$\cdots$}
-%  child [grow=down] {
-%    node (y) {$O\left(\displaystyle\sum_{i = 0}^k 2^i \cdot \frac{n}{2^i}\right)$}
-%    edge from parent[draw=none]
-%  };
 \path (q) -- (r) node [midway] {+};
 \path (s) -- (r) node [midway] {+};
 \path (s) -- (t) node [midway] {+};
-\path (s) -- (l) node [midway] {$\displaystyle \longrightarrow$};
+\draw[<-,>=latex,dashed] (s) to (l);
 \path (t) -- (u) node [midway] {+};
-\path (z) -- (u) node [midway] {$\displaystyle \longrightarrow$};
-\path (j) -- (t) node [midway] {$\displaystyle \longrightarrow$};
-\path (p) -- (q) node [midway] {$\displaystyle \longrightarrow$};
-%\path (y) -- (x) node [midway] {$\Downarrow$};
-%\path (v) -- (y)
-%  node (w) [midway] {$\tau \mu(u t) = \Oapp(\mu(u t))$};
+\draw[->,>=latex,dashed] (z) to (u);
+\draw[->,>=latex,dashed] (j) to (t);
+\draw[->,>=latex,dashed] (p) to (q);
 \path (q) -- (v) node [midway] {$\displaystyle =$};
-%\path (e) -- (x) node [midway] {+};
-%\path (o) -- (x) node [midway] {+};
-%\path (y) -- (w) node [midway] {$\displaystyle \longrightarrow$};
-%\path (v) -- (w) node [midway] {$\Leftrightarrow$};
-%\path (r) -- (c) node [midway] {$\cdots$};
 \end{tikzpicture}
 \end{turn}}
-\caption{Division From Product Tree}\label{fig:div-prod-tree}
+\caption{Modular Reduction From Product Tree}\label{fig:div-prod-tree}
 \end{figure}
 
 \newpage
@@ -584,37 +566,47 @@ At the end ({\sl i.e.}, at the leaves), we obtain the residues of $a$ modulo eac
 \newcommand{\vmid}{\ensuremath{\mathrm{mid}}}
 \newcommand{\vend}{\ensuremath{\mathrm{end}}}
 \begin{algorithmic}[1]
-\Require{$a$ an integer, $\pi$ the product tree from Algorithm~\ref{alg:prod-tree}}
-\Ensure{$A_i = A[i] = a \bmod \pi_i$ for $i \in \{1,\dots,2t-1\}$, computed as in Figure~\ref{alg:div-prod-tree}}
+\Require{$a$ an integer, $\pi$ the product tree of Algorithm \ref{alg:prod-tree}}
+\Ensure{$A[i] = a \bmod \pi_i$ for $i \in \{1,\dots,2t-1\}$, computed as in Figure \ref{alg:div-prod-tree}}
 \State $A \gets $ array of size $t$
 \Function{modTree}{$i$}
   \If{$i < 2t$}
-    \State $A[i] \gets A[\lfloor i/2 \rfloor] \bmod \pi[i]$
-    \State \Call{modTree}{$2 \times i$}
-    \State \Call{modTree}{$2 \times i+1$}
+    \State $A[i] \gets A[\lfloor i/2 \rfloor] \bmod \pi_i$
+    \State \Call{modTree}{$2i$}
+    \State \Call{modTree}{$2i+1$}
   \EndIf
 \EndFunction
-\State $A[1] \gets a \bmod \pi[1]$
+\State $A[1] \gets a \bmod \pi_1$
 \State \Call{modTree}{$2$}
 \State \Call{modTree}{$3$}
 \end{algorithmic}
 \caption{Division Using a Product Tree}\label{alg:div-prod-tree}
 \end{algorithm}
 
-\subsection{Using a Smooth $p$}
+\subsection{Adapting $p$}
 
-Comme explique dans un ancien email, je pense que l'on devrait utiliser un produit de petits nombres premiers au lieu d'un grand nombre premier $p$. Des l'instant que ces petits nombres premiers sont plus grands que les hashes, cela fonctionne. L'interêt est que l'on peut travailler modulo ces "petits nombres premiers" avec le CRT. Et en plus, la generation de ce modulo $p$ (pas premier) est beaucoup plus rapide.
+Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the {\sl only} property required from $p$ is to be co-prime with all the $h_i$ and all the $h'_i$. We can hence consider the following variants:
 
-Fabrice: Je comprends que ca marche si $p$ est le produit de $p_i$ immediatement superieurs a $2^u$. Je ne vois pas pourquoi on ne pourrait pas aller encore plus loin et prendre carrement un $p=2\times 3\times 5\times \cdots$ FRIABLE. Qu'en penses-tu? Il me semble que toutes les maths du paper continuent a etre valables non?
+\subsubsection{Variant 1:} Use a sequence of smooth $p_i$:
+
+$$p_i=\prod_{j=r_i}^{r_{i+1}-1} \mbox{{\tt Prime}}[j]$$
+
+Where the bounds $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+
+\subsubsection{Variant 2:} Define $p_i=\mbox{{\tt Prime}}[i]^{r_i}$ where the exponents $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+
+\subsubsection{Variant 2:} Progressively work modulo a long power of two. This variant, is probably the most efficient of all but somewhat complex to explain. We hence describe it in detail in Appendix \ref{powtwo}.
+
+This variant is more delicate to explain as Where the exponents $r_i$ are chosen to ensure that each $p_i$ has the proper size.
 
 \section{Implementation}
 \label{program}
 
-To illustrate the concept, the authors has coded and evaluated the proof of concept described in this section.\smallskip
+To illustrate the concept, we coded and evaluated the proof of concept described in this section.\smallskip
 
-The executable and source codes of the program, called {\sf btrsync}, can be downloaded from \cite{Robin}.\smallskip
+All executables and source codes can be downloaded from \cite{Robin}.\smallskip
 
-The synchronization is unidirectional (clearer). The program consist in two subprograms: a bash script and a python script:
+Synchronization is unidirectional (clearer). The program, called {\sf btrsync}, consist in two subprograms: a bash script and a python script:
 
 \subsection{The Bash Script}
 
@@ -685,16 +677,16 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
   \caption{Perform Moves}
   \label{alg:moves}
   \begin{algorithmic}[1]
-    \Require{$D$ is a dictionary where $D[f]$ denotes the intended destinations of $f$}
+    \Require{$\mathfrak{D}$ is a dictionary where $\mathfrak{D}[f]$ denotes the intended destinations of $f$}
     \Statex
     \Let{$M$}{[]}
     \Let{$T$}{[]}
-    \For{$f$ in $D$'s keys}
+    \For{$f$ in $\mathfrak{D}$'s keys}
       \Let{$M[f]$}{not\_done}
     \EndFor
     \Function{unblock\_copy}{$f, t$}
       \If{$t$ is blocked by some $b$}
-        \If{$b$ is not in $D$'s keys}
+        \If{$b$ is not in $\mathfrak{D}$'s keys}
           \State unlink($b$) \Comment{We don't need $b$}
         \Else
           \State \Call{resolve}{$b$} \Comment{Take care of $b$ and make it go away}
@@ -716,12 +708,12 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
         \State \Return \Comment{We found a loop, moved $f$ out of the way}
       \EndIf
       \Let{$M[f]$}{doing}
-      \For{$d \in D[f]$}
+      \For{$d \in \mathfrak{D}[f]$}
         \If{$d \neq f$}
           \State unblock\_copy($f$, $d$) \Comment{Perform all the moves}
         \EndIf
       \EndFor
-      \If{$f \notin D[f]$ and $T[f]$ was not set}
+      \If{$f \notin \mathfrak{D}[f]$ and $T[f]$ was not set}
         \State unlink($f$)
       \EndIf
       \If{$T[f]$ was set}
@@ -729,7 +721,7 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
       \EndIf
     \EndFunction
 
-    \For{$f$ in $D$'s keys}
+    \For{$f$ in $\mathfrak{D}$'s keys}
       \State \Call{resolve}{$f$}
     \EndFor
   \end{algorithmic}
@@ -742,7 +734,7 @@ file contents.
 
 \subsection{Experimental Comparison to \rsync}
 
-We compared \rsync\footnote{version 3.0.9, used both as a competitor to benchmark against and for a minor underlying call to \rsync in our own code.}
+We compared \rsync\footnote{version 3.0.9, used both as a competitor to benchmark against and for a minor underlying call in our own code.}
 and our Divide \& Factor implementation called \btrsync under the following experimental conditions:
 
 \subsubsection{Test Directories:} The directories used for transmission and time comparisons are described in Figure \ref{tab:benchdirec}.\smallskip
@@ -768,27 +760,27 @@ and our Divide \& Factor implementation called \btrsync under the following expe
 \end{center}
 \end{figure}
 
-\subsubsection{Test Directories:} \rsync was called with the following flag configurations, for the following reasons:
+\subsubsection{Test Directories:} \rsync was called with the following options, for the reasons below:
 
 $\blacktriangleright$ {\tt --delete} to delete existing files on Oscar which do not exist on Neil.\smallskip
 
-$\blacktriangleright$ {\tt -I} to ensure that \rsync did not cheat by looking at the file modification times (which \btrsync does not do).\smallskip
+$\blacktriangleright$ {\tt -I} to ensure that \rsync did not cheat by looking at file modification times (which \btrsync does not do).\smallskip
 
-$\blacktriangleright$ {\tt --chmod="a=rx,u+w"} in an attempt to disable the transfer of file permissions (which \btrsync does not transfer). Although these settings ensure that \rsync does not need to transfer the permissions, verbose logging suggests that it transfers them anyway, so \rsync must lose a few bytes per file as compared to \btrsync for this reason.\smallskip
+$\blacktriangleright$ {\tt --chmod="a=rx,u+w"} in an attempt to disable the transfer of file permissions (which \btrsync does not transfer). Although these settings ensure that \rsync does not need to transfer permissions, verbose logging suggests that it does transfer them anyway, so \rsync must lose a few bytes per file as compared to \btrsync for this reason.\smallskip
 
 $\blacktriangleright$ {\tt -v} Transmission accounting was performed by calling \rsync with the {\tt -v} flag (which reports the number of sent and received bytes). For \btrsync we added a piece of code counting the amount of data transmitted during \btrsync's own negotiations.\smallskip
 
-\subsubsection{Network Configuration:} The experiments were performed between two remote hosts connected by a high-speed link. Time measurements account both for CPU time and for transfer times and are hence only given as a general indication.
+\subsubsection{Network Configuration:} Experiments were performed between two remote hosts connected by a high-speed link. Time measurements account both for CPU time and for transfer times and are hence only given as a general indication.
 
-\subsection{Results:} 
+\subsection{Results:}
 
-Results are given in table~\ref{tab:results}. In general, \btrsync spends more time than \rsync on computations (especially when the number of files is large, which is typically seen with our {\tt synthetic} experiments.\smallskip
+Results are given in table~\ref{tab:results}. In general, \btrsync spent more time than \rsync on computations (especially when the number of files is large, which is typically seen with our {\tt synthetic} experiments).\smallskip
 
-The transmission results, however, turn out to be favorable to \btrsync: 
+Transmission results, however, turn out to be favorable to \btrsync:
 
-In the trivial experiments where either Oscar or Neil have no data at all, \rsync outperforms \btrsync. This is especially clear when Neil has no data: \rsync immediately notices that there is nothing to transfer, but \btrsync starts information transfers to determine the symmetric difference.\smallskip
+In the trivial experiments where either Oscar or Neil have no data at all, \rsync outperforms \btrsync. This is especially visible when Neil has no data: \rsync immediately notices that there is nothing to transfer, but \btrsync engages in information transfers to determine the symmetric difference.\smallskip
 
-On the non-trivial datasets, however, \btrsync outperforms \rsync. This is the case on the {\tt synthetic} datasets, where \btrsync does not have to transfer information about all the files which were not modified, and even more so on the case where there are no modifications at all. In the case of Firefox source code datasets, \btrsync saves a very small amount of bandwidth, presumably because of unmodified files. For the \btrsync source code dataset, we notice that \btrsync, unlike \rsync, was able to detect the move and avoid retransferring the moved folder.
+On non-trivial tasks, however, \btrsync outperforms \rsync. This is the case of the {\tt synthetic} datasets, where \btrsync does not have to transfer information about all unmodified files, and even more so in the case where there are no modifications at all. For Firefox source code datasets, \btrsync saves a very small amount of bandwidth, presumably because of unmodified files. For the \btrsync source code dataset, we notice that \btrsync, unlike \rsync, was able to detect the move and avoid retransferring the moved folder.
 
 \begin{figure}
   \begin{tabularx}{\textwidth}{|X|X||c c|c c|c c||c c|}
@@ -808,8 +800,7 @@ On the non-trivial datasets, however, \btrsync outperforms \rsync. This is the c
 \hline
 
   \end{tabularx}
-  \caption{Experimental results. The two first columns indicate the datasets,
-    synchronization is performed \emph{from} Neil \emph{to} Oscar. RX and TX are
+  \caption{Experimental results. Synchronization is performed \emph{from} Neil \emph{to} Oscar. RX and TX are
     received and sent byte counts, $r$ and $b$ are \rsync and \btrsync, we also
     provide the absolute difference in exchanged data (positive when \btrsync
     transfers more data than \rsync) and the relative amount of data sent by
@@ -818,7 +809,7 @@ On the non-trivial datasets, however, \btrsync outperforms \rsync. This is the c
   \label{tab:results}
 \end{figure}
 
-\subsubsection{Code Availability:} Source codes can be downloaded from \url{https://github.com/RobinMorisset/Btrsync.}.
+\subsubsection{Code Availability:} Source codes can be downloaded from \cite{Robin}.
 
 \section{Haskell Implementation}
 
@@ -828,7 +819,7 @@ On the non-trivial datasets, however, \btrsync outperforms \rsync. This is the c
 ou juste dire que ça existe.)
 
 A proof-of-concept called Btrsync has been implemented in Haskell and is
-available at 
+available at
 
 It is intended to work as a drop-in replacement of rsync for directories, taking
 as arguments two (possibly remote) directories. It launches instances of itself
@@ -854,9 +845,15 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 
 \section{ToDo}
 
-todo: Fix euclidean to Euclidean in reference 5.\smallskip
+\begin{itemize}
+\item Fix euclidean to Euclidean in reference 5.\smallskip
 
-todo: Merge two reference files rsynch and wagner.\smallskip
+\item Merge two reference files rsynch and wagner.\smallskip
+
+\item Antoine, je n'arrive pas a comprendre comment tu calcules les pourcentages rel dans la table. Peux-tu stp me donner la forumle? c'est le ratio de qui sur qui?
+    
+\item Antoine, peux tu stp enlever du papier (et du git) toute trace du programme version 1 (ie celui fait par les etudiants en tant que projet du cours d'informatique scientifique par la pratique) car il est moins performant que l'implementation de Fabrice. Ainsi on n'aura pas de confusion possible. Je ne sais plus dans le texte ce qui est relatif au nouveau code et ce qui est relatif a l'ancien.
+\end{itemize}
 
 \nocite{rsync}
 \nocite{wagner}
@@ -916,10 +913,50 @@ ACM SIGCOMM Computer Communication Review - SIGCOMM '11, 41(4), 2011, pp. 218-22
 
 Note that parties do not need to store the $p_i$'s in full. Indeed, the $p_i$s could be subsequent primes sharing their most significant bits. This reduces storage per prime to a very small additive constant $ \cong \mbox{ln}(p_i) \cong \mbox{ln}(2^{2tu+2}) \cong 1.39(tu+1)$ of about $\log_2(tu)$ bits.
 
+\section{Power of Two Protocol}
+\label{powtwo}
+
+In this variant Oscar computes $c$ in $\mathbb{N}$:
+
+$$
+c=\prod_{F_i\in \mathfrak{F}} \mbox{{\tt HashPrime}}(F_i) = \prod_{i=1}^n h_i \in \mathbb{N}
+$$
+
+and considers $c=\bar{c}_{n-1}|\ldots|\bar{c}_2|\bar{c}_0$ as the concatenation of $n$ successive $u$-bit strings.
+
+\begin{center}
+\begin{tabular}{|lcl|}\hline
+\multicolumn{3}{|c|}{{\sf First phase during which Neil amasses modular information on the difference~~}} \\\hline
+~~{\bf Oscar}                      &                                                      &   {\bf Neil}~\\
+~~computes $c\in \mathbb{N}$       &                                                      &\\
+                                   &~~{{\LARGE $\stackrel{\bar{c}_0}{\longrightarrow}$}}~~&   \\
+                                   &                                                      &computes $a,b$ modulo $2^u$~\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}~~\\
+                                   &                                                      &~~~~~~else request next chunk $\bar{c}_1$~~\\
+                                   &~~{{\LARGE $\stackrel{\bar{c}_1}{\longrightarrow}$}}~~&   \\
+                                   &                                                      &construct $c \bmod 2^{2u}=\bar{c}_1|\bar{c}_0$~~\\
+                                   &                                                      &computes $a,b$ modulo $2^{2u}$~\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}~~\\
+                                   &                                                      &~~~~~~else request next chunk $\bar{c}_2$~~\\
+                                   &~~{{\LARGE $\stackrel{\bar{c}_2}{\longrightarrow}$}}~~      &   \\
+                                   &                                                      &construct $c\bmod 2^{3u}=\bar{c}_2|\bar{c}_1|\bar{c}_0$~~\\
+                                   &                                                      &computes $a,b$ modulo $2^{3u}$~\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}~~\\
+                                   &                                                      &~~~~~~else request next chunk $\bar{c}_3$~~\\
+                                   &                  $\vdots~(\mbox{~for~}\lambda \mbox{~rounds~})$    & \\\hline\hline
+\multicolumn{3}{|c|}{{\sf Final Phase~~}} \\\hline
+                                   &                                                      & \\
+                                   &                                                      &Let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod 2^{\lambda u} =0\}$~~\\
+                                   &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
+                                   ~~deletes files s.t. $b \bmod 2^{\lambda u} =0$&        &\\
+                                   ~~adds $\mathfrak{S}$ to the disk    &                                                      &\\\hline
+\end{tabular}
+\end{center}
+
 \section{Hashing Into Primes}
 
-Hashing into primes is frequently needed in cryptography. A recommended implementation of $\mbox{{\tt HashPrime}}(F)$ is typically algorithm \ref{alg:primes}. If $u$ is large enough ({\sl e.g.} $160$) one might sacrifice uniformity to avoid repeated file hashings and use $\mbox{{\tt HashPrime}}(F)=\mbox{{\tt NextPrime}}(\mbox{{\tt Hash}}(F))$. Yet another acceleration option (even less uniform) consists in replacing $\mbox{{\tt NextPrime}}$ by the faster nonuniform scanning Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times q$ is the product of the first primes until some moderate bound.
- 
+Hashing into primes is frequently needed in cryptography. A recommended implementation of $\mbox{{\tt HashPrime}}(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough ({\sl e.g.} $160$) one might sacrifice uniformity to avoid repeated file hashings using $\mbox{{\tt HashPrime}}(F)=\mbox{{\tt NextPrime}}(\mbox{{\tt Hash}}(F))$. Yet another acceleration option (that further destroys uniformity) consists in replacing $\mbox{{\tt NextPrime}}$ by the faster scanning Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
+
 \begin{algorithm}
   \caption{Fast Nonuniform Hashing Into Primes}
   \label{alg:scanprime}
@@ -930,7 +967,7 @@ Hashing into primes is frequently needed in cryptography. A recommended implemen
 \EndWhile
 \State \Return{$h$}
   \end{algorithmic}
-\end{algorithm} 
+\end{algorithm}
 
 \begin{algorithm}
   \caption{Possible Implementation of $\mbox{{\tt HashPrime}}(F)$}
@@ -944,7 +981,6 @@ Hashing into primes is frequently needed in cryptography. A recommended implemen
 \State \Return{$h$}
   \end{algorithmic}
 \end{algorithm}
-
 
 
 \end{document}
