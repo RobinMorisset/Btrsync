@@ -405,7 +405,7 @@ The overwhelming complexities of the computations of $(c,c')$ and of the factori
 The idea is the following: group $h_i$s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$.
 \[ H_j = \prod_{i=j t}^{j t + t - 1} h_i. \]
 
-Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm~\ref{alg:prod-tree} (for $j=0$) and illustrated in Figure~\ref{fig:prod-tree}. 
+Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm~\ref{alg:prod-tree} (for $j=0$) and illustrated in Figure~\ref{fig:prod-tree}.
 And all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu(u t))$. Then, one can compute $c$ by multiplying the $H_j$ modulo $p$, which costs $\Oapp(\frac{n}{t} \mu(u t))$.
 
 \newpage
