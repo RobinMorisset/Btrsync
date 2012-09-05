@@ -72,42 +72,80 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 \maketitle
 
 \begin{abstract}
-This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets whiles minimizing communication.
-We propose a new number theoretic reconciliation protocol called ``Divide \& Factor''. In terms of asymptotic  transmission complexity, Divide \& Factor is comparable to prior proposals (that anyhow reached optimality). Nonetheless, this new protocol offers interesting parameter trade-offs resulting in experimentally measured {\sl constant-factor} transmission gains over the popular software \rsync.\smallskip
-
-Reconciliation experiments show that the new protocol usually transmits less data than \rsync\ but requires lengthier calculations.\smallskip
+This work revisits {\sl set reconciliation}, a problem consisting in
+synchronizing two multisets while minimizing the amount of data transmitted. We
+propose a new number theoretic reconciliation protocol called ``Divide \&
+Factor''. Like prior proposals, our protocol in optimal in terms of asymptotic
+transmission complexity. Nonetheless, this new protocol offers interesting
+parameter trade-offs resulting in experimentally measured {\sl constant-factor}
+transmission gains over the popular software \rsync. Reconciliation experiments
+show that the new protocol usually transmits less data than \rsync at the
+expense of lengthier calculations.\smallskip
 \end{abstract}
 
 \section{Introduction}
+This work revisits {\sl set reconciliation}, a problem consisting in
+synchronizing two multisets while minimizing the amount of data transmitted. Set
+reconciliation arises in many practical situations, the most typical of which is
+certainly incremental backups performed over a slow network link.\smallskip
 
-This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets while minimizing communication complexity. Set reconciliation is necessary in many practical situations, the most typical of which is certainly incremental information backup.\smallskip
-
-Set reconciliation has already several efficient and elegant solutions. For instance, \cite{PSRec} presents a particularly interesting reconciliation protocol whose computational and communication complexities are linear in the number of differences between the reconciled multisets.\smallskip
+Set reconciliation has already several efficient and elegant solutions. For
+instance, \cite{PSRec} presents a particularly interesting reconciliation
+protocol whose computational and communication complexities are linear in the
+number of differences between the reconciled multisets, which mathches the
+obvious lower bound.\smallskip
 
 We refer the reader to \cite{PSRec,Mins1,Whats} (to quote a few references) for more on the problem's history and its existing solutions.\smallskip
 
-This article proposes a new reconciliation protocol based on number theory. In terms of asymptotic  transmission complexity, the proposed procedure is comparable to prior proposals (that anyhow reached optimality). Nonetheless, the new protocols offer interesting parameter trade-offs resulting in experimentally measured {\sl constant-factor} gains over the popular software \rsync.\smallskip
+This article proposes a new reconciliation protocol based on number theory. In
+terms of asymptotic  transmission complexity, the proposed procedure reaches
+optimality, like prior proposals. Nonetheless, the new protocols offer interesting parameter trade-offs resulting in experimentally measured {\sl constant-factor} gains over the popular software \rsync.\smallskip
 
 We observed during most of our reconciliation experiments that the new protocol transmitted less bytes than \rsync\ but required lengthier calculations.\smallskip
 
 Beyond these practical concerns the mathematical ideas underlying this work seem new and interesting as such.
 
+TODO: announce the structure of the rest of the paper.
+
 \section{``Divide \& Factor'' Set Reconciliation}
 
 \subsection{Problem Definition and Notations}
 
-Oscar possesses an old version of a directory $\mathfrak{D}$ that he wishes to update. Neil has the up-to-date version $\mathfrak{D}'$. The challenge faced by Oscar and Neil\footnote{Oscar and Neil will respectively stand for {\sl \underline{o}ld} and {\sl \underline{n}ew}.} is that of {\sl exchanging as little data as possible} during the synchronization process. In practice $\mathfrak{D}$ and $\mathfrak{D}'$ usually differ both in their files and in their tree structure.\smallskip
+\underline{O}scar possesses an \underline{o}ld version of a directory
+$\mathfrak{D}$ that he wishes to update. \underline{N}eil has the
+\underline{n}ew, up-to-date version $\mathfrak{D}'$: $\mathfrak{D}$ and
+$\mathfrak{D}'$ can differ both in their files and in their tree structure.
+Oscar wishes to obtain knowledge about $\mathfrak{D}'$ but wishes to {\sl
+exchange as little data as possible} during the synchronization
+process.\smallskip
 
-In tackling this problem we separate the {\sl ``what''} from the {\sl ``where''} and disregard the relative position of files in subdirectories\footnote{{\sl i.e.} view directories as multisets of files.}. Let $\mathfrak{F}$ and $\mathfrak{F}'$ denote the multisets of files contained in $\mathfrak{D}$ and $\mathfrak{D}'$. We denote $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$ and $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
+To tackle this problem we separate the {\sl ``what''} from the {\sl ``where''}
+and disregard the relative position of files. We represent $\mathfrak{D}$ as a
+multiset of files which we denote as $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$, and
+likewise represent $\mathfrak{D'}$ as
+$\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
 
-Let $t$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ that Oscar wishes to learn, {\sl i.e.}:
+Let $t_0$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ that Oscar wishes to learn, {\sl i.e.}:
 
-$$t=\#\mathfrak{F}+\#\mathfrak{F}'-2 \#\left(\mathfrak{F} \bigcap \mathfrak{F}'\right)=\#\left(\mathfrak{F}\bigcup\mathfrak{F}'\right)-\#\left(\mathfrak{F}\bigcap\mathfrak{F}'\right)$$
+$$t_0=\#\mathfrak{F}+\#\mathfrak{F}'-2 \#\left(\mathfrak{F} \bigcap \mathfrak{F}'\right)=\#\left(\mathfrak{F}\bigcup\mathfrak{F}'\right)-\#\left(\mathfrak{F}\bigcap\mathfrak{F}'\right)$$
 
-Let $\mbox{{\tt Hash}}(F)$ be a collision-resistant hash function\footnote{{\sl e.g.} SHA-1} where $F$ is a file. Let $\mbox{{\tt HashPrime}}(F)$ be a function hashing files (uniformly) into primes smaller than $2^u$. Define the shorthand notations: $h_i=\mbox{{\tt HashPrime}}(F_i)$ and $h'_i=\mbox{{\tt HashPrime}}(F'_i)$.\smallskip
+Given a file $F$, we denote by $\mbox{{\tt Hash}}(F)$ its image by a
+collision-resistant hash function such as SHA-1. Let $\mbox{{\tt
+HashPrime}}(F)$\footnote{We discuss the design of \mbox{{\tt HashPrime}} in
+Appendix~\ref{sec:hashprime}.} be a function hashing files (uniformly) into
+primes smaller than $2^u$. [TODO(antoine): what is the definition of $u$, is it
+something like ``there exists $u$ such that HashPrime hashes to primes smaller
+than $2^u$''?]. Define the shorthand notations: $h_i=\mbox{{\tt
+HashPrime}}(F_i)$ and $h'_i=\mbox{{\tt HashPrime}}(F'_i)$.\smallskip
 
 \subsection{Description of the Basic Exchanges}
 \label{basic}
+
+The quantity $t_0$ is unknown to Oscar and Neil. However, in our protocol, Oscar
+and Neil will assume that $t_0$ is smaller than some $t$ and attempt to perform
+synchronization. If they are right, synchronization will succeed; if they are
+wrong, they will transmit more information and try again, as will be explained
+later.
 
 We generate a prime $p$ such that:
 
@@ -137,7 +175,13 @@ b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox
 \right.
 $$
 
-Note that since $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements, $a$ and $b$ are strictly lesser than $2^{ut}$. Theorem \ref{theo} (see \cite{cryptorational}) guarantees $a$ and $b$ can be efficiently recovered from $s$ (A problem  known as the {\sl Rational Number Reconstruction} \cite{pan2004rational,wang2003acceleration}). This is typically done using Gauss' algorithm for finding the shortest vector in a bi-dimensional lattice \cite{vallee}.
+Note that if our assumption $t_0 \leq t$ is correct $\mathfrak{F}$ and
+$\mathfrak{F}'$ differ by at most $t$ elements and $a$ and $b$ are strictly less
+than $2^{ut}$. Theorem \ref{theo} (see \cite{cryptorational}) guarantees $a$ and
+$b$ can be efficiently recovered from $s$: this problem is known as the {\sl
+Rational Number Reconstruction} \cite{pan2004rational,wang2003acceleration} and
+is typically solved using Gauss' algorithm for finding the shortest vector in a
+bi-dimensional lattice \cite{vallee}.
 
 \begin{theorem}
 \label{theo}
@@ -154,6 +198,7 @@ Formally, this is done as follows:\smallskip
 \begin{center}
 \begin{tabular}{|lcl|}\hline
 ~~{\bf Oscar}                       &                                                      &   {\bf Neil}~\\
+~~computes $c$&                                                      &\\
                                    &~~{{\LARGE $\stackrel{c}{\longrightarrow}$}}~~        &   \\
                                    &                                                      &computes $a,b$~\\
                                    &                                                      &if $a$ doesn't factor into a product of $h'_i$s~\\
@@ -165,11 +210,11 @@ Formally, this is done as follows:\smallskip
 \end{tabular}
 \end{center}
 
-As we have just seen, the ``output $\bot$ and halt'' protocol interruption should never occur if bounds on parameters are respected. However, a file synchronization procedure that works {\sl only} for a limited number of differences is not really useful in practice. Section \ref{insuf} explains how to extend the protocol even when the number of differences exceeds $t$, the informational capacity of the modulus $p$.
+As we have just seen, the ``output $\bot$ and halt'' protocol interruption should never occur if indeed $t_0 \leq t$. However, a file synchronization procedure that works {\sl only} for a limited number of differences is not really useful in practice. Section~\ref{insuf} explains how to extend the protocol even when the number of differences exceeds $t$, the informational capacity of the modulus $p$.[TODO(antoine): I'm not I understand why if $t$ is too small we cannot have that $a$ factors into a product of $h'_i$s even though the protocol has actually failed and $b$ is not what we expect. Will this really \emph{never} occur, or is it very unlikely?]
 
 \subsection{The Case of Insufficient Information}
 \label{insuf}
-To extend the protocol to an arbitrary $t$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails, Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in appendix A. Note that no information is lost and that the transmitted modular knowledge about the difference adds-up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
+To extend the protocol to an arbitrary $t_0$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails, Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in Appendix~\ref{sec:extended}. Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
 
 \section{Transmission Complexity}
 
@@ -381,7 +426,7 @@ For na\"{i}ve ({\sl i.e.} convolutive) algorithms $\mu(k) = O(k^2)$, but using {
 
 \comm{"reduction also run in $\Oapp(\mu(k))$"}
 
-\begin{figure}
+\begin{table}
   \begin{tabularx}{\textwidth}{lXp{1.2cm}p{2.3cm}p{1.2cm}p{2.3cm}}\toprule
 {\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &
     \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\\midrule
@@ -395,7 +440,7 @@ Both  & factorization of $a$ (resp. $b$) by modular reductions           & $n \c
   \end{tabularx}
   \caption{Global Protocol Complexity. In practice $\max((u t)^2,n \cdot \mu(ut))=n(u t)^2$ because $(u t)^2 \ll n \cdot \mu(ut)=n(u t)^2$}
   \label{tab:workload}
-\end{figure}
+\end{table}
 
 
 \subsection{Improvements}
@@ -636,6 +681,7 @@ and performs the actual synchronization. It proceeds in two phases:
 \end{enumerate}
 
 More precisely:
+[TODO(antoine): isn't there going to be some overlap between this section and the description of the protocol in Appendix~\ref{sec:extended}? I feel we should explain the protocol elsewhere and only give implementation details here.]
 \begin{itemize}
 \item Oscar sends it product of hashes modulo a first prime number $p_1$.
 \item Neil receives the product, divides by its own product of hashes, reconstructs the fraction modulo $p_1$ [can we elaborate more on what happens here? which functions in GMP are used to do the reconstruction?] and checks if he can factor the denominator using his hashes base. If he can, he stops and sends the numerator and the list of tuples (path, type, hash of content of the file) corresponding to the denominator's factors. Otherwise he sends "None" [is this the ASCII string "None"? if not what does he send precisely?].
@@ -809,6 +855,19 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 \section{ToDo}
 
 \begin{itemize}
+\item @Fabrice @David: Je n'ai toujours pas compris si on a un argument clair
+  pour dire qu'on est meilleur que \cite{Mins1}, du genre ``on prend en compte
+  la taille des hachés, etc.'' Ce serait à mon avis beaucoup plus vendeur que de
+  dire ``on fait pareil qu'eux, mais différemment'' et de parler d'``interesting
+  parameter trade-offs''. :-)
+
+\item @David: Je ne comprends pas pourquoi tu parles de ``constant-factor
+  gains'' par rapport à rsync. Vu que rsync ne détecte absolument pas les moves,
+  on n'a pas juste un facteur constant comme amélioration, enfin si ton problème
+  c'est ''synchroniser un dataset de taille N avec un move d'un dossier de
+  taille N/2'' on a une complexité asymptotique largement meilleure que rsync,
+  je crois ?
+
 \item Fix euclidean to Euclidean in reference 5.\smallskip
 
 \item Merge two reference files rsynch and wagner.\smallskip
@@ -820,6 +879,8 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 \item @Fabrice: Pour éviter le cas empty $\rightarrow$ source trop gros, on pourrait imaginer l'astuce suivante: si jamais Neil la taille de c est plus petite que la taille du produit des nombres premiers $p_1$...$p_n$ utilisés, Neil envoie un message pour l'indiquer, et on arr\^ete là le protocole. Et Oscar peut directement factoriser ce nombre envoyé...
 
 \item @Fabrice: il faut discuter de la taille de la taille maximale des ``petits'' premiers utilisés pour les variantes de $p$ et montrer que cela n'enlève pas trop d'entropie pour les $h_i$. Encore une fois, je m'en occupe la semaine prochaine si besoin.
+
+\item Revoir l'intro.
 \end{itemize}
 
 \nocite{rsync}
@@ -848,6 +909,7 @@ ACM SIGCOMM Computer Communication Review - SIGCOMM '11, 41(4), 2011, pp. 218-22
 \appendix
 
 \section{Extended Protocol}
+\label{sec:extended}
 
 \begin{center}
 \begin{tabular}{lcl}\toprule
@@ -925,7 +987,7 @@ and considers $c=\bar{c}_{n-1}|\ldots|\bar{c}_2|\bar{c}_0$ as the concatenation 
 \end{center}
 
 \section{Hashing Into Primes}
-
+\label{sec:hashprime}
 Hashing into primes is frequently needed in cryptography. A recommended implementation of $\mbox{{\tt HashPrime}}(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough ({\sl e.g.} $160$) one might sacrifice uniformity to avoid repeated file hashings using $\mbox{{\tt HashPrime}}(F)=\mbox{{\tt NextPrime}}(\mbox{{\tt Hash}}(F))$. Yet another acceleration option (that further destroys uniformity) consists in replacing $\mbox{{\tt NextPrime}}$ by the faster scanning Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
 
 \begin{algorithm}
