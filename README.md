@@ -7,8 +7,8 @@ btrsync is a program to synchronize files between two hosts, with detection of
 move operations.
 
 There are two independent implementations: one in Haskell and one in Python. The
-Haskell implementation is not stable and is documented in its own section. The
-rest of this document describes the Python implementation.
+Haskell implementation is not stable and is documented in a separate section.
+The rest of this document describes the Python implementation.
 
 ## Credits and license
 
