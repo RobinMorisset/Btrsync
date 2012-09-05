@@ -218,7 +218,7 @@ To extend the protocol to an arbitrary $t_0$, Oscar and Neil agree on an infinit
 
 \section{Transmission Complexity}
 
-This section explores two strategies to reduce the size of $p$ and hence improve transmission by {\sl constant factors} (from an asymptotic communication standpoint, improvements cannot be expected as the protocol already transmits information proportional to $t$, the difference to settle).
+This section explores two strategies to reduce the size of $p$ and hence improve transmission by {\sl constant factors} (from an asymptotic communication standpoint, improvements cannot be expected as the protocol already transmits information proportional to $t$, the difference to settle). [TODO(antoine): This claim is not entirely obvious to me. I think it would be worthwhile to do some simple accounting to give the size of everything that is transferred so that everyone can see that we are indeed linear in the size of the symmetric difference.]
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
@@ -252,7 +252,7 @@ $$\left(A_i,B_i\right)=\left(2^{wi},\left\lfloor \frac{p-1}{2^{wi+1}} \right\rfl
 
 Equations (\ref{eqnewp}) and (\ref{eqab}) imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
 
-The problem is that (unlike section \ref{basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We expect this to happen with negligible probability (that we do not try to estimate here) when $w$ is large enough, but this makes the modified protocol heuristic only.\smallskip
+The problem is that (unlike section \ref{basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We expect this to happen with negligible probability (that we do not try to estimate here) when $w$ is large enough, but this makes the modified protocol heuristic only. [TODO(antoine): Si je comprends bien, vous améliorez la complexité, mais en supposant que les choses se passent bien (et vous dites que c'est très probablement le cas). J'ai l'impression que c'est quand même un peu malhonnête de ne pas avoir un résultat sur l'\emph{espérance} de la quantité d'information à transmettre, en prenant aussi en compte les cas où les choses se passent mal ; ou bien, si on ne peut pas avoir de tel résultat, il faudrait avouer clairement qu'on conjecture juste que c'est meilleur en moyenne. Non ?] \smallskip
 
 \subsection{The File Laundry: Reducing $u$}
 
