@@ -15,7 +15,7 @@ trap "{ rm -Rf $TDIR; rm -Rf $TDIR2; }" EXIT
 rsync -a "$TO" "$TDIR/"
 rsync -a "$TO" "$TDIR2/"
 T1=$(date +%s%N | cut -b1-13)
-BTRSYNC=$(time ./btrsync.sh "$FROM" "$TDIR/" | tail -1)
+BTRSYNC=$(time btrsync.sh "$FROM" "$TDIR/" | tail -1)
 T2=$(date +%s%N | cut -b1-13)
 RSYNC=$(time rsync --delete -rIv --no-perms --chmod="a=rx,u+w" --no-links \
   --no-hard-links --no-acls --no-xattrs --no-owner --no-group --no-devices \

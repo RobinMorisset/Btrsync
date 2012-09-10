@@ -13,6 +13,8 @@ import hashlib
 import gmpy
 from gmpy import mpz
 import json
+import itertools
+import multiprocessing as mp
 
 # Enable us to use the modules in the same folder than the script
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
@@ -25,8 +27,13 @@ from algo_moves import do_moves
 P_SIZE = 1024
 HASH_SIZE = 160
 SEED = 10
+PROFILE = True
 
-# WARNING: use the random number generator only for generate_next_p !
+if PROFILE:
+  import cProfile
+  import pstats
+
+# TODO: remove this warning... # WARNING: use the random number generator only for generate_next_p !
 
 gmpy.rand('init')
 gmpy.rand('seed', SEED)
@@ -80,30 +87,64 @@ def hash_dirname(path, other=""):
   h = int(hashlib.sha1('d\0'+path+'\0'+other).hexdigest(), 16)
   return hash_to_prime(h)
 
+def hash_dir_file((path,isdir)):
+  if isdir:
+    h = hash_dirname(path)
+    return (h,(path,True,None))
+  else:
+    (h,hcontent) = hash_file(path)
+    return (h,(path,False,hcontent))
+
 def hash_dir():
-  hashes = {}
-  for root, dirs, files in os.walk('.'):
-    for dirname in dirs:
+  def list_dirs_files((root,dirs,files)):
+    def f_dir(dirname):
       path = root+'/'+dirname
-      h = hash_dirname(path)
-      hashes[h] = (path, True, None)
-    for filename in files:
+      #h = hash_dirname(path)
+      #hashes[h] = (path, True, None)
+      return (path,True)
+    def f_file(filename):
       path = root+'/'+filename
-      (h, hcontent) = hash_file(path)
-      hashes[h] = (path, False, hcontent)
-  return hashes
+      #(h, hcontent) = hash_file(path)
+      #hashes[h] = (path, False, hcontent)
+      return (path,False)
+    return itertools.chain(itertools.imap(f_dir,dirs), itertools.imap(f_file,files))
 
+  dirs_files = itertools.chain.from_iterable(itertools.imap(list_dirs_files,os.walk('.'))) # flatten !
+
+  # TODO: mp.Pool().imap should be better, but I do not nknow why it does not work...
+  hashes = mp.Pool().map(hash_dir_file,dirs_files)
+  #hashes = map(hash_dir_file,dirs_files)
+
+  return dict(hashes)
+
+
+def p_gen():
+  small_p = mpz(1)
+  k = P_SIZE
+  while True:
+    small_p = gmpy.next_prime(small_p)
+    p = small_p ** int(k / (small_p.bit_length()-1))
+    yield p
+    k *= 2
+p_gen_inst = p_gen()
+
+#import time
 def generate_next_p():
-  """ Generate the i^th number p """
-  def rand_bits(bits):
-    """ Pick a random number of n bits """
-    n = gmpy.rand('next', (1<<(bits+1))-1)
-    if n < (1<<bits):
-      return rand_bits(bits)
-    else:
-      return n
+  """ Generate the i^th number modulo p """
 
-  return gmpy.next_prime(rand_bits(P_SIZE))
+#  def rand_bits(bits):
+#    """ Pick a random number of n bits """
+#    n = gmpy.rand('next', (1<<(bits+1))-1)
+#    if n < (1<<bits):
+#      return rand_bits(bits)
+#    else:
+#      return n
+
+#  a = time.time()
+  p = p_gen_inst.next()
+#  b = time.time()
+#  eprint("%d, time: %f" % (int(p), a-b))
+  return p
 
 def product_mod(n, l):
   """ Compute the product of the elements of l modulo n """
@@ -242,18 +283,7 @@ def sync_oscar(root_neil, root_oscar, files_neil, files_oscar):
   received = int(fields[5])
   return sent, received
 
-
-
-def main():
-  parser = argparse.ArgumentParser()
-  parser.add_argument("--origin", help="Neil role (internal use)", action="store_true")
-  parser.add_argument("--destination", help="Oscar role (internal use)", action="store_true")
-  parser.add_argument("--status", help="Status file to write (internal use)")
-  parser.add_argument("root_neil", help="[[user@]host:]path/to/neil")
-  parser.add_argument("root_oscar", help="[[user@]host:]path/to/oscar")
-  args = parser.parse_args()
-
-  if args.origin:
+def main_neil(args):
     # Neil
     eprint("Neil: start")
     os.chdir(args.root_neil)
@@ -268,7 +298,7 @@ def main():
       (pp, d, res_neil) = round_neil(hashes, pi_oscar, pp, d)
       send(res_neil)
 
-  elif args.destination:
+def main_oscar(args):
     # Oscar
     eprint("Oscar: start")
     os.chdir(args.root_oscar)
@@ -302,6 +332,25 @@ def main():
         sent + my_sent, received + my_received), file=status)
       status.close()
 
+def main():
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--origin", help="Neil role (internal use)", action="store_true")
+  parser.add_argument("--destination", help="Oscar role (internal use)", action="store_true")
+  parser.add_argument("--status", help="Status file to write (internal use)")
+  parser.add_argument("root_neil", help="[[user@]host:]path/to/neil")
+  parser.add_argument("root_oscar", help="[[user@]host:]path/to/oscar")
+  args = parser.parse_args()
+
+  if args.origin:
+    if PROFILE:
+      cProfile.runctx("main_neil(args)",globals(),locals(),"/tmp/btrsync_profile_neil")
+    else:
+      main_neil(args)
+  elif args.destination:
+    if PROFILE:
+      cProfile.runctx("main_oscar(args)",globals(),locals(),"/tmp/btrsync_profile_oscar")
+    else:
+      main_oscar(args)
   else:
     # Print command to be executed for Neil and Oscar
     # Used by btrsync.sh
