@@ -1,3 +1,4 @@
+- refaire les benches
 - btrsync.sh does not correctly return the return value of the btrsync.py invocations
 - file metadata support
 
