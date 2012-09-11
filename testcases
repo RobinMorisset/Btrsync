@@ -1,0 +1,8 @@
+test/source/ test/empty/
+test/empty/ test/source/
+test/empty/ test/empty/
+test/synthetic/ test/synthetic_shuffled/
+test/synthetic_shuffled/ test/synthetic/
+test/synthetic/ test/synthetic/
+test/firefox-13.0.1/ test/firefox-13.0/
+test/source_moved/ test/source/

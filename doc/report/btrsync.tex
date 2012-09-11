@@ -819,7 +819,10 @@ $\blacktriangleright$ {\tt --chmod="a=rx,u+w"} in an attempt to disable the tran
 
 $\blacktriangleright$ {\tt -v} Transmission accounting was performed by calling \rsync with the {\tt -v} flag (which reports the number of sent and received bytes). For \btrsync we added a piece of code counting the amount of data transmitted during \btrsync's own negotiations.\smallskip
 
-\subsubsection{Network Configuration:} Experiments were performed between two remote hosts connected by a high-speed link. Time measurements account both for CPU time and for transfer times and are hence only given as a general indication.
+\subsubsection{Network Configuration:} The influence of the network on
+performance can be approximated by the quantity of bandwidth. The benchmark was
+done on a synchronization on two folders on the same host to try to account for
+actual CPU time.
 
 \subsubsection{Results:}
 

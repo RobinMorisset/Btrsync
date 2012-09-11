@@ -1,8 +1,8 @@
-test/source/ test/empty/ 1846 788357 1613 778353 10237 7740 166
-test/empty/ test/source/ 12436 6120 11 29 18516 5528 88
-test/empty/ test/empty/ 19 28 11 29 7 317 99
-test/synthetic/ test/synthetic_shuffled/ 3638 4147 24891 51019 -68125 26808 165
-test/synthetic_shuffled/ test/synthetic/ 3443 3477 24701 50625 -68406 26623 156
-test/synthetic/ test/synthetic/ 327 28 25011 50918 -75574 25689 143
-test/firefox-13.0.1/ test/firefox-13.0/ 80895 27995969 90598 28003573 -17307 4199 2585
-test/source_moved/ test/source/ 1603 1974 2456 694003 -692882 2508 181
+test/source/ test/empty/ 779517 10140 778311 1614 9732 435 81
+test/empty/ test/source/ 11927 5952 24 12 17843 410 59
+test/empty/ test/empty/ 19 30 24 12 13 329 46
+test/synthetic/ test/synthetic_shuffled/ 7308 3417 54799 19012 -63086 1481 222
+test/synthetic_shuffled/ test/synthetic/ 6822 3042 54407 18822 -63365 772 230
+test/synthetic/ test/synthetic/ 327 30 54799 19012 -73454 672 149
+test/firefox-13.0.1/ test/firefox-13.0/ 39604079 3305 40998350 1187 -1392153 10214 1531
+test/source_moved/ test/source/ 2757 1966 778176 1473 -774926 642 59
