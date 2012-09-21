@@ -6,7 +6,8 @@ def sha1(f):
   fp = open(f, 'rb')
   try:
     while True:
-      buf = fp.read(16*1024*1024)
+      #buf = fp.read(16*1024*1024)
+      buf = fp.read(8*1024)
       if not buf:
         break
       sha1.update(buf)
