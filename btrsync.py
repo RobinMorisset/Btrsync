@@ -25,7 +25,7 @@ from sha1 import sha1
 from algo_moves import do_moves
 
 P_SIZE = 1024
-HASH_SIZE = 160
+HASH_SIZE = 40# 160
 SEED = 10
 PROFILE = True
 
@@ -107,14 +107,17 @@ def hash_dir():
       #(h, hcontent) = hash_file(path)
       #hashes[h] = (path, False, hcontent)
       return (path,False)
-    return itertools.chain(itertools.imap(f_dir,dirs), itertools.imap(f_file,files))
+    return itertools.chain(itertools.imap(f_dir,dirs),
+      itertools.imap(f_file,files))
 
   dirs_files = itertools.chain.from_iterable(itertools.imap(list_dirs_files,os.walk('.'))) # flatten !
 
   # TODO: mp.Pool().imap should be better, but I do not nknow why it does not work...
+  #hashes = list(dirs_files)
   hashes = mp.Pool().map(hash_dir_file,dirs_files)
   #hashes = map(hash_dir_file,dirs_files)
 
+  #return hashes
   return dict(hashes)
 
 
@@ -398,9 +401,9 @@ def main():
 
 
 
-#Just a Unit test
-assert make_frac(gmpy.mpz(102577), gmpy.mpz(101)*gmpy.invert(gmpy.mpz(125),
-  102577)) == (gmpy.mpz(101), gmpy.mpz(125))
 
 if __name__ == "__main__":
+  #Just a Unit test
+  assert make_frac(gmpy.mpz(102577), gmpy.mpz(101)*gmpy.invert(gmpy.mpz(125),
+    102577)) == (gmpy.mpz(101), gmpy.mpz(125))
   main()
