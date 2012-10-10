@@ -18,14 +18,10 @@
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath, amsfonts, amssymb, graphicx, rotating, epsfig}
-\usepackage{verbatim}
-\usepackage{algorithm}
+\usepackage{verbatim,algorithm}
 \usepackage[noend]{algpseudocode}
-\usepackage{url}
-\usepackage{tikz}
-\usepackage{tabularx,multirow}
-\usepackage{xspace}
-\usepackage{booktabs}
+\usepackage{url,tikz,tabularx,multirow,xspace,booktabs}
+\usetikzlibrary{trees,arrows,chains,matrix,positioning,scopes}
 
 \newcommand*\Let[2]{\State #1 $\gets$ #2}
 %\algrenewcommand\alglinenumber[1]{
@@ -54,11 +50,11 @@
 \itshape\hrule\smallskip#1\par\smallskip\hrule}}
 \setlength{\marginparwidth}{2cm}
 
-\usepackage{hyperref}
+\usepackage{hyperref, geometry}
 
 \begin{document}
 
-\title{When File Synchronization Meets Number Theory}
+\title{From Rational Number Reconstruction to Set Reconciliation}
 
 \author{Antoine Amarilli \and Fabrice Ben Hamouda \and Florian Bourse \and\\
 Robin Morisset \and David Naccache \and Pablo Rauzy}
@@ -72,42 +68,48 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 \maketitle
 
 \begin{abstract}
-This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets whiles minimizing communication.
-We propose a new number theoretic reconciliation protocol called ``Divide \& Factor''. In terms of asymptotic  transmission complexity, Divide \& Factor is comparable to prior proposals (that anyhow reached optimality). Nonetheless, this new protocol offers interesting parameter trade-offs resulting in experimentally measured {\sl constant-factor} transmission gains over the popular software \rsync.\smallskip
-
-Reconciliation experiments show that the new protocol usually transmits less data than \rsync\ but requires lengthier calculations.\smallskip
+This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets while minimizing the amount of data transmitted. We propose a new number theoretic reconciliation protocol called ``Divide \&
+Factor'' ({\sc d\&f}). Like prior proposals, {\sc d\&f} is optimal in terms of asymptotic transmission complexity. Nonetheless, {\sc d\&f} offers interesting parameter trade-offs resulting in experimentally measured
+transmission gains over the popular software \rsync. Reconciliation experiments show that {\sc d\&f} usually transmits less data than \rsync at the expense of lengthier (less straightforward) calculations.\smallskip
 \end{abstract}
 
 \section{Introduction}
 
-This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets while minimizing communication complexity. Set reconciliation is necessary in many practical situations, the most typical of which is certainly incremental information backup.\smallskip
+This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets while minimizing the amount of data transmitted. Set reconciliation arises in many practical situations, the most typical of which is certainly incremental backups performed over slow network links.\smallskip
 
-Set reconciliation has already several efficient and elegant solutions. For instance, \cite{PSRec} presents a particularly interesting reconciliation protocol whose computational and communication complexities are linear in the number of differences between the reconciled multisets.\smallskip
+Set reconciliation has already several efficient and elegant solutions. For instance, \cite{PSRec} presents a particularly interesting protocol whose computational and communication complexities are linear in the number of differences between the reconciled multisets. This matches the problem's obvious lower bound.\smallskip
 
 We refer the reader to \cite{PSRec,Mins1,Whats} (to quote a few references) for more on the problem's history and its existing solutions.\smallskip
 
-This article proposes a new reconciliation protocol based on number theory. In terms of asymptotic  transmission complexity, the proposed procedure is comparable to prior proposals (that anyhow reached optimality). Nonetheless, the new protocols offer interesting parameter trade-offs resulting in experimentally measured {\sl constant-factor} gains over the popular software \rsync.\smallskip
+This article proposes a new reconciliation protocol based on number theory. In terms of asymptotic  transmission complexity, the proposed procedure reaches optimality as well. In addition, the new protocols offer a very interesting gamut of parameter trade-offs resulting in experimentally measured gains over the popular software \rsync.\smallskip
 
-We observed during most of our reconciliation experiments that the new protocol transmitted less bytes than \rsync\ but required lengthier calculations.\smallskip
+During most of our set reconciliation experiments that the new protocol transmitted less information than \rsync\ but required lengthier calculations.\smallskip
 
-Beyond these practical concerns the mathematical ideas underlying this work seem new and interesting as such.
+Beyond these practical applications, the mathematical ideas underlying our protocols seem new and could hence be interesting as such.\smallskip
+
+This paper is structured as follows: Section \ref{basic} presents a basic version of the proposed protocol. This basic version suffers from two limitations: it works only if the number of differences to reconcile is bound and it may fail leave the synchronized party in an erroneous state. Failure avoidance is overcome in section \ref{reco} and an extension to any number of differences is given in section \ref{insuf}. The protocol's transmission complexity is treated in section \ref{trans}. Section \ref{trans} also introduces two transmission optimizations and analyzes them in detail. Section \ref{comp} analyzes the computational complexities of the proposed protocols and \ref{program} reports our practical experiments and benchmarks.
 
 \section{``Divide \& Factor'' Set Reconciliation}
+\label{dandf}
 
 \subsection{Problem Definition and Notations}
 
-Oscar possesses an old version of a directory $\mathfrak{D}$ that he wishes to update. Neil has the up-to-date version $\mathfrak{D}'$. The challenge faced by Oscar and Neil\footnote{Oscar and Neil will respectively stand for {\sl \underline{o}ld} and {\sl \underline{n}ew}.} is that of {\sl exchanging as little data as possible} during the synchronization process. In practice $\mathfrak{D}$ and $\mathfrak{D}'$ usually differ both in their files and in their tree structure.\smallskip
+\underline{O}scar possesses an \underline{o}ld version of a directory $\mathfrak{D}$ that he wishes to update. \underline{N}eil has the \underline{n}ew, up-to-date version $\mathfrak{D}'$: $\mathfrak{D}$ and
+$\mathfrak{D}'$ can differ both in their files and in their tree structures. Oscar wishes to learn $\mathfrak{D}'$ but {\sl exchange as little data as possible} during the learning (synchronization) process.\smallskip
 
-In tackling this problem we separate the {\sl ``what''} from the {\sl ``where''} and disregard the relative position of files in subdirectories\footnote{{\sl i.e.} view directories as multisets of files.}. Let $\mathfrak{F}$ and $\mathfrak{F}'$ denote the multisets of files contained in $\mathfrak{D}$ and $\mathfrak{D}'$. We denote $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$ and $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
+To tackle this problem we separate the {\sl ``what''} from the {\sl ``where''} and disregard the relative position of files. We represent $\mathfrak{D}$ as a multiset of files which we denote as $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$, and likewise represent $\mathfrak{D'}$ as $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
 
-Let $t$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ that Oscar wishes to learn, {\sl i.e.}:
+Let $t_0$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ that Oscar wishes to learn, {\sl i.e.}:
 
-$$t=\#\mathfrak{F}+\#\mathfrak{F}'-2 \#\left(\mathfrak{F} \bigcap \mathfrak{F}'\right)=\#\left(\mathfrak{F}\bigcup\mathfrak{F}'\right)-\#\left(\mathfrak{F}\bigcap\mathfrak{F}'\right)$$
+$$t_0=\#\mathfrak{F}+\#\mathfrak{F}'-2 \#\left(\mathfrak{F} \bigcap \mathfrak{F}'\right)=\#\left(\mathfrak{F}\bigcup\mathfrak{F}'\right)-\#\left(\mathfrak{F}\bigcap\mathfrak{F}'\right)$$
 
-Let $\mbox{{\tt Hash}}(F)$ be a collision-resistant hash function\footnote{{\sl e.g.} SHA-1} where $F$ is a file. Let $\mbox{{\tt HashPrime}}(F)$ be a function hashing files (uniformly) into primes smaller than $2^u$. Define the shorthand notations: $h_i=\mbox{{\tt HashPrime}}(F_i)$ and $h'_i=\mbox{{\tt HashPrime}}(F'_i)$.\smallskip
+Given a file $F$, we denote by $\mbox{{\tt Hash}}(F)$ its image by a collision-resistant hash function such as {\sc sha}-1. Let $\mbox{{\tt HashPrime}}(F)$\footnote{The design of \mbox{{\tt HashPrime}} is addressed in Appendix \ref{sec:hashprime}.} be a function hashing files (uniformly) into primes smaller than $2^u$ for some $u\in \mathbb{N}$. Define the shorthand notations: $h_i=\mbox{{\tt HashPrime}}(F_i)$ and $h'_i=\mbox{{\tt HashPrime}}(F'_i)$.\smallskip
 
 \subsection{Description of the Basic Exchanges}
 \label{basic}
+
+$t_0$ is unknown to Oscar and Neil. However, for the time being, we assume that $t_0$ is smaller than some $t$ and attempt to perform
+synchronization. If $t_0\leq t$, synchronization will succeed; if $t_0 < t$ the parties will transmit more information later and achieve synchrony as explained in section \ref{insuf}.
 
 We generate a prime $p$ such that:
 
@@ -137,53 +139,177 @@ b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox
 \right.
 $$
 
-Note that since $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements, $a$ and $b$ are strictly lesser than $2^{ut}$. Theorem \ref{theo} (see \cite{cryptorational}) guarantees $a$ and $b$ can be efficiently recovered from $s$ (A problem  known as the {\sl Rational Number Reconstruction} \cite{pan2004rational,wang2003acceleration}). This is typically done using Gauss' algorithm for finding the shortest vector in a bi-dimensional lattice \cite{vallee}.
+Note that if our assumption $t_0 \leq t$ is correct $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements and $a$ and $b$ are strictly less than $2^{ut}$. Theorem \ref{theo} (see \cite{cryptorational}) guarantees $a$ and $b$ can be efficiently recovered from $s$: this problem is known as the {\sl Rational Number Reconstruction} \cite{pan2004rational,wang2003acceleration} and is typically solved using Gauss' algorithm for finding the shortest vector in a bi-dimensional lattice \cite{vallee}.
 
 \begin{theorem}
 \label{theo}
-Let $a,b \in {\mathbb Z}$ such that $-A \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \mod p$.
-Then $a,b$ can be recovered from $A,B,s,p$ in polynomial time.
+Let $a,b \in {\mathbb Z}$ such that $-A \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \mod p$. Then $a,b$ can be recovered from $A,B,s,p$ in polynomial time.
 \end{theorem}
 
-Taking $A=B=2^{ut}-1$, (\ref{equp}) implies that $2AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can
-recover $a$ and $b$ from $s$ in polynomial time. By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can
-deterministically identify the discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ and settle them.\smallskip
+Taking $A=B=2^{ut}-1$, (\ref{equp}) implies that $2AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time. By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can attempt to identify the discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ and settle them.\smallskip
 
-Formally, this is done as follows:\smallskip
+Formally, this is done as described in Figure \ref{fig:one}.\smallskip
 
+\begin{figure}
 \begin{center}
 \begin{tabular}{|lcl|}\hline
 ~~{\bf Oscar}                       &                                                      &   {\bf Neil}~\\
+~~compute $c$&                                                      &\\
                                    &~~{{\LARGE $\stackrel{c}{\longrightarrow}$}}~~        &   \\
-                                   &                                                      &computes $a,b$~\\
-                                   &                                                      &if $a$ doesn't factor into a product of $h'_i$s~\\
-                                   &                                                      &~~~~~~then output $\bot$ and halt~\\
-                                   &                                                      &~~~~~~else let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod h'_i =0\}$~~\\
+                                   &                                                      &compute $a,b$~\\
+                                   &                                                      &if $a$ doesn't factor as a product of $h'_i$s~~\\
+                                   &                                                      &~~~~then output $\bot_{\mbox{{\tiny {\sf bandwidth}}},1}$ and halt~~\\
+                                   &                                                      &$\mathfrak{S}\leftarrow\{F'_i \mbox{~s.t.~} a \bmod h'_i =0\}$~~\\
                                    &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
-~~deletes files s.t. $b \bmod h_i =0$&                                                      &\\
-~~adds $\mathfrak{S}$ to the disk    &                                                      &\\\hline
+~~if $b$ doesn't factor as a product of $h_i$'s&&\\
+~~~~~~then output $\bot_{\mbox{{\tiny {\sf bandwidth}}},2}$ and halt &&\\
+~~delete files s.t. $b \bmod h_i =0$&                                                      &\\
+~~add $\mathfrak{S}$ to the disk    &                                                      &\\\hline
 \end{tabular}
 \end{center}
+\caption{Basic Protocol.}\label{fig:one}
+\end{figure}
 
-As we have just seen, the ``output $\bot$ and halt'' protocol interruption should never occur if bounds on parameters are respected. However, a file synchronization procedure that works {\sl only} for a limited number of differences is not really useful in practice. Section \ref{insuf} explains how to extend the protocol even when the number of differences exceeds $t$, the informational capacity of the modulus $p$.
+The ``output $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ '' protocol interruptions will:
+
+\begin{itemize}
+\item never occur if the assumption $t_0 \leq t$ holds.
+
+\item occur with high probability if $t_0 > t$. Indeed, for a potential $\bot_{\mbox{{\tiny {\sf bandwidth}}},1}$ to be overlooked, the $ut$-bit number $a$ must perfectly factor over a set of $n$ primes of size $u$. If we assume that $a$ is ``random'', the probability $\gamma$ that $a$ is divisible by some $h_i$ is essentially $\gamma \sim 1/h_i \sim 2^{-u}$, the probability that $a$ is divisible by exactly $t$ digests is:
+$$\alpha=\binom{n}{t} \gamma^t (1 - \gamma)^{n - t} \sim \binom{n}{t} 2^{-u t} (1 - 2^{-u})^{n - t}$$ and the probability that the protocol does not terminate by a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ while it should ({\sl i.e.} while $t_0 > t$) is $\sim\alpha^2$.
+\end{itemize}
+
+The very existence of $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$'s is annoying for two reasons:
+\begin{itemize}
+\item A file synchronization procedure that works {\sl only} for a limited number of differences is not really useful in practice. Thus, section \ref{insuf} explains how to extend the protocol even when $t_0$ the number of differences exceeds $t$, the informational capacity of the modulus $p$.\smallskip
+\item If, by sheer bad luck, both $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$'s went undetected (double accidental factorization) the Basic Protocol (Fig. \ref{fig:one}) may leave Oscar in an incoherent state.
+\end{itemize}
+
+Double accidental factorization is not only possible source of incoherent states: as we did not specifically require $\mbox{{\tt HashPrime}}$ to be collision-resistant, the events
+
+$$
+\begin{array}{lll}
+{
+\bot_{\mbox{{\tiny {\sf collision}}},1}=\left\{
+\begin{array}{l}
+h'_i = h'_j \mbox{~for~}i\neq j\\
+\\
+a \bmod h_i =0
+\end{array}
+\right.
+}&\mbox{~~~and/or~~~}&{
+\bot_{\mbox{{\tiny {\sf collision}}},2}=\left\{
+\begin{array}{l}
+h_i = h_j \mbox{~for~}i\neq j\\
+\\
+b \bmod h'_i =0
+\end{array}
+\right.}\\
+\end{array}
+$$
+
+will cause Neil to send wrong files in $\mathfrak{S}$ ($\bot_{\mbox{{\tiny {\sf collision}}},1}$) and/or have Oscar unduely delete files owned by Neil ($\bot_{\mbox{{\tiny {\sf collision}}},2}$).\smallskip
+
+Incoherent states may hence stem from three events:
+
+\begin{center}
+\begin{tabular}{llll}
+$\bullet$~~&\multicolumn{3}{l}{accidental double factorization of $a$ and/or $b$ when $t_0 > t$ (probability $\alpha^2$)}\\
+$\bullet$~~&$\bot_{\mbox{{\tiny {\sf collision}}},1}$   &$=$& collisions within the set $\{h'_i\}$\\
+$\bullet$~~&$\bot_{\mbox{{\tiny {\sf collision}}},2}$ &$=$& collisions within the set $\{h_i\}$\\
+\end{tabular}\smallskip
+\end{center}
+
+Section \ref{reco} explains how protect the protocol from all incoherent events at once.
+
+\subsection{Avoiding Incoherency}
+\label{reco}
+
+The Basic Protocol of Figure \ref{fig:one} is fully deterministic. Hence if any sort of trouble occurs, repeating the protocol will be of no help. We modify the protocol as follows:
+
+\begin{itemize}
+\item Let $H\leftarrow\mbox{{\tt Hash}}(\mathfrak{F}')$
+\item Replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_k(F)=\mbox{{\tt HashPrime}}(k|F)$.\smallskip
+\item Define the shorthand notations: $\hbar_{k,i}=\hbar_k(F_i)$ and $\hbar'_{k,i}=\hbar_k(F'_i)$.\smallskip
+\item Let $\mbox{{\sf StepProtocol}}(k)$ denote the sub-protocol shown in Figure \ref{fig:step}.
+\item Use the protocol of Figure \ref{fig:itera} as a fully functional reconciliation protocol for $t_0 \leq t$.
+\end{itemize}
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{|lcl|}\hline
+~~{\bf Oscar}                       &                                                      & {\bf Neil}~\\
+                                   &                                                       &if $a$ doesn't factor as a product of $\hbar'_{k,i}$s~~\\
+                                   &                                                       &~~~~then output $\bot_{\mbox{{\tiny {\sf bandwidth}}},1}$ and halt~~\\
+                                   &                                                       &$\mathfrak{S}\leftarrow\{F'_i \mbox{~s.t.~} a \bmod \hbar'_{k,i} =0\}$~~\\
+~~                                 &                                                       &if there are collisions in $\mathfrak{S}$\\
+                                   &                                                       &~~~~then output $\bot_{\mbox{{\tiny {\sf collision}}},1}$ and halt~~\\
+                                   &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$} &\\
+~~if $b$ doesn't factor as a product of $\hbar_{k,i}$'s&&\\
+~~~~~~then output $\bot_{\mbox{{\tiny {\sf bandwidth}}},2}$ and halt &&\\
+~~$\mathfrak{A}\leftarrow\{F_i \mbox{~s.t.~} b \bmod \hbar_{k,i} =0\}$ &&\\
+~~if there are collisions in $\mathfrak{A}$ &                                   & \\
+~~~~~~then output $\bot_{\mbox{{\tiny {\sf collision}}},2}$ and halt~~&                      &~~\\
+~~if $H \neq \mbox{{\tt Hash}}(\mathfrak{F}\bigcup\mathfrak{S} - \mathfrak{A})$ &                                                      &\\
+~~~~~~then output $\bot_{\mbox{{\tiny {\sf bandwidth}}},3}$ and halt &&\\
+~~add $\mathfrak{S}$ to the disk and erase $\mathfrak{A}$ from the disk &                                                      &\\
+~~return {\sf success} &                                                      &\\\hline
+\end{tabular}
+\end{center}
+\caption{$\mbox{{\sf StepProtocol}}(k)$.}\label{fig:step}
+\end{figure}
+
+\subsubsection{Note:} To avoid transmitting (the potentially very voluminous) $\mathfrak{S}$ during {\sf StepProtocol} before knowing if one of the errors $\bot_{\mbox{{\tiny {\sf bandwidth}}},2},\bot_{\mbox{{\tiny {\sf bandwidth}}},3},\bot_{\mbox{{\tiny {\sf collision}}},2}$ will occur, Neil may transmit $$\mathfrak{S}'=\{\mbox{{\tt Hash}}(F'_i),~F'_i\in \mathfrak{S}\}$$ instead of $\mathfrak{S}$ and send $\mathfrak{S}$ only after successfully passing the $\bot_{\mbox{{\tiny {\sf bandwidth}}},3}$ test. The definition of $H$ must be changed accordingly to 
+
+$$H=\mbox{{\tt Hash}}(\{\mbox{{\tt Hash}}(F'_i),~F'_i\in \mathfrak{F}'\})$$
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{|lcl|}\hline
+~~{\bf Oscar}                      &                                                      &   {\bf Neil}~\\
+~~                                 &                                                      & compute $H\leftarrow\mbox{{\tt Hash}}(\mathfrak{F}')$\\
+                                   &~~{{\LARGE $\stackrel{H}{\longleftarrow}$}}~~   &   \\
+~~compute $c$&                                                                             &\\
+                                   &~~{{\LARGE $\stackrel{c}{\longrightarrow}$}}~~         &   \\
+                                   &                                                       &compute $a,b$~\\
+                                   &                                                      &$k\leftarrow 1$~\\
+                                   &~~{{\LARGE $\stackrel{\mbox{{\small{\sf StepProtocol}}}(k)}{\longleftarrow}$}}~~   &while $\mbox{{\sf StepProtocol}}(k)=\bot_{\mbox{{\tiny {\sf collision}}},\square}$~~\\
+                                   &                                                      &~~~~$k\leftarrow k+1$~\\\hline
+\end{tabular}
+\end{center}
+\caption{Fully Functional Protocol for $t_0 \leq t$.}\label{fig:itera}
+\end{figure}
 
 \subsection{The Case of Insufficient Information}
 \label{insuf}
-To extend the protocol to an arbitrary $t$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails, Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in appendix A. Note that no information is lost and that the transmitted modular knowledge about the difference adds-up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
+
+To extend the protocol to an arbitrary $t_0$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ status, Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in Appendix \ref{sec:extended}. Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$. \smallskip
+
+All $\bot$ treatments were removed from Appendix \ref{sec:extended} for the sake of clarity (these can be very easily added by modifying Appendix \ref{sec:extended} {\sl mutatis mutandis}). In essence, the rules are: add information modulo a new $p_i$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ and to increment $k$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf collision}}},\square}$.\smallskip
+
+A typical execution sequence is thus expected to be something like:
+
+$$\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf collision}}},1},\bot_{\mbox{{\tiny {\sf collision}}},1},\mbox{{\sf success}}$$
 
 \section{Transmission Complexity}
+\label{trans}
+This section explores two strategies for reducing the size of $p$ and hence improving transmission by {\sl constant factors} (from an asymptotic communication standpoint, improvements cannot be expected as the protocol already transmits information proportional to $t_0$, the difference to settle). Excluding the core information $\mathfrak{S}$ and assuming that no $\bot_{\mbox{{\tiny {\sf collision}}},\square}$ events occurred, the transmission complexity of the protocol of Appendix \ref{sec:extended} is:
 
-This section explores two strategies to reduce the size of $p$ and hence improve transmission by {\sl constant factors} (from an asymptotic communication standpoint, improvements cannot be expected as the protocol already transmits information proportional to $t$, the difference to settle).
+$$
+\lambda \log (\max_{i=1}^\lambda c_i) + \log b \leq \lambda \log (\max_{i=1}^\lambda p_i) + \frac12 \log \prod_{i=1}^\lambda p_i \leq 3\lambda (ut_0+1)=O(\lambda ut_0)=O(ut)
+$$
+
+Where $\lambda=t/t_0$ is the number of rounds required to complete the protocol. As we have no control over $t$, decreasing $u$ is the main natural optimization option. We will back to this later on in this paper (section \ref{shortu}).
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
 Generate a prime $p$ about twice shorter than the $p$ recommended in section \ref{basic}, namely:
 \begin{equation}
 \label{eqnewp}
-2^{ut+w-1}<p \leq 2^{ut+w}
+2^{u(t+1)}<p \leq 2^{u(t+1)+1}
 \end{equation}
 
-where $w \geq 1$ is some small integer (say $w=50$). Let $\eta=\max(n,n')$. The new redundancy $c$ is calculated as previously and is hence also approximately twice smaller. Namely:
+Let $\eta=\max(n,n')$. The new redundancy $c$ is calculated as previously and is hence also approximately twice smaller. Namely:
 
 $$s=\frac{a}{b} \bmod p \mbox{~and~}
 \left\{
@@ -201,16 +327,16 @@ and since there are at most $t$ differences, we must have:
 a b \leq 2^{ut}
 \end{equation}
 
-By opposition to section \ref{basic} we do not have a fixed bound for $a$ and $b$ anymore; equation (\ref{eqab}) only provides a bound for the {\sl product} $a b$. Therefore, we define a sequence of at most $\lceil ut/w \rceil+1$ couples of bounds:
+By opposition to section \ref{basic} we do not have a fixed bound for $a$ and $b$ anymore; equation (\ref{eqab}) only provides a bound for the {\sl product} $a b$. Therefore, we define a sequence of at most $t+1$ couples of bounds:
 
-$$\left(A_i,B_i\right)=\left(2^{wi},\left\lfloor \frac{p-1}{2^{wi+1}} \right\rfloor\right)\mbox{~~where~~}B_i>1\mbox{~~and~~}\forall i>0,~2 A_i B_i<p$$
+$$\left(A_i,B_i\right)=\left(2^{(u+1)i},\left\lfloor \frac{p-1}{2^{(u+1)i+1}} \right\rfloor\right)\mbox{~~where~~}B_i>1\mbox{~~and~~}\forall i>0,~2 A_i B_i<p$$
 
 Equations (\ref{eqnewp}) and (\ref{eqab}) imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
 
-The problem is that (unlike section \ref{basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We expect this to happen with negligible probability (that we do not try to estimate here) when $w$ is large enough, but this makes the modified protocol heuristic only.\smallskip
+The problem is that (unlike section \ref{basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough, but this makes the modified protocol heuristic only. If failures never occur, this variant will roughly halve the quantity of transmitted bits with respect to section \ref{basic}.\smallskip
 
 \subsection{The File Laundry: Reducing $u$}
-
+\label{shortu}
 What happens if we brutally shorten $u$ in the basic Divide \& Factor protocol?\smallskip
 
 As expected by the birthday paradox, we should start seeing collisions. Let us analyze the statistics governing the appearance of collisions.
@@ -236,9 +362,9 @@ For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of c
 
 However, it is important to note that a collision can only yield a {\sl false positive}, and never a {\sl false negative}. In other words, while a collision may obliviate a difference\footnote{{\sl e.g.} make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create a nonexistent difference {\sl ex nihilo}.\smallskip
 
-Thus, it suffices to replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\mbox{{\tt HashPrime}}(k|F)$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each iteration the parties will detect new files and new deletions, fix these and ``launder'' again the remaining multisets.\smallskip
+Thus, it suffices to replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_k(F)=\mbox{{\tt HashPrime}}(k|F)$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each iteration the parties will detect new files and new deletions, fix these and ``launder'' again the remaining multisets.\smallskip
 
-Assume that the diversified $\mbox{{\tt HashPrime}}(k|F)$'s are random and independent. To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $k$, assume that $\eta$ remains invariant between iterations and define the following random variables:\smallskip
+Assume that the diversified $\hbar_k(F)$'s are random and independent. To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $k$, assume that $\eta$ remains invariant between iterations and define the following random variables:\smallskip
 
 $$
 \begin{array}{rcl}
@@ -261,6 +387,8 @@ Y_i = \prod_{\ell=1}^k X^{\ell}_i & = &
 \right.
 \end{array}$$
 
+\comm{Fabrice je ne vois pas la difference entre $X^{\ell}_i $ dans cette section et $Z^\ell_i $ dans la suivante. Peux-tu preciser STP}
+
 By independence, we have:
 
  \[ \Prob{Y_i = 1} = \prod_{\ell=1}^k \Prob{X^{\ell}_i = 1} = \Prob{X^1_i = 1} \dots \Prob{X^k_i = 1} \le \left( \frac{\eta -1}{2^u} \right)^k \]
@@ -277,7 +405,7 @@ And the probability that at least one false positive will survive $k$ rounds is:
 
 For the previously considered instance\footnote{$\eta=10^6$,$u=32$.} we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3}\%$.
 
-\subsubsection{A more refined (but somewhat technical) analysis.} As mentioned previously, the parties can remove the files confirmed as different during iteration $k$ and work during iteration $k+1$ only with common and colliding files. Now, the only collisions that can fool round $k$, are the collisions of file-pairs $(F_i,F_j)$ such that $F_i$ and $F_j$ have both already collided during {\sl all the previous iterations}\footnote{Note that we \underline{do not} require that $F_i$ and $F_j$ repeatedly collide {\sl which each other}. {\sl e.g.} we may witness during the first round $\hbar_{1,u}(F_1)=\hbar_{1,u}(F_2)$ and $\hbar_{1,u}(F_3)=\hbar_{1,u}(F_4)$ while during the second round $\hbar_{2,u}(F_1)=\hbar_{2,u}(F_4)$ and $\hbar_{2,u}(F_2)=\hbar_{2,u}(F_3)$.}. We call such collisions ``masquerade balls''. Define the two random variables:
+\subsubsection{A more refined (but somewhat technical) analysis.} As mentioned previously, the parties can remove the files confirmed as different during iteration $k$ and work during iteration $k+1$ only with common and colliding files. Now, the only collisions that can fool round $k$, are the collisions of file-pairs $(F_i,F_j)$ such that $F_i$ and $F_j$ have both already collided during {\sl all the previous iterations}\footnote{Note that we \underline{do not} require that $F_i$ and $F_j$ repeatedly collide {\sl which each other}. {\sl e.g.} we may witness during the first round $\hbar_{1}(F_1)=\hbar_{1}(F_2)$, $\hbar_{1}(F_3)=\hbar_{1}(F_4)$ and $\hbar_{1}(F_5)=\hbar_{1}(F_6)$ while during the second round $\hbar_{2}(F_1)=\hbar_2(F_2)$, $\hbar_{2}(F_3)=\hbar_{1}(F_6)$ and $\hbar_{2}(F_5)=\hbar_{2}(F_4)$ as shown in Figure \ref{fig:masked}.}. We call such collisions ``masquerade balls'' ({\sl cf. } Figure \ref{fig:masked}). Define the two random variables:
 
 \begin{align*}
 Z^\ell_i &=
@@ -297,7 +425,26 @@ X^{\ell}_{i,j} &=
 \end{array}
 \right.
 \end{align*}
-\comm{Inclure ici image du bal masque}
+
+\def\bruijn{file $F_1$,file $F_2$,file $F_3$,file $F_4$,file $F_5$,file $F_6$}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[scale=4]
+    \foreach \v [count=\n] in \bruijn
+    \node[draw=black!30,fill=black!10,rounded corners] (\n) at (180-\n*60:1) {\v};
+  \path (1) edge [<->,above,double,thick]             node {round 1} (2)
+        (3) edge [<->,above,double,thick,sloped]             node {round 1} (4)
+        (5) edge [<->,above,double,thick,sloped]             node {round 1} (6)
+        (1) edge [<->,above,bend left]  node {round 2} (2)
+        (3) edge [<->,above]             node {round 2} (6)
+        (5) edge [<->,above]             node {round 2} (4)
+        (6) edge [<->,above,dashed,sloped]  node {round 3} (2)
+        (1) edge [<->,above,dashed,sloped]  node {round 3} (3)
+        (5) edge [<->,bend left,above,dashed]  node {round 3} (4);
+\end{tikzpicture}
+\caption{Illustration of three masquerade balls. Each protocol round is materialized by a different type of arrow. Arrows denotes collisions.}\label{fig:masked}
+\end{figure}
 
 Set $Z^0_i = 1$ and write $p_\ell = \Prob{Z^{\ell-1}_{i} = 1 \text{ and } Z^{\ell-1}_{j} = 1} $ for all $\ell$ and $i \neq j$.
 For $k \ge 1$, we have:
@@ -328,7 +475,7 @@ And finally, the survival probability of at least one false positive after $k$ i
 For $(\eta=10^6,u=32,k=2)$, we get $\epsilon'_2 \le 0.013\%$.\smallskip
 
 \subsubsection{How to select $u$?}
-% 
+%
 For a fixed $k$, $\epsilon'_k$ decreases as $u$ grows. For a fixed $u$, $\epsilon'_k$ also decreases as $k$ grows. Transmission, however, grows with both $u$ (bigger digests) and $k$ (more iterations). We write for the sake of clarity: $\epsilon'_k = \epsilon'_{k,u,\eta}$.\smallskip
 
 Fix $\eta$. Note that the number of bits transmitted per iteration ($\simeq 3ut$), is proportional to $u$. This yields an expected transmission complexity bound $T_{u,\eta}$ such that:\smallskip
@@ -350,62 +497,59 @@ $\phi_{10^6}(u)$ admits an optimum for $u=19$.
 \begin{itemize}
 \item We consider $u$-bit prime digests while $u$-bit strings contain only about $2^u/u$ primes.\smallskip
 
-\item In all our probability calculations $\eta$ can be replaced by the total number of differences $t$. It is reasonable to assume that in most {\sl practical} settings $t \ll \eta$, but extreme instances where $t\sim\eta$ can sometimes be encountered as well.\smallskip
-
 \item We used a fixed $u$ in all rounds. Nothing forbids using a different $u_k$ at each iteration\footnote{...or even fine-tuning the $u_k$s adaptively, as a function of the laundry's effect on the progressively reconciliated multisets.}.
 
-\item Our analysis treated $t$ as a constant, but large $t$ values increase $p$ and hence the number of potential files detected as different per iteration - an effect disregarded in our analysis.
+\item Our analysis treats $t$ as a constant, but large $t$ values increase $p$ and hence the number of potential files detected as different per iteration - an effect disregarded {\sl supra}.
 \end{itemize}
 
-Given that, after all, optimization may only result in constant-factor improvements, we suggest to optimize $t$ and $u$ experimentally, {\sl e.g.} using the open source program \btrsync\ developed by the authors ({\sl cf.} section  \ref{program}).
+In practice, we suggest to optimize $t$ and $u$ experimentally, {\sl e.g.} using the open source {\sc d\&f} program \btrsync\ developed by the authors ({\sl cf.} section  \ref{program}).
 
 \subsection{How to Stop a Probabilistic Washing Machine?} We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a half-sized $p$. By opposition to section \ref{basic}, confirming correct protocol termination is now non-trivial.\smallskip
 
-Let the round failure probability\footnote{{\sl i.e.} that probability that a round resulted in an $(a',b')\neq (a,b)$ satisfying equation (\ref{eqab}).} be some function $\upsilon(w)$ (that we did not estimate). If $w$ is kept small (for efficiency reasons), the probability $\left(1-\upsilon(w)\right)^{\ell}$ that the protocol will properly terminate may dangerously drift away from one.\smallskip
+Let the round failure probability\footnote{{\sl i.e.} that probability that a round resulted in an $(a',b')\neq (a,b)$ satisfying equation (\ref{eqab}).} be some function $\zeta(u)$ (that we did not estimate). If $u$ is kept small (for efficiency reasons), the probability $\left(1-\zeta(u)\right)^{\ell}$ that the protocol will properly terminate may dangerously drift away from one.\smallskip
 
-If $v$ of $\ell+v$ rounds fail, Oscar needs to solve a problem called {\sl Chinese Remaindering With Errors}:\smallskip
+If $v$ of $\ell+v$ rounds fail, Oscar needs to solve a problem called {\sl Chinese Remaindering With Errors} \cite{phong}:\smallskip
 
-\begin{problem}{\sl (Chinese Remaindering With Errors Problem: {\sc crwep} \cite{phong}).} Given as input integers $v$, $B$ and $\ell+v$ points $(s_1,p_1),\ldots,(s_{\ell+v},p_{\ell+v})\in \mathbb{N}^2$ where the $p_i$'s are coprime, output all numbers $0 \leq s < B$ such that $s \equiv s_i \bmod p_i$ for at least $v$ values of $i$.
+\begin{problem}{\sl (Chinese Remaindering With Errors Problem: {\sc crwep}).} Given as input integers $v$, $B$ and $\ell+v$ points $(s_1,p_1),\ldots,(s_{\ell+v},p_{\ell+v})\in \mathbb{N}^2$ where the $p_i$'s are coprime, output all numbers $0 \leq s < B$ such that $s \equiv s_i \bmod p_i$ for at least $\ell$ values of $i$.
 \end{problem}
 
-We refer the reader to \cite{phong} for more on this problem, which is beyond the scope of this article. Boneh \cite{boneh} provides a polynomial-time algorithm for solving the {\sc crwep} under certain conditions satisfied by our setting.\smallskip
+We refer the reader to \cite{phong} for more on this problem, which is beyond our scope. Boneh \cite{boneh} provides a polynomial-time algorithm for solving the {\sc crwep} under certain conditions satisfied by our setting.\smallskip
 
-To detect that reconciliation succeeded, Neil will send to Oscar $\mbox{{\tt Hash}}(\mathfrak{F}')$ as soon as the interaction starts. As long as Oscar's {\sc crwep} resolution does not result in a state matching $\mbox{{\tt Hash}}(\mathfrak{F}')$, the parties will continue the interaction.
+But how can we confirm the solution? As mentioned in section \ref{reco}, Neil will send to Oscar $H=\mbox{{\tt Hash}}(\mathfrak{F}')$ as the interaction starts. As long as Oscar's {\sc crwep} resolution will not yield a state matching $H$, the parties will continue the interaction.
 
 \section{Computational Complexity}
-
+\label{comp}
 Let $\mu(k)$ be the time required to multiply two $k$-bit numbers\footnote{We suppose that $\forall k,k', \mu(k+k') \ge \mu(k) + \mu(k')$.}.
-The modular division of two $k$-bit numbers and the reduction of $2k$-bit number modulo a $k$-bit number are known to cost $\Oapp(\mu(k))$ \cite{burnikel1998fast}.\smallskip
+The modular division of two $k$-bit numbers and the reduction of $2k$-bit number modulo a $k$-bit number are also known to cost $\Oapp(\mu(k))$ \cite{burnikel1998fast}.\smallskip
 
-For na\"{i}ve ({\sl i.e.} convolutive) algorithms $\mu(k) = O(k^2)$, but using {\sc fft} multiplication strategies \cite{schonhage1971schnelle}, $\mu(k) = \Oapp(k)$. {\sc fft} is experimentally faster than convolutive methods for $k \sim 10^6$ and on. For such sizes, in packages such as {\sf gmp}, division and modular reduction also run in $\Oapp(\mu(k))$. Given that $p \sim 2^{ut}$, we get the following complexity analysis:
+For na\"{i}ve ({\sl i.e.} convolutive) algorithms $\mu(k) = O(k^2)$, but using {\sc fft} multiplication \cite{schonhage1971schnelle}, $\mu(k) = \Oapp(k)$. {\sc fft} is experimentally faster than convolutive methods from $k \sim 10^6$ and on. For such sizes, in packages such as {\sf gmp}, division and modular reduction also run in $\Oapp(k)$. Given that $p \sim 2^{ut}$, we get the following complexity analysis:
 
-\comm{"reduction also run in $\Oapp(\mu(k))$"}
 
-\begin{figure}
+\begin{table}
   \begin{tabularx}{\textwidth}{lXp{1.2cm}p{2.3cm}p{1.2cm}p{2.3cm}}\toprule
-{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &
-    \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\\midrule
+{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\\midrule
+Both  & prime generation                                                 & $nu^4$  & Rabin-Miller & $n u^3$  & Rabin-Miller             \\
 Both  & redundancies $c$ and $c'$                                        & $n \cdot \mu(u t)$  & na\"{i}ve product & $n u t$  & using {\sc fft}             \\
 Oscar & $s = c' / c \bmod p$                                             & $\mu(u t)$    & na\"{i}ve inversion& $u t$    & using {\sc fft}               \\
-Oscar & $a,b$ such that $s = a / b \bmod p$                              & $(u t)^2$   & na\"{i}ve ext. {\sc gcd} & $\mu(u t)$ &  using \cite{pan2004rational,wang2003acceleration} \\
+Oscar & $a,b$ such that $s = a / b \bmod p$                              & $(u t)^2$   & na\"{i}ve ext. {\sc gcd} & $u t$ &  using \cite{pan2004rational,wang2003acceleration} \\
 Both  & factorization of $a$ (resp. $b$) by modular reductions           & $n \cdot \mu(u t)$  & na\"{i}ve reduction & $n u t$  & using {\sc fft}             \\
       & {\bf Overwhelming complexity:}                                   &
-    \multicolumn{2}{c}{$\max((u t)^2,n \cdot \mu(ut))$ }    &
-    \multicolumn{2}{c}{$n u t$}              \\\bottomrule
+    \multicolumn{2}{c}{$\max(nu^4,n \cdot \mu(ut),(u t)^2)$}    &
+    \multicolumn{2}{c}{$n u \max(t,u^3)$}              \\\bottomrule
   \end{tabularx}
-  \caption{Global Protocol Complexity. In practice $\max((u t)^2,n \cdot \mu(ut))=n(u t)^2$ because $(u t)^2 \ll n \cdot \mu(ut)=n(u t)^2$}
+  \caption{Global Protocol Complexity. In practice $\max((u t)^2,n \cdot \mu(ut))=n(u t)^2$ because $(u t)^2 \ll n \cdot \mu(ut)=n(u t)^2$. This boils-down to $\max(n(u t)^2, nu^4)=n(u\max(t,u))^2$.}
   \label{tab:workload}
-\end{figure}
+\end{table}
 
 
 \subsection{Improvements}
 
-The overwhelming complexities of the computations of $(c,c')$ and of the factorizations can be reduced to $\Oapp(\frac{n}{t} \mu(u t))$ using convolutive methods and to $\Oapp(n u)$ with {\sc fft} \cite{schonhage1971schnelle}. To simplify explanations, assume that $t=2^\tau$ is a power of two dividing $n$.
+The non-overwhelming (but nonetheless important) complexities of the computations of $(c,c')$ and of the factorizations can be even reduced to $\Oapp(\frac{n}{t} \mu(u t))$ using convolutive methods. These complexities can be reduced to $\Oapp(n u)$ with {\sc fft} \cite{schonhage1971schnelle}. To simplify explanations, assume that $t=2^\tau$ is a power of two dividing $n$.
 
 The idea is the following: group $h_i$s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$.
-\[ H_j = \prod_{i=j t}^{j t + t - 1} h_i. \]
+\[ H_j = \prod_{i=j t}^{j t + t - 1} h_i\in\mathbb{N} \]
 
-Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm~\ref{alg:prod-tree} (for $j=0$) and illustrated in Figure~\ref{fig:prod-tree}.
+Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm~\ref{alg:prod-tree} (for $j=0$) illustrated in Figure~\ref{fig:prod-tree}.
 And all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu(u t))$. Then, one can compute $c$ by multiplying the $H_j$ modulo $p$, which costs $\Oapp(\frac{n}{t} \mu(u t))$.
 
 \newpage
@@ -499,9 +643,9 @@ And all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu(u
 
 The same technique applies to factorization\footnote{We explain the process with $a$, this is applicable {\sl ne variatur} to $b$ as well.}, but with a slight {\sl caveat}.\smallskip
 
-After computing the tree product, we can compute the residues of $a$ modulo $H_0$. 
-Then we can compute the residues of $a \mod H_0$ modulo the two children $\pi_2$ and $\pi_3$ of $H_0 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end ({\sl i.e.}, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{0,\dots,t-1\}$). This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}. 
-We can use the same method for the tree product associated to any $H_j$, and so we can get the residues of $a$ modulo each of the $h_i$ ($i \in \{jt,\dots,jt+t-1\}$) for any $j$, {\sl i.e.}, $a$ modulo each of the $h_i$ for any $i$.
+After computing the tree product, we can compute the residues of $a$ modulo $H_0$.
+Then we can compute the residues of $a \mod H_0$ modulo the two children $\pi_2$ and $\pi_3$ of $H_0 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end ({\sl i.e.}, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{0,\dots,t-1\}$). This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
+We can use the same method for the tree product associated to any $H_j$, and the residues of $a$ modulo each of the $h_i$ ($i \in \{jt,\dots,jt+t-1\}$) for any $j$, {\sl i.e.}, $a$ modulo each of the $h_i$ for any $i$.
 Complexity is $\Oapp(\mu(u t))$ for each $j$, summing-up to a total complexity of $\Oapp(\frac{n}{t} \Oapp(\mu(u t)))$.
 
 \newpage
@@ -571,7 +715,7 @@ Complexity is $\Oapp(\mu(u t))$ for each $j$, summing-up to a total complexity o
 \newcommand{\vmid}{\ensuremath{\mathrm{mid}}}
 \newcommand{\vend}{\ensuremath{\mathrm{end}}}
 \begin{algorithmic}[1]
-\Require{$a$ an integer, $\pi$ the product tree of Algorithm \ref{alg:prod-tree}}
+\Require{$a\in\mathbb{N}$, $\pi$ the product tree of Algorithm \ref{alg:prod-tree}}
 \Ensure{$A[i] = a \bmod \pi_i$ for $i \in \{1,\dots,2t-1\}$, computed as in Figure \ref{alg:div-prod-tree}}
 \State $A \gets $ array of size $t$
 \Function{modTree}{$i$}
@@ -592,53 +736,69 @@ Complexity is $\Oapp(\mu(u t))$ for each $j$, summing-up to a total complexity o
 
 Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the {\sl only} property required from $p$ is to be co-prime with all the $h_i$ and all the $h'_i$. We can hence consider the following variants:
 
-\subsubsection{Variant 1:} Use a sequence of smooth $p_i$:
+\subsubsection{Variant 1:} Smooth $p_i$:
 
 $$p_i=\prod_{j=r_i}^{r_{i+1}-1} \mbox{{\tt Prime}}[j]$$
 
 Where the bounds $r_i$ are chosen to ensure that each $p_i$ has the proper size.
 
-\subsubsection{Variant 2:} Define $p_i=\mbox{{\tt Prime}}[i]^{r_i}$ where the exponents $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+\subsubsection{Variant 2:} $p_i=\mbox{{\tt Prime}}[i]^{r_i}$ where the exponents $r_i$ are chosen to ensure that each $p_i$ has the proper size.
 
-\subsubsection{Variant 3:} Progressively work modulo a long power of two. This variant, is probably the most efficient of all but somewhat complex to explain. We hence describe it in detail in Appendix \ref{powtwo}.
+\subsubsection{Variant 3:} Progressively work modulo a growing power of two. This variant, is probably the most efficient of all, but somewhat complex to explain. We hence describe it in detail in Appendix \ref{powtwo}. This variant is {\sc fft}-multiplication compatible hence asymptotic complexity is preserved. In addition, it avoids all modular reductions and all {\sc crt} re-combinations and hence offers considerable constant-factor accelerations.\smallskip
 
-This variant is more delicate to explain as Where the exponents $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+\begin{verbatim}
+
+Have this written by Fabrice...
+
+(les modulos etant $2^{ut}, 2^{2ut}, ...$):
+- calcul des $H_j$ comme dans 4.1 par product tree
+- produit des $H_j$ de la facon suivante pour round 1:
+  - $\mbox{prod} = 1$ (de taille $ut$)
+  - pour $j=1,...$
+      $\mbox{carry}_j | \mbox{prod} = \mbox{prod} \times H_j$
+  - retourner prod, et garder carry
+- produit des $H_j$ pour round suivants:
+  - prod = 0
+  - pour $j=1,...$
+      $\mbox{carry}_j | \mbox{prod} = \mbox{prod} \times H_j + \mbox{carry}_j$
+
+L'idee est la suivante (invariant): au round i et au tour j, prod contient les bits $(i-1)ut,...iut$ du produit reel de $H_1,...,H_j$ et
+$\mbox{carry}_j$ contient le carry genere par ces bits...
+\end{verbatim}
 
 \section{Implementation}
 \label{program}
 
-To illustrate the concept, we coded and evaluated the proof of concept described in this section.\smallskip
+We implemented and benchmarked the Divide \& Factor protocol described in the previous sections. The implementation is called \btrsync, its source code is available from \cite{Robin}.\smallskip
 
-The executable and source codes of the program, called \btrsync, can be downloaded from \cite{Robin}.\smallskip
+\comm{on parle de "in the previous sections" mais de quelle variate s'agit il?}
 
-Synchronization is unidirectional (clearer). The program, called {\sf btrsync}, consist in two subprograms: a bash script and a python script:
+The program performs unidirectional synchronization, which is simpler to understand. The code is divided into two subprograms: a shell script and a Python program:
 
-\subsection{The Bash Script}
+\subsubsection{The Shell Script} sets up two instances of the Python program on Oscar and Neil and establishes a bidirectional communication channel between them using two Unix pipes between their standard inputs and outputs.
 
-A bash script runs a python script (describe below) on the two computers to be synchronized. If the computer is not the one running the bash script, the python script is executed through ssh. The bash scripts also creates two pipes: one from Neil stdin to Oscar stdout and one from Oscar stdin to Neil stdout. Data exchanged during the protocol transits {\sl via} these two pipes.
-
-\subsection{The Python Script}
-
-The python script uses gmp which implements all the number theory operations required by Oscar and Neil, and does the actual synchronization. This script works in two phases:
+\subsubsection{The Python Program} uses {\sf gmp} to perform all the number theory operations and performs the actual synchronization. It proceeds in two phases:
 
 \subsubsection{Finding Different Files}
 
 \begin{enumerate}
-\item Compute the hashes of all files concatenated with their paths, type (folder/file), and permissions (not supported yet).
-\item Implement the protocol proposed in Section \ref{} [add here a reference to the appropriate section in the paper] with input data coming from stdin and output data going to stdout.
+\item Hash of files' contents concatenated with their paths, types (folder/file), and permissions (not supported yet).
+\item Implement the protocol proposed in Section \ref{???} with input data coming from {\tt stdin} and output data going to {\tt stdout}.
 \end{enumerate}
-
+\comm{encore une fois "Implement the protocol proposed in Section \ref{???}" qu'a t on implemente au juste?}
 More precisely:
+
 \begin{itemize}
 \item Oscar sends it product of hashes modulo a first prime number $p_1$.
-\item Neil receives the product, divides by its own product of hashes, reconstructs the fraction modulo $p_1$ [can we elaborate more on what happens here? which functions in GMP are used to do the reconstruction?] and checks if he can factor the denominator using his hashes base. If he can, he stops and sends the numerator and the list of tuples (path, type, hash of content of the file) corresponding to the denominator's factors. Otherwise he sends "None" [is this the ASCII string "None"? if not what does he send precisely?].
+\comm{sur "a first prime number $p_1$", l'implem marche avec $p_i$ ou des $2^u$?}
+\item Neil receives the product, divides by its own product of hashes, reconstructs the fraction modulo $p_1$ and checks if he can factor the denominator using his hashes base. If he can, he stops and sends the numerator and the list of tuples (path, type, hash of content of the file) corresponding to the denominator's factors. Otherwise he sends "None" [is this the ASCII string "None"? if not what does he send precisely?].
 \item If Neil sent "None", Oscar computes the product of hashes modulo another prime $p_2$, sends it... CRT mechanism... [can we elaborate more on what happens here? which functions in GMP are used to do the CRT?]
-\item If Neil sent the numerator and a list of tuples, then Oscar factors the numerator over his own hash values. Now each party (Neil, Oscar) knows precisely the list of files (path + type + hash of content) that differs from the over party.
+\item If Neil sent the numerator and a list of tuples, then Oscar factors the numerator over his own hash values. Now each party (Neil, Oscar) knows precisely the list of files (path + type + hash of content) that differs from the other party.
 \end{itemize}
 
 [please structure the following:]\smallskip
 
-2. synchronize all the stuff [this is not an expression we can use in a paper...]. This part is not completely optimized.\smallskip
+2. synchronize all the files. This part is not completely optimized.\smallskip
 
 We just remove all folders Oscar should not have and create new folders.\smallskip
 
@@ -650,32 +810,13 @@ We can even try to detect moves of complete subtrees...\smallskip
 
 \subsection{Move Resolution Algorithm}
 
-To reproduce the structure of Oscar on Neil, we have a list of file moves to apply. Sadly, it is not straightforward to apply the moves, because, if we take a file to move, its destination might be blocked, either because a file already exists (we want to move $a$ to $b$, $b$ already exists), or because a folder cannot be created (we want to move $a$ to $b/c$, $b$ already exists but is a file and not a folder). Note that for a move operation $a \rightarrow b$, there is at most one file blocking the location $b$: we will call it the \emph{blocker}.
+To reproduce the structure of Oscar on Neil's disk, we need to perform a sequence of file moves. Sadly, moves are not straightforward to apply the moves, because, if we take a file to move, its destination might be blocked, either because a file already exists (we want to move $a$ to $b$, but $b$ already exists), or because a folder cannot be created (we want to move $a$ to $b/c$, but $b$ already exists as a file and not as a folder). Note that for a move operation $a \rightarrow b$, there is at most one file blocking the location $b$: we will call it the {\sl blocker}.
 
-If the blocker is not present on Oscar, then we can just delete. However, if it
-exists, then we might need to move it somewhere else before we solve the move we
-are interested in. This move itself might have a blocker, and so on. It seems
-that we just need to continue until we reach a move which has no blocker or
-where the blocker can be deleted, but we can get caught in a cycle: if we must
-move $a$ to $b$, $b$ to $c$ and $c$ to $a$, then we will not be able to perform
-anything without using a temporary location.
+If the blocker absent on Oscar, then we can just delete the blocker. However, if a blocker exists, then we might need to move it somewhere else before we solve the move we are interested in. This move itself might have a blocker, and so on. It seems that we just need to continue until we reach a move which has no blocker or whose blocker can be deleted, but we can get caught in a cycle: if we must move $a$ to $b$, $b$ to $c$ and $c$ to $a$, then we will not be able to perform the operations without using a temporary location.
 
-How can we perform the moves? A simple way would be to move each file to a
-unique temporary location and then rearrange files to our liking: however, this
-performs many unnecessary moves and will result in problems if the program is
-interrupted. We can do something more clever so by performing a decomposition in
-strongly connected components of the \emph{move graph} (with one vertex per file
-and one edge per move operation going from to the file to its blocker or to its
-destination if no blocker exists). The computation of the SCC decomposition is
-simplified by the observation that because two files being moved to the same
-destination must be equal, we can only keep one arbitrary in-edge per node, and
-look at the graph pruned in this fashion: its nodes have in-degree at most one,
-so the strongly connected components are either single nodes or cycles. Once the
-SCC decomposition is known, the moves can be applied by applying each SCC in a
-bottom-up fashion, an SCC's moves being solved either trivially (for single
-files) or using one intermediate location (for cycles).
+How can we perform the moves? A simple way would be to move each file to a unique temporary location and then rearrange files to our liking: however, this performs many unnecessary moves and could lead to problems if the program is interrupted. We can do something more clever by performing a decomposition in Strongly Connected Components ({\sc scc}) of the {\sl move graph} (with one vertex per file and one edge per move operation going from to the file to its blocker or to its destination if no blocker exists). The computation of the {\sc scc} decomposition is simplified by the observation that because two files being moved to the same destination must be equal, we can only keep one arbitrary in-edge per node, and look at the graph pruned in this fashion: its nodes have in-degree at most one, so the strongly connected components are either single nodes or cycles. Once the {\sc scc} decomposition is known, the moves can be applied by applying each {\sc scc} in a bottom-up fashion, an {\sc scc}'s moves being solved either trivially (for single files) or using one intermediate location (for cycles).
 
-The detailed algorithm is implemented as two mutually recursive functions and presented as Algorithm~\ref{alg:moves}.
+The detailed algorithm is implemented as two mutually recursive functions and presented as Algorithm \ref{alg:moves}.
 
 % TODO check this algo
 \begin{algorithm}
@@ -732,42 +873,20 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
   \end{algorithmic}
 \end{algorithm}
 
-An optimization implemented by \btrsync over the algorithm described here is to
-move files instead of copying them and then removing the original file, because
-moves are faster than copies on most filesystems as they don't need to copy the
-file contents.
+An optimization implemented by \btrsync over the algorithm described here is to move files instead of copying them and then remove the original file. Moves are faster than copies on most filesystems as the OS does not need to copy the actual file contents to perform moves.
 
 \subsection{Experimental Comparison to \rsync}
 
-We compared \rsync\footnote{version 3.0.9, used both as a competitor to benchmark against and for a minor underlying call in our own code.}
-and our Divide \& Factor implementation called \btrsync under the following experimental conditions:
+We compared \rsync\footnote{\rsync version 3.0.9, used both as a competitor to benchmark against and as an underlying call in our own code.}
+and our Divide \& Factor implementation (called \btrsync) under the following experimental conditions:
 
-\subsubsection{Test Directories:} The directories used for transmission and time comparisons are described in Figure \ref{tab:benchdirec}.\smallskip
+\subsubsection{Test Directories:} The directories used for transmission and time
+comparisons are described in Table~\ref{tab:benchdirec}.\smallskip
 
-\begin{figure}
-\begin{center}
-\begin{tabular}{ll}\toprule
-~~{\bf Directory}              ~~&~~{\bf Description}\\\midrule
-~~{\tt synthetic}              ~~&~~A directory containing 1000 very small files containing~~\\
-~~                             ~~&~~the numbers $1,2,\ldots,1000$. \\
-~~{\tt synthetic\_shuffled}    ~~&~~{\tt synthetic} with:\\
-                             ~~& ~~~~~10 deleted files\\
-                             ~~& ~~~~~10 renamed files \\
-                             ~~& ~~~~~10 modified files \\
-~~{\tt source}                 ~~& ~~A snapshot of \btrsync's own source tree \\
-~~{\tt source\_moved}          ~~& ~~{\tt source} with one big folder (a few megabits) renamed.~~\\
-~~{\tt firefox-13.0}           ~~& ~~The source archive of Mozilla Firefox 13.0.\\
-~~{\tt firefox-13.0.1}         ~~& ~~The source archive of Mozilla Firefox 13.0.1\\
-~~{\tt empty}                  ~~& ~~An empty folder.\\\bottomrule
-\end{tabular}\smallskip
-  \caption{Test Directories.}
-  \label{tab:benchdirec}
-\end{center}
-\end{figure}
+\subsubsection{Command-Line Options:} \rsync was called with the following options, for the reasons below:
 
-\subsubsection{Test Directories:} \rsync was called with the following options, for the reasons below:
-
-$\blacktriangleright$ {\tt --delete} to delete existing files on Oscar which do not exist on Neil.\smallskip
+$\blacktriangleright$ {\tt --delete} to delete existing files on Oscar which do
+not exist on Neil like \btrsync does.\smallskip
 
 $\blacktriangleright$ {\tt -I} to ensure that \rsync did not cheat by looking at file modification times (which \btrsync does not do).\smallskip
 
@@ -775,52 +894,30 @@ $\blacktriangleright$ {\tt --chmod="a=rx,u+w"} in an attempt to disable the tran
 
 $\blacktriangleright$ {\tt -v} Transmission accounting was performed by calling \rsync with the {\tt -v} flag (which reports the number of sent and received bytes). For \btrsync we added a piece of code counting the amount of data transmitted during \btrsync's own negotiations.\smallskip
 
-\subsubsection{Network Configuration:} Experiments were performed between two remote hosts connected by a high-speed link. Time measurements account both for CPU time and for transfer times and are hence only given as a general indication.
+\subsubsection{Network Configuration:} Experiments were performed between two remote hosts connected {\sl via} a high-speed link. Time measurements include both for {\sc cpu} and transfer times and are hence only given as a general indication.
 
-\subsection{Results:}
+\subsubsection{Results:}
 
-Results are given in table~\ref{tab:results}. In general, \btrsync spent more time than \rsync on computations (especially when the number of files is large, which is typically seen with our {\tt synthetic} experiments).\smallskip
+Results are given in Table \ref{tab:results}. In general, \btrsync spent more time than \rsync on computation (especially when the number of files is large, which is typically seen in the experiments involving {\tt synthetic}). Transmission results, however, turn out to be favorable to \btrsync.\smallskip
 
-Transmission results, however, turn out to be favorable to \btrsync:
+In the trivial experiments where either Oscar or Neil have no data at all, \rsync outperforms \btrsync. This is especially visible when Neil has no data: \rsync immediately notices that there is nothing to transfer, but \btrsync engages in information transfers to determine the symmetric
+difference.\smallskip
 
-In the trivial experiments where either Oscar or Neil have no data at all, \rsync outperforms \btrsync. This is especially visible when Neil has no data: \rsync immediately notices that there is nothing to transfer, but \btrsync engages in information transfers to determine the symmetric difference.\smallskip
-
-On non-trivial tasks, however, \btrsync outperforms \rsync. This is the case of the {\tt synthetic} datasets, where \btrsync does not have to transfer information about all unmodified files, and even more so in the case where there are no modifications at all. For Firefox source code datasets, \btrsync saves a very small amount of bandwidth, presumably because of unmodified files. For the \btrsync source code dataset, we notice that \btrsync, unlike \rsync, was able to detect the move and avoid retransferring the moved folder.
-
-\begin{figure}
-  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}ll c c c c c c c c }
-    \toprule
-    \multicolumn{2}{c}{\bf Entities and Datasets} & \multicolumn{6}{c}{\bf Transmission (Bytes)} & \multicolumn{2}{c}{\bf Time (s)} \\
-    \midrule {\bf \hfill Neil's $\mathfrak{F}'$ \hfill \null} & {\bf \hfill Oscar's $\mathfrak{F}$ \hfill \null}
-    & {\bf TX$_r$} & {\bf RX$_r$} & {\bf TX$_b$} & {\bf RX$_b$} & {\bf abs} &
-    {\bf rel} & {\bf t$_r$} & {\bf t$_b$} \\\midrule
-    &&&&&&&&&\\[-1em]
-\texttt{source} & \texttt{empty} & 1613 & 778353 & 1846 & 788357 & 10237 & +2 \% & 0.2 & 7.7 \\
-\texttt{empty} & \texttt{source} & 11 & 29 & 12436 & 6120 & 18516 & +46305 \% & 0.1 & 5.5 \\
-\texttt{empty} & \texttt{empty} & 11 & 29 & 19 & 28 & 7 & +32 \% & 0.1 & 0.3 \\
-\texttt{synthetic} & \texttt{synthetic\_shuffled} & 24891 & 51019 & 3638 & 4147 & -68125 & -57 \% & 0.2 & 26.8 \\
-\texttt{synthetic\_shuffled} & \texttt{synthetic} & 24701 & 50625 & 3443 & 3477 & -68406 & -58 \% & 0.2 & 26.6 \\
-\texttt{synthetic} & \texttt{synthetic} & 25011 & 50918 & 327 & 28 & -75574 & -67 \% & 0.1 & 25.7 \\
-\texttt{firefox-13.0.1} & \texttt{firefox-13.0} & 90598 & 28003573 & 80895 & 27995969 & -17307 & +0 \% & 2.6 & 4.2 \\
-\texttt{source\_moved} & \texttt{source} & 2456 & 694003 & 1603 & 1974 & -692882 & -99 \% & 0.2 & 2.5 \\
-\bottomrule
-
-  \end{tabular*}
-  \caption{Experimental results. The two first columns indicate the datasets,
-    synchronization is performed \emph{from} Neil \emph{to} Oscar. RX and TX are
-    received and sent byte counts, $r$ and $b$ are \rsync and \btrsync, we also
-    provide the absolute difference in exchanged data (positive when \btrsync
-    transfers more data than \rsync) and the relative amount of data sent by
-    \btrsync compared to \rsync (over $100\%$ when \btrsync transfers more data
-    than $\rsync$). The last two columns show timing results.}
-  \label{tab:results}
-\end{figure}
-
-\subsubsection{Code Availability:} Source codes can be downloaded from \cite{Robin}.
+On non-trivial tasks, however, \btrsync outperforms \rsync. This is the case of the {\tt synthetic} datasets, where \btrsync does not have to transfer
+information about all unmodified files, and even more so in the case where there are no modifications at all. For Firefox source code datasets, \btrsync saves a very small amount of bandwidth, presumably because of unmodified files. For the \btrsync source code dataset, we notice that \btrsync, unlike \rsync, was able to detect the move and avoid retransferring the moved folder.
 
 \section{Conclusion and Further Improvements}
 
-\comm{Recopier de l'intro et adapter}
+The main contributions of this paper are thus:
+
+\begin{itemize}
+\item The protocols described in this paper allows to synchronize not only multisets of fixed-size integers but directories of files. This makes the analysis particularly interesting because we need to determine the optimal size of message digests.
+
+\item We present a "move reconciliation" protocol, allowing to manage file moves efficiently.
+
+\item The optimizations presented in this paper apply to \cite{} as well.
+\end{itemize}
+
 
 We strongly encourage the developer community to continue improving our open source software (that we called \btrsync).
 
@@ -831,21 +928,42 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 \section{ToDo}
 
 \begin{itemize}
+
 \item Fix euclidean to Euclidean in reference 5.\smallskip
 
 \item Merge two reference files rsynch and wagner.\smallskip
-
-\item Antoine, je n'arrive pas a comprendre comment tu calcules les pourcentages rel dans la table. Peux-tu stp me donner la forumle? c'est le ratio de qui sur qui?
-    
-\item Antoine, peux tu stp enlever du papier (et du git) toute trace du programme version 1 (ie celui fait par les etudiants en tant que projet du cours d'informatique scientifique par la pratique) car il est moins performant que l'implementation de Fabrice. Ainsi on n'aura pas de confusion possible. Je ne sais plus dans le texte ce qui est relatif au nouveau code et ce qui est relatif a l'ancien.
-
-\item @Fabrice: Appendix B (je vais jeter un coup d'oeil la semaine prochaine)
 
 \item @Fabrice: Fig. 1 pas clair, je pense qu'il faut mieux créer une notation mu gcd car en fait la FFT ne modifie que le mu... Et on pourrait plut\^ot indiquer dans ce tableau la complexité (avec mu et mu gcd) en utilisant l'optimisation décrite ou sans utiliser l'optimisation décrite). N'oublions pas de préciser que les temps des expériences d'Antoine comptent aussi le tirage des nombres premiers (qui doit \^etre négligeable peut-\^etre dans notre cas, je ne me rappelle plus...)
 
 \item @Fabrice: Pour éviter le cas empty $\rightarrow$ source trop gros, on pourrait imaginer l'astuce suivante: si jamais Neil la taille de c est plus petite que la taille du produit des nombres premiers $p_1$...$p_n$ utilisés, Neil envoie un message pour l'indiquer, et on arr\^ete là le protocole. Et Oscar peut directement factoriser ce nombre envoyé...
 
 \item @Fabrice: il faut discuter de la taille de la taille maximale des ``petits'' premiers utilisés pour les variantes de $p$ et montrer que cela n'enlève pas trop d'entropie pour les $h_i$. Encore une fois, je m'en occupe la semaine prochaine si besoin.
+
+\item Refaire les expériences, vu que Fabrice a significativement amélioré les perfs. Du reste, autant les refaire en local...
+
+\item Faire clarifier par Fabrice l'histoire du doublement...
+
+\item Prendre en compte les remq suivants de Fabrice
+\begin{verbatim}
+
+- page 2, "To tackle this problem we separate the “what” from the “where” and disregard the relative position of files.". En fait, je dirai plutôt:
+"To tackle this problem, we consider a file as the tuple of its path and its content".
+
+- je pense que l'événement bottom_bandwidth est ou bien l'événement "on n'a pas réussi à factoriser" ou bien "on n'a pas réussi à factoriser ou bien %la factorisation obtenue est abusive". Dans l'article, il semble que tu as choisi le premier, donc je pense que la phrase "bottom_... went undetected" n'est pas tout à fait correcte, mais je me trompe peut-être. J'aurai dis "even if bottom_... are not output, this does not mean the protocol is a success, since there may be misfactorization..."
+
+- je pense que tu essayes de traiter 2 cas ensembles: modulus trop petit (t0 > t) et collisions. Le problème est que ces deux problèmes sont compliqués, et que j'ai peur que le lecteur soit embrouillé... Et en fait, ton protocole fig. 2/3 ne traite que le problème de collisions d'une certaine manière, ... car tu ne change pas le "t" ni ne précise d'utiliser le CRT pour augmenter la taille du modulus.
+- dans l'intro, au lieu de "This article proposes a new reconciliation protocol based on number theory. In terms
+of asymptotic transmission complexity, the proposed procedure reaches optimality as well."
+j'aurai dis quelque chose comme:
+"In this article, we first propose a new reconciliation protocol based on number theory. In terms
+of asymptotic transmission complexity, the proposed procedure reaches optimality as well.
+
+Then, we show how to apply this set reconciliation protocol to efficiently synchronize real files.
+We show that the naive method of hashing the files and synchronizing these hashes can be improved in two ways.
+First, we show that the size of the hashes can be carefully optimize to reduce the bandwidth by a constant factor compared to a naive choice of his size (to avoid all collisions.
+Then, we show that a protocol to detect moves of files and carefully use this information to avoid transmitting files which have only be moved.
+Finally, we run some practical experiments and compare ... rsync ..."
+\end{verbatim}
 \end{itemize}
 
 \nocite{rsync}
@@ -858,14 +976,14 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 
 \bibitem{boneh} D. Boneh, {\sl Finding Smooth Integers in Short Intervals Using CRT Decoding}, Proceedings of the 32-nd Annual ACM Symposium on Theory of Computing, 2000, pp. 265--272.
 
-\bibitem{phong} D. Bleichenbacher and Ph. Nguyen, Advances in Cryptology -- Proceedings of Eurocrypt'00, vol. 1807 of Lecture Notes in Computer Science, Springer-Verlag, pp. 53--69.
+\bibitem{phong} D. Bleichenbacher and Ph. Nguyen, {\sl Noisy Polynomial Interpolation and Noisy Chinese Remaindering}, Advances in Cryptology -- Proceedings of Eurocrypt 2000, vol. 1807 of Lecture Notes in Computer Science, Springer-Verlag, pp. 53--69.
 
-\bibitem{PSRec} Y. Minsky, A. Trachtenberg, {\sl Scalable Set Reconciliation}, 40th Annual Allerton Conference on Communications, Control and Computing, Monticello, IL, October 2002. A full version entitled {\sl Practical Set Reconciliation} can be downloaded from \url{http://ipsit.bu.edu/documents/BUTR2002-01.ps}
+\bibitem{PSRec} Y. Minsky, A. Trachtenberg, {\sl Scalable Set Reconciliation}, 40th Annual Allerton Conference on Communications, Control and Computing, Monticello, {\sc il}, October 2002. A full version entitled {\sl Practical Set Reconciliation} can be downloaded from \url{http://ipsit.bu.edu/documents/BUTR2002-01.ps}
 
-\bibitem{Mins1} Y. Minsky, A. Trachtenberg, R. Zippel, {\sl Set reconciliation with nearly optimal communication complexity}. IEEE Transactions on Information Theory, 49(9), 2003, pp. 2213–2218.
+\bibitem{Mins1} Y. Minsky, A. Trachtenberg, R. Zippel, {\sl Set reconciliation with nearly optimal communication complexity}. {\sc ieee} Transactions on Information Theory, 49(9), 2003, pp. 2213–2218.
 
 \bibitem{Whats} D. Eppstein, M. Goodrich, F. Uyeda, G. Varghese What's the difference?: efficient set reconciliation without prior context
-ACM SIGCOMM Computer Communication Review - SIGCOMM '11, 41(4), 2011, pp. 218-229.
+ACM SIGCOMM Computer Communication Review - {\sc sigcomm}'11, 41(4), 2011, pp. 218-229.
 
 \bibitem{Robin} \url{https://github.com/RobinMorisset/Btrsync}
 
@@ -874,6 +992,7 @@ ACM SIGCOMM Computer Communication Review - SIGCOMM '11, 41(4), 2011, pp. 218-22
 \appendix
 
 \section{Extended Protocol}
+\label{sec:extended}
 
 \begin{center}
 \begin{tabular}{lcl}\toprule
@@ -919,7 +1038,7 @@ $$
 c=\prod_{F_i\in \mathfrak{F}} \mbox{{\tt HashPrime}}(F_i) = \prod_{i=1}^n h_i \in \mathbb{N}
 $$
 
-and considers $c=\bar{c}_{n-1}|\ldots|\bar{c}_2|\bar{c}_0$ as the concatenation of $n$ successive $u$-bit strings.
+and considers $c=\bar{c}_{n-1}|\ldots|\bar{c}_2|\bar{c}_0$ as the concatenation of $n$ successive $u$-bit strings. Again, we omit the treatment of $\bot$s for the sake of clarity.
 
 \begin{center}
 \begin{tabular}{|lcl|}\hline
@@ -940,19 +1059,19 @@ and considers $c=\bar{c}_{n-1}|\ldots|\bar{c}_2|\bar{c}_0$ as the concatenation 
                                    &                                                      &computes $a,b$ modulo $2^{3u}$~\\
                                    &                                                      &if $a$ factors properly then go to {\sf Final Phase}~~\\
                                    &                                                      &~~~~~~else request next chunk $\bar{c}_3$~~\\
-                                   &                  $\vdots~(\mbox{~for~}\lambda \mbox{~rounds~})$    & \\\hline\hline
+                                   &                  $\vdots~(\mbox{~for~}2t \mbox{~rounds~})$    & \\\hline\hline
 \multicolumn{3}{|c|}{{\sf Final Phase~~}} \\\hline
                                    &                                                      & \\
-                                   &                                                      &Let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod 2^{\lambda u} =0\}$~~\\
+                                   &                                                      &Let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod 2^{2tu} =0\}$~~\\
                                    &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
-                                   ~~deletes files s.t. $b \bmod 2^{\lambda u} =0$&        &\\
+                                   ~~deletes files s.t. $b \bmod 2^{2t u} =0$&        &\\
                                    ~~adds $\mathfrak{S}$ to the disk    &                                                      &\\\hline
 \end{tabular}
 \end{center}
 
 \section{Hashing Into Primes}
-
-Hashing into primes is frequently needed in cryptography. A recommended implementation of $\mbox{{\tt HashPrime}}(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough ({\sl e.g.} $160$) one might sacrifice uniformity to avoid repeated file hashings using $\mbox{{\tt HashPrime}}(F)=\mbox{{\tt NextPrime}}(\mbox{{\tt Hash}}(F))$. Yet another acceleration option (that further destroys uniformity) consists in replacing $\mbox{{\tt NextPrime}}$ by the faster scanning Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
+\label{sec:hashprime}
+Hashing into primes is frequently needed in cryptography. A recommended implementation of $\mbox{{\tt HashPrime}}(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough ({\sl e.g.} $160$) one might sacrifice uniformity to avoid repeated file hashings by defining $\mbox{{\tt HashPrime}}(F)=\mbox{{\tt NextPrime}}(\mbox{{\tt Hash}}(F))$. Yet another acceleration (that further destroys uniformity) consists in replacing $\mbox{{\tt NextPrime}}$ by Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
 
 \begin{algorithm}
   \caption{Fast Nonuniform Hashing Into Primes}
@@ -978,6 +1097,45 @@ Hashing into primes is frequently needed in cryptography. A recommended implemen
 \State \Return{$h$}
   \end{algorithmic}
 \end{algorithm}
+
+\begin{table}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}ll r r r r r r r r }
+    \toprule
+    \multicolumn{2}{c}{\bf Entities and Datasets} & \multicolumn{6}{c}{\bf Transmission (Bytes)} & \multicolumn{2}{c}{\bf Time (s)} \\
+    \midrule {\bf \hfill Neil's $\mathfrak{F}'$ \hfill \null} & {\bf \hfill Oscar's $\mathfrak{F}$ \hfill \null}
+    & $\mbox{{\tt TX}}_{\mbox{{\tiny {\tt rs}}}}$ & $\mbox{{\tt RX}}_{\mbox{{\tiny {\tt rs}}}}$  & $\mbox{{\tt TX}}_{\mbox{{\tiny {\tt bt}}}}$  & $\mbox{{\tt RX}}_{\mbox{{\tiny {\tt bt}}}}$  & $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ &
+    $\frac{\delta_{\mbox{{\tiny {\tt bt}}}}}{\delta_{\mbox{{\tiny {\tt rs}}}}}$ & $\mbox{{\tt time}}_{\mbox{{\tiny {\tt rs}}}}$ & $\mbox{{\tt time}}_{\mbox{{\tiny {\tt bt}}}}$ \\\midrule
+    &&&&&&&&&\\[-1em]
+    \input{results.tex}
+    \bottomrule
+  \end{tabular*}
+
+  \caption{Experimental results. {\tt rs} and {\tt bt} subscripts respectively denote {\tt rsync} and {\tt btrsync}. The two first columns indicate the datasets. Synchronization is performed {\sl from} Neil {\sl to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between the two programs. The last two columns show timing results.}
+  \label{tab:results}
+\end{table}
+\comm{Antoine sur quelle plate-formes ont ete obtenus les resultats experimentaux? quelles vitesses de processeur etc?}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{ll}\toprule
+~~{\bf Directory}              ~~&~~{\bf Description}\\\midrule
+~~{\tt synthetic}              ~~&~~A directory containing 1000 very small files containing~~\\
+~~                             ~~&~~the numbers $1,2,\ldots,1000$. \\
+~~{\tt synthetic\_shuffled}    ~~&~~{\tt synthetic} with:\\
+                             ~~& ~~~~~10 deleted files\\
+                             ~~& ~~~~~10 renamed files \\
+                             ~~& ~~~~~10 modified files \\
+~~{\tt source}                 ~~& ~~A snapshot of \btrsync's own source tree \\
+~~{\tt source\_moved}          ~~& ~~{\tt source} with one big folder (a few megabits) renamed.~~\\
+~~{\tt firefox-13.0}           ~~& ~~The source archive of Mozilla Firefox 13.0.\\
+~~{\tt firefox-13.0.1}         ~~& ~~The source archive of Mozilla Firefox 13.0.1\\
+~~{\tt empty}                  ~~& ~~An empty folder.\\\bottomrule
+\end{tabular}\smallskip
+  \caption{Test Directories.}
+  \label{tab:benchdirec}
+\end{center}
+\end{table}
+
 
 
 \end{document}
