@@ -50,7 +50,8 @@
 \itshape\hrule\smallskip#1\par\smallskip\hrule}}
 \setlength{\marginparwidth}{2cm}
 
-\usepackage{hyperref, geometry}
+\usepackage[bookmarks=false]{hyperref}
+\usepackage{geometry}
 
 \begin{document}
 
@@ -70,6 +71,7 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 \comm{Si cet abstract vous convient, il faudrait en reprendre des bouts dans l'introduction.}
 \begin{abstract}
   This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new number theoretic reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}) which achieves optimal asymptotic transmission complexity like prior proposals. We then study the problem of synchronizing sets of variable-size files, and describe how constant-factor improvements can be achieved through the use of hashing with a carefully chosen hash size (balancing the quantity of data transferred and the risk of collisions). We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync uses more CPU time but transmits less data.
+\comm{Fabrice: j'écrirai quelque chose de plus positif comme: ``\btrsync transmits much less data at the expense of a small computationnal overhead.''}
 \end{abstract}
 
 \section{Introduction}
@@ -78,10 +80,12 @@ synchronizing two multisets while minimizing the amount of data transmitted. Set
 reconciliation arises in many practical situations, the most typical of which is
 certainly incremental backups performed over a slow network link.\smallskip
 
-\comm{Est-ce que c'est vrai qu'on apporte quelque chose de nouveau dans le cas où c'est des fichiers de taille non fixe ?}
+\comm{Est-ce que c'est vrai qu'on apporte quelque chose de nouveau dans le cas où c'est des fichiers de taille non fixe ? --- Fabrice: je ne sais pas, il faudrait que l'on réanalyse la complexité propre de la dernière variante.}
 Several efficient and elegant solutions are known to achieve set reconciliation of multisets containing atomic elements of a fixed size. For instance, \cite{PSRec} manages to perform set reconciliation using a bandwidth which is linear in the size of the symmetric difference of the multisets multiplied by the size of the elements, which is optimal in this setting. We refer the reader to~\cite{PSRec,Mins1,Whats} (to quote a few references) for more on this problem's history and its existing solutions.\smallskip
 
-However, in the case where the elements to be synchronized can be very large (e.g., files during a backup), we must use checksums to identify the differing files before transferring them, and the question of the size of the checksum to use is non-trivial. In this article, we propose a new reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}) based on number theory. In terms of asymptotic transmission complexity, the proposed procedure reaches optimality as well. In addition, the new protocols offer a very interesting gamut of parameter trade-offs. We provide an analysis of the protocol's complexity in terms of transmission and computation, as well as a probabilistic analysis of the possible choices of checksum sizes; we also provide an implementation of the protocol and experimental results.\smallskip
+However, in the case where the elements to be synchronized can be very large (e.g., files during a backup), we must use checksums to identify the differing files before transferring them, and the question of the size of the checksum to use is non-trivial. In this article, we propose a new reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}) based on number theory. In terms of asymptotic transmission complexity, the proposed procedure reaches optimality as well. 
+\comm{Fabrice@Antoine: Je ne suis pas tout à fait d'accord avec ce paragraphe, ton abstract est beaucoup mieux...}
+In addition, the new protocols offer a very interesting gamut of parameter trade-offs. We provide an analysis of the protocol's complexity in terms of transmission and computation, as well as a probabilistic analysis of the possible choices of checksum sizes; we also provide an implementation of the protocol and experimental results.\smallskip
 
 This paper is structured as follows: Section \ref{basic} presents a basic version of the proposed protocol. This basic version suffers from two limitations: it works only if the number of differences to reconcile is bound and it may fail leave the synchronized party in an erroneous state. Failure avoidance is overcome in section \ref{reco} and an extension to arbitrary numbers of differences is given in section \ref{insuf}. The protocol's transmission complexity is treated in section \ref{trans}. Section \ref{trans} also introduces two transmission optimizations and analyzes them in detail. Section \ref{comp} analyzes the computational complexities of the proposed protocols and \ref{program} reports practical experiments and benchmarks against the popular software \rsync.\smallskip
 
@@ -93,19 +97,23 @@ This paper is structured as follows: Section \ref{basic} presents a basic versio
 \underline{O}scar possesses an \underline{o}ld version of a directory $\mathfrak{D}$ that he wishes to update. \underline{N}eil has the \underline{n}ew, up-to-date version $\mathfrak{D}'$: $\mathfrak{D}$ and
 $\mathfrak{D}'$ can differ both in their files and in their tree structures. Oscar wishes to obtain $\mathfrak{D}'$ but {\sl exchange as little data as possible} during the synchronization process.\smallskip
 
-To tackle this problem we separate the {\sl ``what''} from the {\sl ``where''} by considering files as a tuple of their location and content. In other words, we will first synchronize all the file contents and then move files to the adequate location. We consider that $\mathfrak{D}$ is a multiset of files which we denote as $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$, and likewise represent $\mathfrak{D'}$ as $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
+To tackle this problem we separate the {\sl ``what''} from the {\sl ``where''} by considering files as a tuple of their location and content. 
+In other words, we will first synchronize all the file contents and then move files to the adequate location. 
+\comm{Fabrice: NON, ce n'est pas vrai: on considère vraiment qu'un fichier est ``path + content''}
+We consider that $\mathfrak{D}$ is a multiset of files which we denote as $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$, and likewise represent $\mathfrak{D'}$ as $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
+\comm{Fabrice: Qu'est-ce que $\mathfrak{D}$ ? Est-ce $\mathfrak{F}$ ? Dans tous les cas, il s'agit d'un set, vu la représentation indiquée}
 
 Let $t_0$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ that Oscar wishes to learn, {\sl i.e.} the symmetric difference of $\mathfrak{F}$ and $\mathfrak{F}'$:
 
 $$t_0=\#\mathfrak{F}+\#\mathfrak{F}'-2 \#\left(\mathfrak{F} \bigcap \mathfrak{F}'\right)=\#\left(\mathfrak{F}\bigcup\mathfrak{F}'\right)-\#\left(\mathfrak{F}\bigcap\mathfrak{F}'\right)$$
 
-Given a file $F$, we denote by $\mbox{{\tt Hash}}(F)$ its image by a collision-resistant hash function such as {\sc sha}-1. Let $\mbox{{\tt HashPrime}}(F)$\footnote{The design of \mbox{{\tt HashPrime}} is addressed in Appendix \ref{sec:hashprime}.} be a function hashing files (uniformly) into primes smaller than $2^u$ for some $u\in \mathbb{N}$. Define the shorthand notations: $h_i=\mbox{{\tt HashPrime}}(F_i)$ and $h'_i=\mbox{{\tt HashPrime}}(F'_i)$.\smallskip
+Given a file $F$, we denote by $\mbox{{\tt Hash}}(F)$ its image by a collision-resistant hash function such as {\sc sha}-1.\comm{Fabrice: ${\tt Hash}$ can be introduced latter when needed (section 2.3)} Let $\mbox{{\tt HashPrime}}(F)$\footnote{The design of \mbox{{\tt HashPrime}} is addressed in Appendix \ref{sec:hashprime}.} be a function hashing files (uniformly) into primes smaller than $2^u$ for some $u\in \mathbb{N}$. Define the shorthand notations: $h_i=\mbox{{\tt HashPrime}}(F_i)$ and $h'_i=\mbox{{\tt HashPrime}}(F'_i)$.\smallskip
 
 \subsection{Description of the Basic Exchanges}
 \label{basic}
 
 The number of differences $t_0$ is unknown to Oscar and Neil. However, for the time being, we will assume that $t_0$ is smaller than some $t$ and attempt to perform
-synchronization. If $t_0\leq t$, synchronization will succeed; if $t_0 < t$ the parties will transmit more information later to complete the synchronization, as explained in section \ref{insuf}.
+synchronization. If $t_0\leq t$, synchronization will succeed; if $t_0 > t$ the parties will transmit more information later to complete the synchronization, as explained in section \ref{insuf}.
 
 We generate a prime $p$ such that:
 
@@ -124,7 +132,7 @@ Neil computes:\smallskip
 
 $$c'=\prod_{F'_i\in \mathfrak{F'}} \mbox{{\tt HashPrime}}(F'_i)=\prod_{i=1}^{n'} h'_i \bmod p{~~~\mbox{and}~~~}s=\frac{c'}{c} \bmod p$$
 
-Using~\cite{vallee} the integer $s$ can be written as:
+Using~\cite{vallee}\comm{Fabrice: Quel est l'intérêt de cette citation ???} the integer $s$ can be written as:
 $$s=\frac{a}{b} \bmod p{\mbox{~where the~}G_i\mbox{~denote files and~}}
 \left\{
 \begin{array}{lcr}
@@ -134,7 +142,7 @@ b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox
 \end{array}
 \right.
 $$
-
+\comm{Fabrice: je ne comprends pas le ``where the $G_i$ denote files...''}
 Note that if our assumption $t_0 \leq t$ is correct, $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements and $a$ and $b$ are strictly less than $2^{ut}$. The problem of recovering $a$ and $b$ from $s$ efficiently is known as {\sl Rational Number Reconstruction}~\cite{pan2004rational,wang2003acceleration}; theorem \ref{theo} (see~\cite{cryptorational}) guarantees that it can be solved in this setting.
 
 \begin{theorem}
@@ -142,7 +150,8 @@ Note that if our assumption $t_0 \leq t$ is correct, $\mathfrak{F}$ and $\mathfr
 Let $a,b \in {\mathbb Z}$ such that $-A \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a,b$ can be recovered from $A,B,s,p$ in polynomial time.
 \end{theorem}
 
-Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $2AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is o use Gauss' algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
+Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $2AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
+\comm{Fabrice: certes, mais on utilise directement un Euclide étendu tronqué, et en plus je ne suis pas sûr que le lecteur comprenne le lien si facilement que cela avec les réseaux... en plus l'article ne donne pas de complexité temporel...}
 By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can attempt to identify the discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ and settle them.\smallskip
 
 \begin{figure}
@@ -172,6 +181,7 @@ The formal description of the protocol is given in Figure \ref{fig:one}. The ``o
 
 \item occur with high probability if $t_0 > t$. Indeed, for a potential $\bot_{\mbox{{\tiny {\sf bandwidth}}},1}$ to be overlooked, the $ut$-bit number $a$ must perfectly factor over a set of $n$ primes of size $u$. If we assume that $a$ is ``random'', the probability $\gamma$ that $a$ is divisible by some $h_i$ is essentially $\gamma \sim 1/h_i \sim 2^{-u}$, the probability that $a$ is divisible by exactly $t$ digests is:
 $$\alpha=\binom{n}{t} \gamma^t (1 - \gamma)^{n - t} \sim \binom{n}{t} 2^{-u t} (1 - 2^{-u})^{n - t}$$ and the probability that the protocol does not terminate by a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ when $t_0 > t$ is $\sim\alpha^2$.
+\comm{However, we are not interested in the fact $a$ is divisible by ``exactly'' $t$ digests but the fact that $a$ can be factorized over of the basis of $h_i$...}
 \end{itemize}
 
 The very existence of $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$'s is annoying for two reasons:
@@ -225,7 +235,7 @@ Section \ref{reco} explains how protect the protocol from all inconsistent event
 The Basic Protocol of Figure \ref{fig:one} is fully deterministic. Hence if any sort of trouble occurs, repeating the protocol will be of no help. We modify the protocol as follows:
 
 \begin{itemize}
-\item Let $H\leftarrow\mbox{{\tt Hash}}(\mathfrak{F}')$
+\item Let $H\leftarrow\mbox{{\tt Hash}}(\mathfrak{F}')$\comm{Fabrice: This notation (hash of a set) is not defined... and it may be useful to recall the definition of ${\tt Hash}$ here (collision-resistant) if the reader has forgotten it...}
 \item Replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_k(F)=\mbox{{\tt HashPrime}}(k|F)$.\smallskip
 \item Define the shorthand notations: $\hbar_{k,i}=\hbar_k(F_i)$ and $\hbar'_{k,i}=\hbar_k(F'_i)$.\smallskip
 \item Let $\mbox{{\sf StepProtocol}}(k)$ denote the sub-protocol shown in Figure \ref{fig:step}.
@@ -259,6 +269,7 @@ The Basic Protocol of Figure \ref{fig:one} is fully deterministic. Hence if any 
 \subsubsection{Note:} To avoid transmitting the (potentially very voluminous) $\mathfrak{S}$ during {\sf StepProtocol} before knowing if one of the errors $\bot_{\mbox{{\tiny {\sf bandwidth}}},2},\bot_{\mbox{{\tiny {\sf bandwidth}}},3},\bot_{\mbox{{\tiny {\sf collision}}},2}$ will occur, Neil may transmit $$\mathfrak{S}'=\{\mbox{{\tt Hash}}(F'_i),~F'_i\in \mathfrak{S}\}$$ instead of $\mathfrak{S}$ and send $\mathfrak{S}$ only after successfully passing the $\bot_{\mbox{{\tiny {\sf bandwidth}}},3}$ test. The definition of $H$ must be changed accordingly to 
 
 $$H=\mbox{{\tt Hash}}(\{\mbox{{\tt Hash}}(F'_i),~F'_i\in \mathfrak{F}'\})$$
+\comm{Fabrice: en même temps, le Hash d'un ensemble, que l'on n'a pas définit, a tout intérêt à déjà être de cette forme, sinon, on a des problèmes pour avoir une concaténation ``propre''}
 
 \begin{figure}
 \begin{center}
@@ -280,7 +291,7 @@ $$H=\mbox{{\tt Hash}}(\{\mbox{{\tt Hash}}(F'_i),~F'_i\in \mathfrak{F}'\})$$
 \subsection{Handling a High Number of Differences}
 \label{insuf}
 
-To extend the protocol to an arbitrary $t_0$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ status, Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in Appendix \ref{sec:extended}. Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$. \smallskip
+To extend the protocol to an arbitrary $t_0$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ status,\comm{Fabrice: Maybe add: [as long as ... status], Neil and Oscar redo the protocol with another $p_i$ and ...} Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in Appendix \ref{sec:extended}. Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$. \smallskip
 
 All $\bot$ treatments were removed from Appendix \ref{sec:extended} for the sake of clarity (these can be very easily added by modifying Appendix \ref{sec:extended} {\sl mutatis mutandis}). In essence, the rules are: add information modulo a new $p_i$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ and increment $k$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf collision}}},\square}$.\smallskip
 
@@ -291,12 +302,10 @@ $$\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1
 \section{Transmission Complexity}
 \label{trans}
 This section explores two strategies for reducing the size of $p$ and hence improving transmission by {\sl constant factors} (from an asymptotic communication standpoint, improvements cannot be expected as the protocol already transmits information proportional to $t_0$, the difference to settle). Excluding the core information $\mathfrak{S}$ and assuming that no $\bot_{\mbox{{\tiny {\sf collision}}},\square}$ events occurred, the transmission complexity of the protocol of Appendix \ref{sec:extended} is:
-
 $$
-\lambda \log (\max_{i=1}^\lambda c_i) + \log b \leq \lambda \log (\max_{i=1}^\lambda p_i) + \frac12 \log \prod_{i=1}^\lambda p_i \leq 3\lambda (ut_0+1)=O(\lambda ut_0)=O(ut)
+\lambda \log (\max_{i=1}^\lambda c_i) + \log b \leq \lambda \log (\max_{i=1}^\lambda p_i) + \frac12 \log \prod_{i=1}^\lambda p_i \leq 3\lambda (ut_0+1)=O(\lambda ut_0)=O(ut),
 $$
-
-Where $\lambda=t/t_0$ is the number of rounds required to complete the protocol. As we have no control over $t$, decreasing $u$ is the main natural optimization option. We will get back to this later on in this paper (section \ref{shortu}).
+where $\lambda=t/t_0$ is the number of rounds required to complete the protocol. As we have no control over $t$, decreasing $u$ is the main natural optimization option. We will get back to this later on in this paper (section \ref{shortu}).
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
@@ -324,19 +333,23 @@ and since there are at most $t$ differences, we must have:
 a b \leq 2^{ut}
 \end{equation}
 
-By opposition to section \ref{basic} we do not have a fixed bound for $a$ and $b$ anymore; Equation \eqref{eqab} only provides a bound for the {\sl product} $a b$. Therefore, we define a sequence of at most $t+1$ couples of bounds:
+By opposition to section \ref{basic} we do not have a fixed bound for $a$ and $b$ anymore; Equation \eqref{eqab} only provides a bound for the {\sl product} $a b$. Therefore, we define a sequence of $t+1$ couples of bounds:
 
-$$\left(A_i,B_i\right)=\left(2^{(u+1)i},\left\lfloor \frac{p-1}{2^{(u+1)i+1}} \right\rfloor\right)\mbox{~~where~~}B_i>1\mbox{~~and~~}\forall i>0,~2 A_i B_i<p$$
+%$$\left(A_i,B_i\right)=\left(2^{(u+1)i},\left\lfloor \frac{p-1}{2^{(u+1)i+1}} %\right\rfloor\right)\mbox{~~where~~}B_i>1\mbox{~~and~~}\forall i>0,~2 A_i B_i<p$$
+\[\left(A_i, B_i\right) = \left(2^{ui}, 2^{u(t-i)}\right) \forall i \in \{0,\dots,t\} \]
 
-Equations (\ref{eqnewp}) and (\ref{eqab}) imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
+Equations (\ref{eqnewp}) and (\ref{eqab}) imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, since $2 A_i B_i = 2^{u(t+1)} < p$, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
 
-The problem is that (unlike section \ref{basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough, but this makes the modified protocol heuristic only. If failures never occur, this variant will roughly halve the quantity of transmitted bits with respect to section \ref{basic}.\smallskip
+The problem is that (unlike section \ref{basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough, but this makes the modified protocol heuristic only. 
+\comm{Fabrice: ``heuristic'' $\longrightarrow$ not really, because of the final hash verification, though we cannot compute exactly the complexity...}
+If failures never occur, this variant will roughly halve the quantity of transmitted bits with respect to section \ref{basic}.\smallskip
 
 \subsection{The File Laundry: Reducing $u$}
 \label{shortu}
 What happens if we brutally shorten $u$ in the basic Divide \& Factor protocol?\smallskip
-
+\comm{Fabrice: maybe say it in another way, since we already do not suppose HashPrime is collision-resistant}
 As expected by the birthday paradox, we should start seeing collisions. Let us analyze the statistics governing the appearance of collisions.
+\comm{Fabrice: What is $\eta$ exactly ? $n$, $n'$, $n+n'$, $|\mathfrak{F} \cup \mathfrak{F'}|$  ? I prefer the last one actually, i.e., the total number of files...}
 
 Consider $\mbox{{\tt HashPrime}}$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^u-1\}$. Let $X_i$ be the random variable:
 
@@ -358,8 +371,10 @@ The average number of colliding files is hence:
 For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of colliding files is less than $233$.\smallskip
 
 However, it is important to note that a collision can only yield a {\sl false positive}, and never a {\sl false negative}. In other words, while a collision may obliviate a difference\footnote{{\sl e.g.} make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create a nonexistent difference {\sl ex nihilo}.\smallskip
+\comm{Fabrice: difference or discrepancy ?}
 
 Thus, it suffices to replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_k(F)=\mbox{{\tt HashPrime}}(k|F)$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each iteration the parties will detect new files and new deletions, fix these and ``launder'' again the remaining multisets.\smallskip
+\comm{Fabrice: already said in Section 2.3... and maybe it is better to say that, in this first analysis, we suppose we do not filter out files, because this only improves the algo...}
 
 Assume that the diversified $\hbar_k(F)$'s are random and independent. To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $k$, assume that $\eta$ remains invariant between iterations and define the following random variables:\smallskip
 
@@ -368,7 +383,7 @@ $$
 X^{\ell}_i & = &
 \left\{
 \begin{array}{lcl}
-1 & ~~~~&  \mbox{if file $F_i$ collides with another file during iteration $\ell$.}\\
+1 & ~~~~&  \parbox[t]{.6\textwidth}{if file $F_i$ collides with another file during iteration $\ell$.}\\
 \\
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
@@ -377,7 +392,7 @@ X^{\ell}_i & = &
 Y_i = \prod_{\ell=1}^k X^{\ell}_i & = &
 \left\{
 \begin{array}{lcl}
-1 & ~~~~&  \mbox{if file $F_i$ collides with another file during the $k$ first protocol iterations.}\\
+1 & ~~~~&  \parbox[t]{.6\textwidth}{if file $F_i$ collides with another file during all the $k$ first protocol iterations.}\\
 \\
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
@@ -412,7 +427,7 @@ For the previously considered instance\footnote{$\eta=10^6$,$u=32$.} we get $\ep
 Z^\ell_i &=
 \left\{
 \begin{array}{lcl}
-1 & ~~~~&  \mbox{if $F_i$ participated in masquerade balls during all $\ell$ first protocol iterations.}\\
+1 & ~~~~&  \parbox[t]{0.6\textwidth}{if $F_i$ participated in masquerade balls during all the $\ell$ first protocol iterations.}\\
 \\
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
@@ -420,7 +435,7 @@ Z^\ell_i &=
 X^{\ell}_{i,j} &=
 \left\{
 \begin{array}{lcl}
-1 & ~~~~&  \mbox{if files $F_i$ and $F_j$ collide during iteration $\ell$.}\\
+1 & ~~~~&  \parbox[t]{0.6\textwidth}{if files $F_i$ and $F_j$ collide during iteration $\ell$.}\\
 \\
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
@@ -451,10 +466,10 @@ Set $Z^0_i = 1$ and write $p_\ell = \Prob{Z^{\ell-1}_{i} = 1 \text{ and } Z^{\el
 For $k \ge 1$, we have:
 \begin{align*}
 \Prob{Z^k_i=1} &= \Prob{\exists j\neq i \text{, } X^k_{i,j} = 1 \text{, } Z^{k-1}_{i} = 1  \text{ and } Z^{\ell-1}_{j} = 1}  \\
-&\le \sum_{j=0, j\neq i}^{\eta-1} \Prob{X^{k-1}_{i,j} = 1} \Prob{Z^{k-1}_{i} = 1 \text{ and } Z^{k-1}_{j} = 1}  \\
+&\le \sum_{j=0, j\neq i}^{\eta-1} \Prob{X^{k}_{i,j} = 1} \Prob{Z^{k-1}_{i} = 1 \text{ and } Z^{k-1}_{j} = 1}  \\
 &\le \frac{\eta-1}{2^u} p_{k-1}
 \end{align*}
-Furthermore $p_0 = 1$ and
+Furthermore $p_0 = 1$ and\comm{Fabrice: stop reading here for Section 3 --- need to read the sequel}
 \begin{align*}
 p_\ell &= \Prob{X^{\ell}_0 = X^{\ell}_1 \text{, } Z^{\ell}_{0} = 1 \text{ and } Z^{\ell}_{1} = 1}
   + \Prob{X^{\ell}_0 \neq X^{\ell}_1 \text{, } Z^{\ell}_{0} = 1 \text{ and } Z^{\ell}_{1} = 1} \\
@@ -769,6 +784,12 @@ L'idee est la suivante (invariant): au round i et au tour j, prod contient les b
 $\mbox{carry}_j$ contient le carry genere par ces bits...
 \end{verbatim}
 
+Remarks Fabrice:
+\begin{itemize}
+\item we should separate move resolution algo from implementation
+\item we should implement the non-prime version stuff... but difficult to find the correct subset of hi which factorizes...
+\end{itemize}
+
 \section{Implementation}
 \label{program}
 
@@ -777,6 +798,7 @@ We implemented and benchmarked the Divide \& Factor protocol described in the pr
 \comm{on parle de "in the previous sections" mais de quelle variate s'agit il?}
 
 The program performs unidirectional synchronization, which is simpler to understand. The code is divided into two subprograms: a shell script and a Python program:
+\comm{Fabrice: in the paper, it is unidirectionnal too !}
 
 \subsubsection{The Shell Script} sets up two instances of the Python program on Oscar and Neil and establishes a bidirectional communication channel between them using two Unix pipes between their standard inputs and outputs.
 
@@ -1072,7 +1094,13 @@ and considers $c=\bar{c}_{n-1}|\ldots|\bar{c}_2|\bar{c}_0$ as the concatenation 
 
 \section{Hashing Into Primes}
 \label{sec:hashprime}
-Hashing into primes is frequently needed in cryptography. A recommended implementation of $\mbox{{\tt HashPrime}}(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough ({\sl e.g.} $160$) one might sacrifice uniformity to avoid repeated file hashings by defining $\mbox{{\tt HashPrime}}(F)=\mbox{{\tt NextPrime}}(\mbox{{\tt Hash}}(F))$. Yet another acceleration (that further destroys uniformity) consists in replacing $\mbox{{\tt NextPrime}}$ by Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
+Hashing into primes is frequently needed in cryptography. A recommended implementation of $\mbox{{\tt HashPrime}}(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough ({\sl e.g.} $160$) one might sacrifice uniformity to avoid repeated file hashings by defining $\mbox{{\tt HashPrime}}(F)=\mbox{{\tt NextPrime}}(\mbox{{\tt Hash}}(F))$. 
+Yet another acceleration (that further destroys uniformity) consists in replacing $\mbox{{\tt NextPrime}}$ by Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
+\comm{analyse ci-contre}
+
+Fabrice: Cela accélère un peu, car il y a environ $\frac{n}{\log(n) \varphi(\alpha)}$ nombres premiers $\le n$ et congrus à $1$ modulo $\alpha$, contre $\frac{n}{\log(n)}$ nombres premiers $\le n$ (voir \url{http://fr.wikipedia.org/wiki/Th%C3%A9or%C3%A8me_de_la_progression_arithm%C3%A9tique#Version_quantitative}).
+Dans l'algo \ref{alg:scanprime}, $h$ est donc premier avec proba $\dfrac{\frac{n}{\log(n) \varphi(a)}}{\frac{n}{\alpha}} = \frac{\alpha}{\log(n) \varphi(\alpha)}$, tandis que dans l'algo \ref{alg:primes}, $h$ est premier avec proba $\frac{1}{\log(n)}$.
+On a alors une accélération d'environ 10 si on prend $d=60$.
 
 \begin{algorithm}
   \caption{Fast Nonuniform Hashing Into Primes}
