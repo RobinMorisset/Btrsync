@@ -5,6 +5,4 @@ dist
 *.swp
 .fuse*
 *.pyc
-\#*
-*.fls
-*.fdb_latexmk
+
