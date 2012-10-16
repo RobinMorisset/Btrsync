@@ -1,21 +1,35 @@
-TARGETS=btrsync.pdf
-DEPS_DIR = .deps
-LATEXMK = latexmk -recorder -use-make -deps \
-  -e 'warn qq(In Makefile, turn off custom dependencies);' \
-  -e '@cus_dep_list = ();' \
-  -e 'show_cus_dep();'
+# Source: http://tex.stackexchange.com/questions/40738/how-to-properly-make-a-latex-project
 
-all : $(TARGETS)
+.PHONY: mrproper clean FORCE_MAKE
 
-$(foreach file,$(TARGETS),$(eval -include $(DEPS_DIR)/$(file)P))
+PDF=btrsync.pdf btrsync-single.pdf
 
-$(DEPS_DIR) :
-	mkdir $@
+all: $(PDF)
 
-#results.tex: results
-#	./mkresults.sh
+btrsync-single.tex: btrsync.tex btrsync.bbl
+	./single.sh
 
-%.pdf: %.tex
-	if [ ! -e $(DEPS_DIR) ]; then mkdir $(DEPS_DIR); fi
-	$(LATEXMK) -pdf -dvi- -ps- -deps-out=$(DEPS_DIR)/$@P $<
+btrsync.bbl: btrsync.pdf
 
+# MAIN LATEXMK RULE
+
+# -pdf tells latexmk to generate PDF directly (instead of DVI).
+# -pdflatex="" tells latexmk to call a specific backend with specific options.
+# -use-make tells latexmk to call make for generating missing files.
+
+# -interactive=nonstopmode keeps the pdflatex backend from stopping at a
+# missing file reference and interactively asking you for an alternative.
+
+btrsync-single.pdf: btrsync-single.tex FORCE_MAKE
+	perl latexmk.pl -pdf -pdflatex="pdflatex -interaction=nonstopmode" -bibtex- $<
+
+btrsync.pdf: btrsync.tex FORCE_MAKE
+	perl latexmk.pl -pdf -pdflatex="pdflatex -interaction=nonstopmode" -bibtex $<
+
+clean:
+	perl latexmk.pl -c
+	rm -f *~ *.backup *.bak
+
+mrproper: clean
+	perl latexmk.pl -C
+	rm -f $(PDF)

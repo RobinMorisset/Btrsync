@@ -1,11 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 from __future__ import print_function
 
 """Btrsync (python version)"""
-__author__ = "Fabrice Ben Hamouda"
+__author__ = "Antoine Amarilli and Fabrice Ben Hamouda"
 
 import os, sys, inspect
-import re
 import shutil
 from subprocess import Popen, PIPE, STDOUT
 import argparse
@@ -25,18 +24,13 @@ from sha1 import sha1
 from algo_moves import do_moves
 
 P_SIZE = 1024
-HASH_SIZE = 40# 160
+HASH_SIZE = 160
 SEED = 10
 PROFILE = True
 
 if PROFILE:
   import cProfile
   import pstats
-
-# TODO: remove this warning... # WARNING: use the random number generator only for generate_next_p !
-
-gmpy.rand('init')
-gmpy.rand('seed', SEED)
 
 # JSON encoder for mpz (gmpy big integer)
 class MpzJSONEncoder(json.JSONEncoder):
@@ -50,9 +44,6 @@ def as_python_object(dct):
   if '_mpz' in dct:
     return mpz(dct["_mpz"])
   return dct
-
-def shellquote(s):
-  return "'" + s.replace("'", "'\\''") + "'"
 
 def eprint(a):
   print(a, file=sys.stderr)
@@ -120,7 +111,6 @@ def hash_dir():
   #return hashes
   return dict(hashes)
 
-
 def p_gen():
   small_p = mpz(1)
   k = P_SIZE
@@ -134,15 +124,6 @@ p_gen_inst = p_gen()
 #import time
 def generate_next_p():
   """ Generate the i^th number modulo p """
-
-#  def rand_bits(bits):
-#    """ Pick a random number of n bits """
-#    n = gmpy.rand('next', (1<<(bits+1))-1)
-#    if n < (1<<bits):
-#      return rand_bits(bits)
-#    else:
-#      return n
-
 #  a = time.time()
   p = p_gen_inst.next()
 #  b = time.time()
@@ -287,58 +268,58 @@ def sync_oscar(root_neil, root_oscar, files_neil, files_oscar):
   return sent, received
 
 def main_neil(args):
-    # Neil
-    eprint("Neil: start")
-    os.chdir(args.root_neil)
-    hashes = hash_dir()
-    eprint("Neil: hash_dir finished")
+  # Neil
+  eprint("Neil: start")
+  os.chdir(args.root_neil)
+  hashes = hash_dir()
+  eprint("Neil: hash_dir finished")
 
-    pp = 1
-    d = 1
-    res_neil = None
-    while res_neil == None:
-      pi_oscar, size = receive()
-      (pp, d, res_neil) = round_neil(hashes, pi_oscar, pp, d)
-      send(res_neil)
+  pp = 1
+  d = 1
+  res_neil = None
+  while res_neil == None:
+    pi_oscar, size = receive()
+    (pp, d, res_neil) = round_neil(hashes, pi_oscar, pp, d)
+    send(res_neil)
 
 def main_oscar(args):
-    # Oscar
-    eprint("Oscar: start")
-    os.chdir(args.root_oscar)
-    hashes = hash_dir()
-    eprint("Oscar: hash_dir finished")
+  # Oscar
+  eprint("Oscar: start")
+  os.chdir(args.root_oscar)
+  hashes = hash_dir()
+  eprint("Oscar: hash_dir finished")
 
-    res_neil = None
-    my_sent = 0
-    my_received = 0
+  res_neil = None
+  my_sent = 0
+  my_received = 0
 
-    while res_neil == None:
-      p = generate_next_p()
-      pi_oscar = product_mod(p, hashes)
-      my_sent += send(pi_oscar)
-      res_neil, my_nreceived = receive()
-      my_received += my_nreceived
+  while res_neil == None:
+    p = generate_next_p()
+    pi_oscar = product_mod(p, hashes)
+    my_sent += send(pi_oscar)
+    res_neil, my_nreceived = receive()
+    my_received += my_nreceived
 
-    (oscar, files_neil) = res_neil
-    factors_oscar = factor(oscar, hashes)
-    files_oscar = [hashes[h] for h in factors_oscar]
-    #eprint("Neil files:")
-    #eprint(files_neil)
-    #eprint("Oscar files:")
-    #eprint(files_oscar)
-    sent, received = sync_oscar(args.root_neil, args.root_oscar, files_neil, files_oscar)
-    if args.status:
-      status = open(args.status, 'w')
-      print ("accounting_btrsync: sent %d bytes  received %d bytes" % (my_sent, my_received), file=status)
-      print ("accounting_rsync: sent %d bytes  received %d bytes" % (sent, received), file=status)
-      print ("accounting_total: sent %d bytes  received %d bytes" % (
-        sent + my_sent, received + my_received), file=status)
-      status.close()
+  (oscar, files_neil) = res_neil
+  factors_oscar = factor(oscar, hashes)
+  files_oscar = [hashes[h] for h in factors_oscar]
+  #eprint("Neil files:")
+  #eprint(files_neil)
+  #eprint("Oscar files:")
+  #eprint(files_oscar)
+  sent, received = sync_oscar(args.root_neil, args.root_oscar, files_neil, files_oscar)
+  if args.status:
+    status = open(args.status, 'w')
+    print ("accounting_btrsync: sent %d bytes  received %d bytes" % (my_sent, my_received), file=status)
+    print ("accounting_rsync: sent %d bytes  received %d bytes" % (sent, received), file=status)
+    print ("accounting_total: sent %d bytes  received %d bytes" % (
+      sent + my_sent, received + my_received), file=status)
+    status.close()
 
 def main():
-  parser = argparse.ArgumentParser()
-  parser.add_argument("--origin", help="Neil role (internal use)", action="store_true")
-  parser.add_argument("--destination", help="Oscar role (internal use)", action="store_true")
+  parser = argparse.ArgumentParser(description="WARNING: Internal use. Please use btrsync.sh")
+  parser.add_argument("--origin", help="Play Neil role", action="store_true")
+  parser.add_argument("--destination", help="Play Oscar role", action="store_true")
   parser.add_argument("--status", help="Status file to write (internal use)")
   parser.add_argument("root_neil", help="[[user@]host:]path/to/neil")
   parser.add_argument("root_oscar", help="[[user@]host:]path/to/oscar")
@@ -355,39 +336,7 @@ def main():
     else:
       main_oscar(args)
   else:
-    # Print command to be executed for Neil and Oscar
-    # Used by btrsync.sh
-    print ("ok")
-
-    regex = re.compile("^((?P<server>[^:]+):)?(?P<path>.*)$")
-    r_oscar = regex.search(args.root_oscar).groupdict()
-    r_neil = regex.search(args.root_neil).groupdict()
-
-    if r_neil["server"] == None:
-      root_neil = os.path.abspath(args.root_neil)
-      root_neil_local = root_neil
-    else:
-      root_neil = args.root_neil
-      root_neil_local = r_neil["path"]
-
-    if r_oscar["server"] == None:
-      root_oscar = os.path.abspath(args.root_oscar)
-      root_oscar_local = root_oscar
-    else:
-      root_oscar = args.root_oscar
-      root_oscar_local = r_oscar["path"]
-
-    if r_neil["server"]==None:
-      print ("btrsync.py --origin %s %s" % (shellquote(root_neil_local), shellquote(root_oscar)))
-    else:
-      print ("ssh %s btrsync.py --origin %s %s" % (r_neil["server"], shellquote(root_neil_local), shellquote(root_oscar)))
-
-    # if a status file is provided, pass it to the destination:
-    invocation = "btrsync.py %s --destination" % ("--status=" + shellquote(args.status) if args.status else "")
-    if r_oscar["server"]==None:
-      print ("%s %s %s" % (invocation, shellquote(root_neil), shellquote(root_oscar_local)))
-    else:
-      print ("ssh %s %s %s %s" % (r_oscar["server"], invocation, shellquote(root_neil), shellquote(root_oscar_local)))
+    args.error("No role specified, add --origin or --destination.")
 
   # Fix: http://stackoverflow.com/questions/7955138/addressing-sys-excepthook-error-in-bash-script
   try:

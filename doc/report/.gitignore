@@ -22,3 +22,9 @@
 *.out
 *.synctex.gz
 
+/auto
+_*
+\#*
+*.fls
+*.fdb_latexmk
+*.backup
