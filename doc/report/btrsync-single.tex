@@ -69,6 +69,7 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 }
 
 \maketitle
+\comm{Penser à voir si on garde ce titre.}
 
 \comm{Si cet abstract vous convient, il faudrait en reprendre des bouts dans l'introduction.}
 \begin{abstract}
@@ -76,23 +77,95 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 \comm{Fabrice: j'écrirai quelque chose de plus positif comme: ``\btrsync transmits much less data at the expense of a small computationnal overhead.''}
 \end{abstract}
 
+\comm{Est-ce que c'est vrai qu'on apporte quelque chose de nouveau dans le cas où c'est des fichiers de taille non fixe ? --- Fabrice: je ne sais pas, il faudrait que l'on réanalyse la complexité propre de la dernière variante.}
 \section{Introduction}
 This work revisits {\sl set reconciliation}, a problem consisting in
 synchronizing two multisets while minimizing the amount of data transmitted. Set
 reconciliation arises in many practical situations, the most typical of which is
 certainly incremental backups performed over a slow network link.\smallskip
 
-\comm{Est-ce que c'est vrai qu'on apporte quelque chose de nouveau dans le cas où c'est des fichiers de taille non fixe ? --- Fabrice: je ne sais pas, il faudrait que l'on réanalyse la complexité propre de la dernière variante.}
-Several efficient and elegant solutions are known to achieve set reconciliation of multisets containing atomic elements of a fixed size. For instance, \cite{PSRec} manages to perform set reconciliation using a bandwidth which is linear in the size of the symmetric difference of the multisets multiplied by the size of the elements, which is optimal in this setting. We refer the reader to~\cite{PSRec,Mins1,Whats} (to quote a few references) for more on this problem's history and its existing solutions.\smallskip
+Several efficient and elegant solutions are known to achieve set reconciliation of multisets containing atomic elements of a fixed size. For instance, \cite{PSRec} manages to perform set reconciliation using a bandwidth which is linear in the size of the symmetric difference of the multisets multiplied by the size of the elements, which is optimal in this setting. We refer the reader to~\cite{PSRec,Mins1,Whats} for more on this problem's history and its existing solutions.\smallskip
 
 However, in the case where the elements to be synchronized can be very large (e.g., files during a backup), we must use checksums to identify the differing files before transferring them, and the question of the size of the checksum to use is non-trivial. In this article, we propose a new reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}) based on number theory. In terms of asymptotic transmission complexity, the proposed procedure reaches optimality as well. 
 \comm{Fabrice@Antoine: Je ne suis pas tout à fait d'accord avec ce paragraphe, ton abstract est beaucoup mieux...}
 In addition, the new protocols offer a very interesting gamut of parameter trade-offs. We provide an analysis of the protocol's complexity in terms of transmission and computation, as well as a probabilistic analysis of the possible choices of checksum sizes; we also provide an implementation of the protocol and experimental results.\smallskip
 
-This paper is structured as follows: Section \ref{basic} presents a basic version of the proposed protocol. This basic version suffers from two limitations: it works only if the number of differences to reconcile is bound and it may fail leave the synchronized party in an erroneous state. Failure avoidance is overcome in section \ref{reco} and an extension to arbitrary numbers of differences is given in section \ref{insuf}. The protocol's transmission complexity is treated in section \ref{trans}. Section \ref{trans} also introduces two transmission optimizations and analyzes them in detail. Section \ref{comp} analyzes the computational complexities of the proposed protocols and \ref{program} reports practical experiments and benchmarks against the popular software \rsync.\smallskip
+This paper is structured as follows: Section~\ref{dandf} presents ``Divide \&
+Factor'', our set reconciliation protocol. Section~\ref{trans} presents the
+transmission complexity of the protocol, introduces two transmission
+optimizations and analyzes them in detail. Section \ref{comp} analyzes the
+computational complexities of the proposed protocols. Section~\ref{files}
+explain how to use a set reconciliation algorithm to perform file
+synchronization. Section~\ref{program} presents our implementation \btrsync and
+reports practical experiments and benchmarks against the popular software
+\rsync.\smallskip
+
+\section{New Introduction}
+
+\emph{File synchronization} is the important practical problem consisting of
+retrieving a hierarchy of files on a remote host given some outdated or
+incomplete version of this hierarchy of files on the local machine. In many use
+cases, the bottleneck is bandwidth of the network link between the local machine
+and the remote host, and care must be taken to limit the quantity of data
+transferred over the link by using the existing copy of the set of files to the
+fullest possible extent. Popular file synchronization programs such as \rsync
+use rolling checksums to skip remote file parts which match a file part at the
+same location on the local machine; however, they are usually unable to take
+advantage of the local files in subtle ways, like detecting that some large file
+is already present on the local machine but at a different location.
+
+File synchronization is closely linked to the theoretical problem of \emph{set
+reconciliation}: given two sets of fixed-size data items on different machines,
+determine the symmetric difference of the two sets while minimizing the amount
+of data transferred. The lower bound of the quantity of data to transfer is
+cleary the size of the symmetric difference (i.e., the number of elements in the
+difference times the size of these elements), and some known algorithms achieve
+this bound~\cite{PSRec}. We refer the reader to~\cite{PSRec,Mins1,Whats} (to
+quote a few references) for more on this problem's history and its existing
+solutions.
+
+In this paper, we look at the problems of set reconciliation and file
+synchronization from a theoretical and practical perspective. Our contribution
+are as follows:
+\begin{itemize}
+  \item We introduce ``Divide \& Factor'', a new set reconciliation algorithm.
+    D\&F is based on number theory: it represents the items to synchronize as
+    prime numbers, accumulates information about the symmetric difference in
+    a series of rounds through the Chinese remainder theorem, and reconstitutes
+    the result through the use of rational number reconstruction. The algorithm
+    is described in Section~\ref{dandf}.
+  \item We show that D\&F, like existing algorithms, has a transmission
+    complexity which is linear in the size of the symmetric difference
+    (Section~\ref{trans}). We study the computational complexity of D\&F and
+    present possible trade-offs between constant-factor transmission complexity
+    and computational complexity through alternative design choices
+    (Section~\ref{comp}).
+  \item We explain how hash functions can be used with any set reconciliation
+    algorithm to synchronize sets of elements which do not have a fixed size,
+    such as file contents. We explain how the size of the hash function should
+    be chosen to achieve a good tradeoff between the quantity of data to
+    transfer and the risks of confusion. TODO have a section for this: also,
+    isn't this D\&F-specific?.
+  \item We spell out in Section~\ref{files} how the previous construction can be
+    extended to perform file synchronization, taking into account the location
+    and metadata of files and managing situations such as file moves in an
+    intelligent manner. We describe an algorithm to apply a set of move
+    operations on a set of files in-place which avoids excessive use of
+    temporary file locations.
+  \item We present \btrsync, our implementation of file synchronization through
+    D\&F, in Section~\ref{program}, and benchmark it against \rsync. The results
+    show that \btrsync has a higher computational complexity but transmits less
+    data in most scenarios.
+\end{itemize}
 
 \section{``Divide \& Factor'' Set Reconciliation}
 \label{dandf}
+Section \ref{basic} presents a basic
+version of the proposed protocol. This basic version suffers from two
+limitations: it works only if the number of differences to reconcile is bound
+and it may fail leave the synchronized party in an erroneous state. Failure
+avoidance is overcome in section \ref{reco} and an extension to arbitrary
+numbers of differences is given in section \ref{insuf}.
 
 \subsection{Problem Definition and Notations}
 
@@ -878,6 +951,7 @@ Remarks Fabrice:
 \end{itemize}
 
 \section{From Set Reconciliation to Files Synchronization}
+\label{files}
 
 The previous sections presented how to perform set reconciliation on a set of
 fixed-size hashes, and how to choose the hash size when it is used to represent
