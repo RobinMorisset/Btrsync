@@ -877,41 +877,57 @@ Remarks Fabrice:
 \item we should implement the non-prime version stuff... but difficult to find the correct subset of hi which factorizes...
 \end{itemize}
 
-\section{From Efficient Set Reconciliation to Efficient Files Synchronization}
+\section{From Set Reconciliation to Files Synchronization}
 
-TODO: expliquer que l'on utilise d'abord le hashé du path+content, puis ensuite on fait le move reconciliation sur le hashé des content (avant d'envoyer tous les fichiers) et enfin, on fait une copie intelligente des fichiers restants (via rsync)...
+The previous sections presented how to perform set reconciliation on a set of
+fixed-size hashes, and how to choose the hash size when it is used to represent
+the content of files. This suggests a simple protocol to synchronize a set of
+files: first synchronize the set of hashes as described, then exchange the
+content of the files corresponding to the hash values that were found to be in
+the symmetric difference.
 
-\subsection{TODO}
-TODO: rewrite this as explained in the previous TODO !!!!
+However, in practice, we do not wish to synchronize file \emph{sets}, but file
+\emph{hierarchies}: we are not just interested in the \emph{content} of the
+files but in their \emph{metadata}. The most important metadata is the file's
+path (i.e., its name and its location in the filesystem), though other kinds of
+metadata exist (e.g., modification time, owner, permissions). In many use cases,
+the file metadata can change without changes in the file content: for instance,
+files can be \emph{moved} to a different location. When performing
+reconciliation, we must be aware of this fact, and reflect file moves without
+re-transferring the contents of the moved files.
 
-\begin{enumerate}
-\item Hash of files' contents concatenated with their paths, types (folder/file), and permissions (not supported yet).
-\item Implement the protocol proposed in Section \ref{???} with input data coming from {\tt stdin} and output data going to {\tt stdout}.
-\end{enumerate}
-\comm{encore une fois "Implement the protocol proposed in Section \ref{???}" qu'a t on implemente au juste?}
-More precisely:
-\begin{itemize}
-\item Oscar sends it product of hashes modulo a first prime number $p_1$.
-\comm{sur "a first prime number $p_1$", l'implem marche avec $p_i$ ou des $2^u$?}
-\item Neil receives the product, divides by its own product of hashes, reconstructs the fraction modulo $p_1$ and checks if he can factor the denominator using his hashes base. If he can, he stops and sends the numerator and the list of tuples (path, type, hash of content of the file) corresponding to the denominator's factors. Otherwise he sends "None" [is this the ASCII string "None"? if not what does he send precisely?].
-\item If Neil sent "None", Oscar computes the product of hashes modulo another prime $p_2$, sends it... CRT mechanism... [can we elaborate more on what happens here? which functions in GMP are used to do the CRT?]
-\item If Neil sent the numerator and a list of tuples, then Oscar factors the numerator over his own hash values. Now each party (Neil, Oscar) knows precisely the list of files (path + type + hash of content) that differs from the other party.
-\end{itemize}
+In this section, we present how to solve this \emph{file synchronization}
+problem, using our set reconciliation program as a building block.
 
-[please structure the following:]\smallskip
+\subsection{General Principle}
 
-2. synchronize all the files. This part is not completely optimized.\smallskip
+To perform file synchronization, Oscar and Neil will compute the hash of the
+contents of each of their file (which we will denote as the \emph{content
+hash}). They will then compute the hash of the concatenation of the content hash
+and file metadata (which we will call the \emph{mixed hash}). Oscar and Neil
+then perform set reconciliation on the set of mixed hashes.
 
-We just remove all folders Oscar should not have and create new folders.\smallskip
+Once the reconciliation has completed, all mixed hashes common to Oscar and Neil
+represent files which have the same content and metadata in Oscar and in Neil.
+Neil now sends to Oscar the content hashes and metadata of the files whose mixed
+hash appears in Neil but not in Oscar. Oscar is now aware of the metadata and
+content hash of all of Neil's files that do not exist in Oscar with the same
+content and metadata (we will call them the \emph{missing files}).
 
-Then we remove all files Oscar should not have and synchronize using rsync the last files.\smallskip
+Oscar now looks at the list of content hashes of the missing files. For some of
+these hashes, Oscar may already have a file with the same content hash, only
+with the wrong metadata. For others, Oscar may not have any file with the same
+content hash. In the first case, Oscar can recreate Neil's file by altering the
+metadata, without retransferring the file contents. In the second case, Oscar
+needs to retrieve the full file contents from Neil. To complete the file
+synchronization, we first deal with all of Oscar's files which fall in the first
+case: this is a bit tricky because ``altering the metadata'' is not obvious to
+perform in-place when it involves file moves, and is the focus of
+Section~\ref{moving}. Once this has been performed, we transfer all missing
+files: this is explained in Section~\ref{transferring}.
 
-We could check for move (since we have the list of hash of contents of files) and do moves locally.\smallskip
-
-We can even try to detect moves of complete subtrees...\smallskip
-
-
-\subsection{Move Resolution Algorithm}
+\subsection{Moving Existing Files}
+\label{moving}
 
 To reproduce the structure of Oscar on Neil's disk, we need to perform a sequence of file moves. Sadly, it is not straightforward to apply the moves, because, if we take a file to move, its destination might be blocked, either because a file already exists (we want to move $a$ to $b$, but $b$ already exists), or because a folder cannot be created (we want to move $a$ to $b/c$, but $b$ already exists as a file and not as a folder). Note that for a move operation $a \rightarrow b$, there is at most one file blocking the location $b$: we will call it the {\sl blocker}.
 
@@ -976,6 +992,16 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
   \end{algorithmic}
 \end{algorithm}
 
+\subsection{Transferring Missing Files}
+\label{transferring}
+
+Once all moves have been applied, Oscar's hierarchy contains all of its files
+which also exist on Neil, and they have been put at the correct location. The
+only thing that remains is to transfer the contents of Neil's files that do not
+exist in Oscar's hierarchy and create those files at the right position. To do
+so, a simple solution is to use \rsync to synchronize explicitly the correct
+files on Neil to the same location in Oscar's hierarchy, using the fact that
+Oscar is now aware of all of Neil's files and their location.
 
 \section{Implementation}
 \label{program}
@@ -1000,7 +1026,6 @@ The program is composed of three parts: shell script, python program cmd, python
 
 
 \subsection{What is Implemented ?}
-
 \begin{itemize}
 \item variant 2 of adapting $p_i$ (power of small primes)
 \item hash to prime (remove use of hash to prime, not supported yet, though it WOULD be VERY interesting)
@@ -1013,6 +1038,30 @@ Small difference with theory:
 \item hash to prime: slightly different, I should correct this and use the fast version described in appendix if I have time (Fabrice)
 \end{itemize}
 
+The only metadata managed by \btrsync is the file path (name and location).
+Other kinds of metadata (modification date, owner, permissions) are not
+implemented, though it would be easy to do so.
+
+TODO: what to do with this? More precisely:
+\begin{itemize}
+\item Oscar sends it product of hashes modulo a first prime number $p_1$.
+\comm{sur "a first prime number $p_1$", l'implem marche avec $p_i$ ou des $2^u$?}
+\item Neil receives the product, divides by its own product of hashes, reconstructs the fraction modulo $p_1$ and checks if he can factor the denominator using his hashes base. If he can, he stops and sends the numerator and the list of tuples (path, type, hash of content of the file) corresponding to the denominator's factors. Otherwise he sends "None" [is this the ASCII string "None"? if not what does he send precisely?].
+\item If Neil sent "None", Oscar computes the product of hashes modulo another prime $p_2$, sends it... CRT mechanism... [can we elaborate more on what happens here? which functions in GMP are used to do the CRT?]
+\item If Neil sent the numerator and a list of tuples, then Oscar factors the numerator over his own hash values. Now each party (Neil, Oscar) knows precisely the list of files (path + type + hash of content) that differs from the other party.
+\end{itemize}
+
+[please structure the following:]\smallskip
+
+2. synchronize all the files. This part is not completely optimized.\smallskip
+
+We just remove all folders Oscar should not have and create new folders.\smallskip
+
+Then we remove all files Oscar should not have and synchronize using rsync the last files.\smallskip
+
+We could check for move (since we have the list of hash of contents of files) and do moves locally.\smallskip
+
+We can even try to detect moves of complete subtrees...\smallskip
 
 \subsection{Experimental Comparison to \rsync}
 
@@ -1061,6 +1110,8 @@ The main contributions of our work are:
 \end{itemize}
 
 Many fine questions of the probabilistic discussions in the paper are left as future work.\comm{Be more specific!} Another further line of research would be to pursue development of \btrsync to make it suitable for end users.
+
+Future work: divide large files in smaller blocks.
 
 \section{Acknowledgment}
 
