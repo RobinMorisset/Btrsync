@@ -21,6 +21,8 @@
 \usepackage{verbatim,algorithm}
 \usepackage[noend]{algpseudocode}
 \usepackage{url,tikz,tabularx,multirow,xspace,booktabs}
+\usepackage{array,threeparttable}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \usetikzlibrary{trees,arrows,chains,matrix,positioning,scopes}
 
 \newcommand*\Let[2]{\State #1 $\gets$ #2}
@@ -298,9 +300,9 @@ Each of this repetition is called a round.
 Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$. \smallskip
 
 More precisely, let us suppose $2^{2 u t_i} \le p_i < 2^{2 u t_i +1}$.
-Let us write $P_i = p_1 \dots p_i$ and $ $.
-After receving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as many information as if Oscar had transmitted a redundancy for $c$ corresponding to the modulo $P_k$.
-Therefore, the number $\lambda$ of rounds used is the minimum number $\lambda$ such that $T_k \ge t_0$.
+Let us write $P_i = p_1 \dots p_i$ and $T_i = u (t_1 + \dots t_i)$.
+After receiving the redundancies $c_1,\dots,c_i$ corresponding to $p_1,\dots,p_i$, Neil has as many information as if Oscar had transmitted a redundancy $C_i$ corresponding to the modulo $P_i$, and can compute $S_i = C'_i / C_i$ from $s_i = c'_i/c_i$ and $S_{i-1}$ using the CRT (TODO ref ?).
+Therefore, the number $\lambda$ of rounds used is the minimum number $\lambda$ such that $T_i \ge t_0$.
 If $t_1 = t_2 = \dots = t$, then $\lambda = \lceil t/t_0 \rceil$.
 
 All $\bot$ treatments were removed from Appendix \ref{sec:extended} for the sake of clarity (these can be very easily added by modifying Appendix \ref{sec:extended} {\sl mutatis mutandis}). In essence, the rules are: add information modulo a new $p_i$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ and increment $k$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf collision}}},\square}$.\smallskip
@@ -550,8 +552,8 @@ But how can we confirm the solution? As mentioned in section \ref{reco}, Neil wi
 \section{Computational Complexity}
 \label{comp}
 In this section, we are interested in computing the computational complexity of our protocol, when there is no collision, to simplify the analysis.
-
-In this section, we first present some variants of the protocol we described above, and then we analyse the complexity of all these variants.
+We first present some variants of the protocol we described above, and then we analyse the complexity of all these variants and propose some algorithmic optimizations to speed up the file reconciliation.
+A summary of all costs can be found in Table~\ref{tab:workload}.
 
 
 \subsection{Basic Complexity}
@@ -562,29 +564,29 @@ The modular division of two $k$-bit numbers and the reduction of $2k$-bit number
 Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(k)$.for sufficiently large $k$.\smallskip
 
 As proven in TODO APPENDIX, the complexity of $\tt HashPrime$ is $u^2 \mu(u)$.
+Hence, we have the costs depicted in the third column of Table~\ref{tab:workload}.
 
-Given that $p \sim 2^{ut}$, we obtain the following complexity analysis (if we suppose $n=n'$):
+%Given that $p \sim 2^{ut}$, we obtain the following complexity analysis (if we suppose $n=n'$):
 
-% TODO: si on introduit \mu, alors il faut s'en servir. Si on dit juste que \mu(k) = \Oapp(k) avec la FFT, alors inutile de définir \mu !
-% TODO: en fait je pense qu'il faudrait réorganiser totalement la section : présenter quelles sont les opérations à faire avec un tableau (et un coût naïf), présenter un par un les trucs clever qu'on peut faire à la place, et avoir un autre tableau à la fin avec les coûts sophistiqués
-\comm{Je ne comprends pas quelle la différence entre les colonnes 3 4 et les colonnes 5 6 de ce tableau.}
 % TODO: conflit de notations: i pour fichier et i pour round !
 
-\subsection{Adapting $p$}
+\subsection{Adapting $p_i$}
 
-TODO: goal $\longrightarrow$ we do not require to use storage... + last variant remove CRT and constant factor gains...
+Using $p_i$ $ut_i$-primes is not very practical, because generating a big prime number is slow, and storing a list of such primes require to be able to bound the number of rounds, and to fix all the parameters ($u$ and $t_1,t_2,\dots$).
+That is why, in this section we show that we can adapt $p_i$ to be able to generate them easily and also, to speed up the computations with a constant factor.
 
-Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the {\sl only} property required from $p$ is to be co-prime with all the $h_i$ and all the $h'_i$. We can hence consider the following variants:\comm{What is the goal of the following variants? Is it to reduce the complexity of the generation of the primes?}
-
+Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the {\sl only} property required from $p$ is to be co-prime with all the $h_i$ and all the $h'_i$. We can hence consider the following variants:
 \subsubsection{Variant 1:} Smooth $p_i$:
-
-$$p_i=\prod_{j=r_i}^{r_{i+1}-1} \mbox{{\tt Prime}}[j]$$
-
-Where the bounds $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+\[ p_i=\prod_{j=r_i}^{r_{i+1}-1} \mbox{{\tt Prime}}[j], \]
+where the bounds $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+Generating such a prime is much faster than generating a big prime $p_i$.
 
 \subsubsection{Variant 2:} $p_i=\mbox{{\tt Prime}}[i]^{r_i}$ where the exponents $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+This variant is even faster than the previous one, but require to choose $h_i$ bigger than all
+$\mbox{{\tt Prime}}[i]^{r_i}$. 
 
-\subsubsection{Variant 3:} Progressively work modulo a growing power of two. This variant, is probably the most efficient of all, but somewhat complex to explain. We hence describe it in detail in Appendix \ref{powtwo}. This variant is compatible with the use of {\sc fft}-multiplication, hence asymptotic complexity is preserved. In addition, it avoids all modular reductions and all {\sc crt} re-combinations and hence offers considerable constant-factor accelerations.\smallskip
+\subsubsection{Variant 3:} $p_i = 2^{ut_i}$. This variant, is probably the most efficient of all, but somewhat complex to explain. We hence describe it in detail in Appendix \ref{powtwo}. This variant is compatible with the use of {\sc fft}-multiplication, hence asymptotic complexity is preserved. In addition, it avoids all modular reductions and all {\sc crt} re-combinations and hence offers considerable constant-factor accelerations.\smallskip
+\comm{Actually it is easier to explain since there is no CRT, isn't it ???}
 
 \begin{verbatim}
 
@@ -606,11 +608,9 @@ L'idee est la suivante (invariant): au round i et au tour j, prod contient les b
 $\mbox{carry}_j$ contient le carry genere par ces bits...
 \end{verbatim}
 
-\subsection{Remove Hashing to Prime Numbers}
-
-TODO: goal remove most complex operation !
 
 \subsection{Algorithmic Optimizations using Product Trees}
+\label{sec:algo-opt-prod-trees}
 
 \comm{Indiquer clairement à quelles lignes du tableau ça se réfère, et si la complexité donnée dans le tableau prend ces optims en compte.}
 The non-overwhelming (but nonetheless important) complexities of the computations of $(c,c')$ and of the factorizations can be even reduced to $\Oapp(\frac{n}{t} \mu(u t))$ using convolutive methods. These complexities can be reduced to $\Oapp(n u)$ with {\sc fft}~\cite{schonhage1971schnelle}. To simplify the presentation, assume that $t=2^\tau$ is a power of two dividing $n$.
@@ -799,41 +799,75 @@ Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexit
 
 \subsection{Summary}
 
-\begin{table}
+Summary of costs is depicted in Table~\ref{tab:workload}.
 
-  \begin{tabularx}{\textwidth}{lXp{1.5cm}p{1.5cm}p{1.5cm}p{1.5cm}}
+\begin{table}[ht]
+\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
+\newcommand{\mcqc}[1]{\multicolumn{4}{c}{#1}}
+ \begin{threeparttable}
+  \begin{tabularx}{\textwidth}{lXC{2cm}C{2cm}C{2cm}C{2cm}}
 \toprule
 {\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\
 \cmidrule(l){3-6}
-& & \multicolumn{2}{c}{{\bf Basic algo.}} & \multicolumn{2}{c}{{\bf Opt. algo.}} \\
-& & hash to prime & not hash to primes & hash to prime & not hash to primes \\
+& & \mcdc{\bf Basic algo.} & \mcdc{\bf Opt. algo.} \\
+& & $p_i$ prime & $p_i = 2^{ut_i}$ & $p_i$ prime & $p_i = 2^{u t_i}$ \\
 \midrule
-Both  & computation of $h_i$ and $h'_i$ & $n u^2 \mu(u)$  &  \\
+Both  & computation of $h_i$ and $h'_i$ 
+      & \mcqc{$n u^2 \mu(u)$}  \\
+\midrule
       & \textit{for round $i$} &  &  \\
-Both  & compute redundancies $c_i$ and $c'_i$ & $n \cdot \mu(ut)$ &  & $\frac{n}{t} \cdot \mu(ut)$  \\
-TODO \\
+Both  & compute redundancies $c_i$ and $c'_i$ 
+      & \mcdc{$n \cdot \mu(ut_i)$} & \mcdc{$\frac{n}{t_i} \cdot \mu(ut_i)$}  \\
+Neil  & compute $s_i = c'_i/c_i$\tnote{a} or $S_i = C'_i / C_i$
+      & \mcqc{$\mu(uT_i)$}  \\
+Neil  & compute $S_i$ from $S_{i-1}$ and $s_i$ (CRT)\tnote{a}
+      & $\mu(u T_i)$ & n/a & $\mu(u T_i)$ & n/a \\
+Neil  & find $a_i,b_i$ such that $S_i = a_i/b_i \bmod p_i$
+      & \mcqc{$\mu(u T_i)$\tnote{3}} \\
+Neil  & factor $a_i$
+      & \mcdc{$n \cdot \mu(uT_i)$} & \mcdc{$\frac{n}{T_i} \cdot \mu(uT_i)$}  \\
+\midrule
+      & \textit{last round} \\
+Oscar & factor $b_i$
+      & \mcdc{$n \cdot \mu(ut_i)$} & \mcdc{$\frac{n}{t_i} \cdot \mu(ut_i)$}  \\
+\midrule
+      & \textbf{Overwhelming complexity}
+      & TODO & TODO & TODO & TODO \\
 \bottomrule
   \end{tabularx}
-
-\end{table}
-
-\begin{table}
-  \begin{tabularx}{\textwidth}{lXp{1.2cm}p{2.3cm}p{1.2cm}p{2.3cm}}\toprule
-{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\\midrule
-Both  & generate primes                                                  & $nu^4$  & Rabin-Miller & $n u^3$  & Rabin-Miller             \\
-Both  & compute redundancies $c$ and $c'$                                & $n \cdot \mu(u t)$  & na\"{i}ve product & $n u t$  & using {\sc fft}             \\
-Neil & compute $s = c' / c \bmod p$                                     & $\mu(u t)$    & na\"{i}ve inversion& $u t$    & using {\sc fft}               \\
-Neil & find $a,b$ such that $s = a / b \bmod p$                         & $(u t)^2$   & na\"{i}ve ext. {\sc gcd} & $u t$ &  using~\cite{pan2004rational,wang2003acceleration} \\
-Both  & factor $a$ (resp. $b$) by modular reductions                     & $n \cdot \mu(u t)$  & na\"{i}ve reduction & $n u t$  & using {\sc fft}             \\
-      & {\bf Overwhelming complexity:}                                   &
-    \multicolumn{2}{c}{$\max(nu^4,n \cdot \mu(ut),(u t)^2)$}    &
-    \multicolumn{2}{c}{$n u \max(t,u^3)$}              \\\bottomrule
-  \end{tabularx}
-  \caption{Global Protocol Complexity. In practice $\max((u t)^2,n \cdot \mu(ut))=n(u t)^2$ because $(u t)^2 \ll n \cdot \mu(ut)=n(u t)^2$. This boils down to $\max(n(u t)^2, nu^4)=n(u\max(t,u))^2$.}
+  \begin{tablenotes}
+    \item[a] only for $p_i$ prime or equivalent TODO;
+    \item[b] only for $p_i = 2^{ut_i}$.
+    \item[c] using advanced algorihms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
+  \end{tablenotes}
+ \end{threeparttable}
+  \caption{Global Protocol Complexity}
   \label{tab:workload}
 \end{table}
 
-\subsection{Improvements Using Product Trees}
+% \begin{table}
+%   \begin{tabularx}{\textwidth}{lXp{1.2cm}p{2.3cm}p{1.2cm}p{2.3cm}}\toprule
+% {\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\\midrule
+% Both  & generate primes                                                  & $nu^4$  & Rabin-Miller & $n u^3$  & Rabin-Miller             \\
+% Both  & compute redundancies $c$ and $c'$                                & $n \cdot \mu(u t)$  & na\"{i}ve product & $n u t$  & using {\sc fft}             \\
+% Neil & compute $s = c' / c \bmod p$                                     & $\mu(u t)$    & na\"{i}ve inversion& $u t$    & using {\sc fft}               \\
+% Neil & find $a,b$ such that $s = a / b \bmod p$                         & $(u t)^2$   & na\"{i}ve ext. {\sc gcd} & $u t$ &  using~\cite{pan2004rational,wang2003acceleration} \\
+% Both  & factor $a$ (resp. $b$) by modular reductions                     & $n \cdot \mu(u t)$  & na\"{i}ve reduction & $n u t$  & using {\sc fft}             \\
+%       & {\bf Overwhelming complexity:}                                   &
+%     \multicolumn{2}{c}{$\max(nu^4,n \cdot \mu(ut),(u t)^2)$}    &
+%     \multicolumn{2}{c}{$n u \max(t,u^3)$}              \\\bottomrule
+%   \end{tabularx}
+%   \caption{Global Protocol Complexity. In practice $\max((u t)^2,n \cdot \mu(ut))=n(u t)^2$ because $(u t)^2 \ll n \cdot \mu(ut)=n(u t)^2$. This boils down to $\max(n(u t)^2, nu^4)=n(u\max(t,u))^2$.}
+%   \label{tab:workload}
+% \end{table}
+
+\subsection{Remove Hashing to Prime Numbers}
+
+In most cases, the most costly operation is the hashing to prime number.
+That is why, a further optimization can consist in removing the need to hash to prime numbers by hashing to any integer coprime with all the $p_i$.
+The problem is that, even if there are no collision and $a$ and $b$ are correctly recovered, the fact that $h_i$ divides $a$ does not mean $F_i$ should be a file in $\mathcal{S}$, because, for example, we can have $a = 150$, $h_1 = 10$, $h_2 = 15$, $h_3 = 6$, and $a = h_1 \times h_2$, but $h_3$ divides $a$.
+Therefore, we need a slightly more complex method for the factorization and a careful probability analysis to ensure this case does not come too often.
+This is left for future work.
 
 
 

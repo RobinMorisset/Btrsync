@@ -21,6 +21,8 @@
 \usepackage{verbatim,algorithm}
 \usepackage[noend]{algpseudocode}
 \usepackage{url,tikz,tabularx,multirow,xspace,booktabs}
+\usepackage{array,threeparttable}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \usetikzlibrary{trees,arrows,chains,matrix,positioning,scopes}
 
 \newcommand*\Let[2]{\State #1 $\gets$ #2}
@@ -119,7 +121,7 @@ We generate a prime $p$ such that:
 
 \begin{equation}
 \label{equp}
-2^{2ut+1} \leq p < 2^{2ut+2}
+2^{2ut} \leq p < 2^{2ut+1}
 \end{equation}
 
 Given $\mathfrak{F}$, Oscar generates and sends to Neil the redundancy:
@@ -143,15 +145,16 @@ b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox
 \right.
 $$
 \comm{Fabrice: je ne comprends pas le ``where the $G_i$ denote files...''}
-Note that if our assumption $t_0 \leq t$ is correct, $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements and $a$ and $b$ are strictly less than $2^{ut}$. The problem of recovering $a$ and $b$ from $s$ efficiently is known as {\sl Rational Number Reconstruction}~\cite{pan2004rational,wang2003acceleration}; theorem \ref{theo} (see~\cite{cryptorational}) guarantees that it can be solved in this setting.
-
+Note that if our assumption $t_0 \leq t$ is correct, $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements and $a$ and $b$ are strictly less than $2^{ut}$. The problem of recovering $a$ and $b$ from $s$ efficiently is known as {\sl Rational Number Reconstruction}~\cite{pan2004rational,wang2003acceleration}.
+ theorem \ref{theo} (see~\cite{cryptorational}) guarantees that it can be solved in this setting.
+The following theorem is a slightly modified version of Theorem~1 in \cite{cryptorational}:
 \begin{theorem}
 \label{theo}
-Let $a,b \in {\mathbb Z}$ such that $-A \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a,b$ can be recovered from $A,B,s,p$ in polynomial time.
+Let $a,b \in {\mathbb Z}$ two co-prime integers such that $0 \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a,b$ are uniquely defined given $s$ and $p$, and can be recovered from $A,B,s,p$ in polynomial time.
 \end{theorem}
 
-Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $2AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
-\comm{Fabrice: certes, mais on utilise directement un Euclide étendu tronqué, et en plus je ne suis pas sûr que le lecteur comprenne le lien si facilement que cela avec les réseaux... en plus l'article ne donne pas de complexité temporel...}
+Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
+\comm{Fabrice: certes, mais on utilise directement un Euclide étendu tronqué. Et pourquoi citer Vallée qui est un peu incompréhensible dans notre cas... TODO: check that in our program we ensure $a$ and $b$ co-prime !! otherwise, it may fail !!!!!}
 By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can attempt to identify the discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ and settle them.\smallskip
 
 \begin{figure}
@@ -292,7 +295,15 @@ $$H=\mbox{{\tt Hash}}(\{\mbox{{\tt Hash}}(F'_i),~F'_i\in \mathfrak{F}'\})$$
 \subsection{Handling a High Number of Differences}
 \label{insuf}
 
-To extend the protocol to an arbitrary $t_0$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ status,\comm{Fabrice: Maybe add: [as long as ... status], Neil and Oscar redo the protocol with another $p_i$ and ...} Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in Appendix \ref{sec:extended}. Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$. \smallskip
+To extend the protocol to an arbitrary $t_0$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ status, Neil and Oscar redo the protocol with a new $p_i$ and Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in Appendix \ref{sec:extended}. 
+Each of this repetition is called a round.
+Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$. \smallskip
+
+More precisely, let us suppose $2^{2 u t_i} \le p_i < 2^{2 u t_i +1}$.
+Let us write $P_i = p_1 \dots p_i$ and $T_i = u (t_1 + \dots t_i)$.
+After receiving the redundancies $c_1,\dots,c_i$ corresponding to $p_1,\dots,p_i$, Neil has as many information as if Oscar had transmitted a redundancy $C_i$ corresponding to the modulo $P_i$, and can compute $S_i = C'_i / C_i$ from $s_i = c'_i/c_i$ and $S_{i-1}$ using the CRT (TODO ref ?).
+Therefore, the number $\lambda$ of rounds used is the minimum number $\lambda$ such that $T_i \ge t_0$.
+If $t_1 = t_2 = \dots = t$, then $\lambda = \lceil t/t_0 \rceil$.
 
 All $\bot$ treatments were removed from Appendix \ref{sec:extended} for the sake of clarity (these can be very easily added by modifying Appendix \ref{sec:extended} {\sl mutatis mutandis}). In essence, the rules are: add information modulo a new $p_i$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ and increment $k$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf collision}}},\square}$.\smallskip
 \comm{Fabrice: plus clair si on le met dans une deuxième figure en appendix quand même, je pense...}
@@ -307,14 +318,15 @@ This section explores two strategies for reducing the size of $p$ and hence impr
 $$
 \lambda \log (\max_{i=1}^\lambda c_i) + \log b \leq \lambda \log (\max_{i=1}^\lambda p_i) + \frac12 \log \prod_{i=1}^\lambda p_i \leq 3\lambda (ut_0+1)=O(\lambda ut_0)=O(ut),
 $$
-where $\lambda=t/t_0$ is the number of rounds required to complete the protocol. As we have no control over $t$, decreasing $u$ is the main natural optimization option. We will get back to this later on in this paper (section \ref{shortu}).
+%where $\lambda=\lceil t_0/t \rceil$ is the number of rounds required to complete the protocol. 
+As we have no control over $t$, decreasing $u$ is the main natural optimization option. We will get back to this later on in this paper (section \ref{shortu}).
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
 Generate a prime $p$ about twice shorter than the $p$ recommended in section \ref{basic}, namely:
 \begin{equation}
 \label{eqnewp}
-2^{u(t+1)}<p \leq 2^{u(t+1)+1}
+2^{ut}<p \leq 2^{ut+1}
 \end{equation}
 
 Let $\eta=\max(n,n')$. The new redundancy $c$ is calculated as previously and is hence also approximately twice smaller. Namely:
@@ -340,7 +352,7 @@ By opposition to section \ref{basic} we do not have a fixed bound for $a$ and $b
 %$$\left(A_i,B_i\right)=\left(2^{(u+1)i},\left\lfloor \frac{p-1}{2^{(u+1)i+1}} %\right\rfloor\right)\mbox{~~where~~}B_i>1\mbox{~~and~~}\forall i>0,~2 A_i B_i<p$$
 \[\left(A_i, B_i\right) = \left(2^{ui}, 2^{u(t-i)}\right) \forall i \in \{0,\dots,t\} \]
 
-Equations (\ref{eqnewp}) and (\ref{eqab}) imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, since $2 A_i B_i = 2^{u(t+1)} < p$, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
+Equations (\ref{eqnewp}) and (\ref{eqab}) imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, since $A_i B_i = 2^{ut} < p$, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
 
 The problem is that (unlike section \ref{basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough, but this makes the modified protocol heuristic only. 
 \comm{Fabrice: ``heuristic'' $\longrightarrow$ not really, because of the final hash verification, though we cannot compute exactly the complexity...}
@@ -375,7 +387,7 @@ For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of c
 However, it is important to note that a collision can only yield a {\sl false positive}, and never a {\sl false negative}. In other words, while a collision may obliviate a difference\footnote{{\sl e.g.} make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create a nonexistent difference {\sl ex nihilo}.\smallskip
 \comm{Fabrice: difference or discrepancy ?}
 
-Thus, it suffices to replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_k(F)=\mbox{{\tt HashPrime}}(k|F)$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each iteration the parties will detect new files and new deletions, fix these and ``launder'' again the remaining multisets.\smallskip
+Thus, it suffices to replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_\ell(F)=\mbox{{\tt HashPrime}}(\ell|F)$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each iteration the parties will detect new files and new deletions, fix these and ``launder'' again the remaining multisets.\smallskip
 \comm{Fabrice: already said in Section 2.3... and maybe it is better to say that, in this first analysis, we suppose we do not filter out files, because this only improves the algo...}
 
 Assume that the diversified $\hbar_k(F)$'s are random and independent. To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $k$, assume that $\eta$ remains invariant between iterations and define the following random variables:\smallskip
@@ -539,36 +551,68 @@ But how can we confirm the solution? As mentioned in section \ref{reco}, Neil wi
 
 \section{Computational Complexity}
 \label{comp}
+In this section, we are interested in computing the computational complexity of our protocol, when there is no collision, to simplify the analysis.
+We first present some variants of the protocol we described above, and then we analyse the complexity of all these variants and propose some algorithmic optimizations to speed up the file reconciliation.
+A summary of all costs can be found in Table~\ref{tab:workload}.
+
+
+\subsection{Basic Complexity}
+
 Let $\mu(k)$ be the time required to multiply two $k$-bit numbers\footnote{We assume that $\forall k,k', \mu(k+k') \ge \mu(k) + \mu(k')$.}.
 For na\"{i}ve ({\sl i.e.} convolutive) algorithms $\mu(k) = O(k^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(k) = \Oapp(k)$. {\sc fft} is experimentally faster than convolutive methods starting at $k \sim 10^6$.
 The modular division of two $k$-bit numbers and the reduction of $2k$-bit number modulo a $k$-bit number are also known to cost $\Oapp(\mu(k))$~\cite{burnikel1998fast}.
 Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(k)$.for sufficiently large $k$.\smallskip
 
-Given that $p \sim 2^{ut}$, we obtain the following complexity analysis:
+As proven in TODO APPENDIX, the complexity of $\tt HashPrime$ is $u^2 \mu(u)$.
+Hence, we have the costs depicted in the third column of Table~\ref{tab:workload}.
 
-% TODO: si on introduit \mu, alors il faut s'en servir. Si on dit juste que \mu(k) = \Oapp(k) avec la FFT, alors inutile de définir \mu !
-% TODO: en fait je pense qu'il faudrait réorganiser totalement la section : présenter quelles sont les opérations à faire avec un tableau (et un coût naïf), présenter un par un les trucs clever qu'on peut faire à la place, et avoir un autre tableau à la fin avec les coûts sophistiqués
-\comm{Je ne comprends pas quelle la différence entre les colonnes 3 4 et les colonnes 5 6 de ce tableau.}
+%Given that $p \sim 2^{ut}$, we obtain the following complexity analysis (if we suppose $n=n'$):
 
-\begin{table}
-  \begin{tabularx}{\textwidth}{lXp{1.2cm}p{2.3cm}p{1.2cm}p{2.3cm}}\toprule
-{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\\midrule
-Both  & generate primes                                                  & $nu^4$  & Rabin-Miller & $n u^3$  & Rabin-Miller             \\
-Both  & compute redundancies $c$ and $c'$                                & $n \cdot \mu(u t)$  & na\"{i}ve product & $n u t$  & using {\sc fft}             \\
-Oscar & compute $s = c' / c \bmod p$                                     & $\mu(u t)$    & na\"{i}ve inversion& $u t$    & using {\sc fft}               \\
-Oscar & find $a,b$ such that $s = a / b \bmod p$                         & $(u t)^2$   & na\"{i}ve ext. {\sc gcd} & $u t$ &  using~\cite{pan2004rational,wang2003acceleration} \\
-Both  & factor $a$ (resp. $b$) by modular reductions                     & $n \cdot \mu(u t)$  & na\"{i}ve reduction & $n u t$  & using {\sc fft}             \\
-      & {\bf Overwhelming complexity:}                                   &
-    \multicolumn{2}{c}{$\max(nu^4,n \cdot \mu(ut),(u t)^2)$}    &
-    \multicolumn{2}{c}{$n u \max(t,u^3)$}              \\\bottomrule
-  \end{tabularx}
-  \caption{Global Protocol Complexity. In practice $\max((u t)^2,n \cdot \mu(ut))=n(u t)^2$ because $(u t)^2 \ll n \cdot \mu(ut)=n(u t)^2$. This boils down to $\max(n(u t)^2, nu^4)=n(u\max(t,u))^2$.}
-  \label{tab:workload}
-\end{table}
+% TODO: conflit de notations: i pour fichier et i pour round !
 
-\subsection{Improvements Using Product Trees}
+\subsection{Adapting $p_i$}
 
-comm{Indiquer clairement à quelles lignes du tableau ça se réfère, et si la complexité donnée dans le tableau prend ces optims en compte.}
+Using $p_i$ $ut_i$-primes is not very practical, because generating a big prime number is slow, and storing a list of such primes require to be able to bound the number of rounds, and to fix all the parameters ($u$ and $t_1,t_2,\dots$).
+That is why, in this section we show that we can adapt $p_i$ to be able to generate them easily and also, to speed up the computations with a constant factor.
+
+Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the {\sl only} property required from $p$ is to be co-prime with all the $h_i$ and all the $h'_i$. We can hence consider the following variants:
+\subsubsection{Variant 1:} Smooth $p_i$:
+\[ p_i=\prod_{j=r_i}^{r_{i+1}-1} \mbox{{\tt Prime}}[j], \]
+where the bounds $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+Generating such a prime is much faster than generating a big prime $p_i$.
+
+\subsubsection{Variant 2:} $p_i=\mbox{{\tt Prime}}[i]^{r_i}$ where the exponents $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+This variant is even faster than the previous one, but require to choose $h_i$ bigger than all
+$\mbox{{\tt Prime}}[i]^{r_i}$. 
+
+\subsubsection{Variant 3:} $p_i = 2^{ut_i}$. This variant, is probably the most efficient of all, but somewhat complex to explain. We hence describe it in detail in Appendix \ref{powtwo}. This variant is compatible with the use of {\sc fft}-multiplication, hence asymptotic complexity is preserved. In addition, it avoids all modular reductions and all {\sc crt} re-combinations and hence offers considerable constant-factor accelerations.\smallskip
+\comm{Actually it is easier to explain since there is no CRT, isn't it ???}
+
+\begin{verbatim}
+
+Have this written by Fabrice...
+
+(les modulos etant $2^{ut}, 2^{2ut}, ...$):
+- calcul des $H_j$ comme dans 4.1 par product tree
+- produit des $H_j$ de la facon suivante pour round 1:
+  - $\mbox{prod} = 1$ (de taille $ut$)
+  - pour $j=1,...$
+      $\mbox{carry}_j | \mbox{prod} = \mbox{prod} \times H_j$
+  - retourner prod, et garder carry
+- produit des $H_j$ pour round suivants:
+  - prod = 0
+  - pour $j=1,...$
+      $\mbox{carry}_j | \mbox{prod} = \mbox{prod} \times H_j + \mbox{carry}_j$
+
+L'idee est la suivante (invariant): au round i et au tour j, prod contient les bits $(i-1)ut,...iut$ du produit reel de $H_1,...,H_j$ et
+$\mbox{carry}_j$ contient le carry genere par ces bits...
+\end{verbatim}
+
+
+\subsection{Algorithmic Optimizations using Product Trees}
+\label{sec:algo-opt-prod-trees}
+
+\comm{Indiquer clairement à quelles lignes du tableau ça se réfère, et si la complexité donnée dans le tableau prend ces optims en compte.}
 The non-overwhelming (but nonetheless important) complexities of the computations of $(c,c')$ and of the factorizations can be even reduced to $\Oapp(\frac{n}{t} \mu(u t))$ using convolutive methods. These complexities can be reduced to $\Oapp(n u)$ with {\sc fft}~\cite{schonhage1971schnelle}. To simplify the presentation, assume that $t=2^\tau$ is a power of two dividing $n$.
 
 The idea is the following: group $h_i$'s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$.
@@ -752,39 +796,80 @@ Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexit
 \caption{Division Using a Product Tree}\label{alg:div-prod-tree}
 \end{algorithm}
 
-\subsection{Adapting $p$}
 
-Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the {\sl only} property required from $p$ is to be co-prime with all the $h_i$ and all the $h'_i$. We can hence consider the following variants:\comm{What is the goal of the following variants? Is it to reduce the complexity of the generation of the primes?}
+\subsection{Summary}
 
-\subsubsection{Variant 1:} Smooth $p_i$:
+Summary of costs is depicted in Table~\ref{tab:workload}.
 
-$$p_i=\prod_{j=r_i}^{r_{i+1}-1} \mbox{{\tt Prime}}[j]$$
+\begin{table}[ht]
+\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
+\newcommand{\mcqc}[1]{\multicolumn{4}{c}{#1}}
+ \begin{threeparttable}
+  \begin{tabularx}{\textwidth}{lXC{2cm}C{2cm}C{2cm}C{2cm}}
+\toprule
+{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\
+\cmidrule(l){3-6}
+& & \mcdc{\bf Basic algo.} & \mcdc{\bf Opt. algo.} \\
+& & $p_i$ prime & $p_i = 2^{ut_i}$ & $p_i$ prime & $p_i = 2^{u t_i}$ \\
+\midrule
+Both  & computation of $h_i$ and $h'_i$ 
+      & \mcqc{$n u^2 \mu(u)$}  \\
+\midrule
+      & \textit{for round $i$} &  &  \\
+Both  & compute redundancies $c_i$ and $c'_i$ 
+      & \mcdc{$n \cdot \mu(ut_i)$} & \mcdc{$\frac{n}{t_i} \cdot \mu(ut_i)$}  \\
+Neil  & compute $s_i = c'_i/c_i$\tnote{a} or $S_i = C'_i / C_i$
+      & \mcqc{$\mu(uT_i)$}  \\
+Neil  & compute $S_i$ from $S_{i-1}$ and $s_i$ (CRT)\tnote{a}
+      & $\mu(u T_i)$ & n/a & $\mu(u T_i)$ & n/a \\
+Neil  & find $a_i,b_i$ such that $S_i = a_i/b_i \bmod p_i$
+      & \mcqc{$\mu(u T_i)$\tnote{3}} \\
+Neil  & factor $a_i$
+      & \mcdc{$n \cdot \mu(uT_i)$} & \mcdc{$\frac{n}{T_i} \cdot \mu(uT_i)$}  \\
+\midrule
+      & \textit{last round} \\
+Oscar & factor $b_i$
+      & \mcdc{$n \cdot \mu(ut_i)$} & \mcdc{$\frac{n}{t_i} \cdot \mu(ut_i)$}  \\
+\midrule
+      & \textbf{Overwhelming complexity}
+      & TODO & TODO & TODO & TODO \\
+\bottomrule
+  \end{tabularx}
+  \begin{tablenotes}
+    \item[a] only for $p_i$ prime or equivalent TODO;
+    \item[b] only for $p_i = 2^{ut_i}$.
+    \item[c] using advanced algorihms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
+  \end{tablenotes}
+ \end{threeparttable}
+  \caption{Global Protocol Complexity}
+  \label{tab:workload}
+\end{table}
 
-Where the bounds $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+% \begin{table}
+%   \begin{tabularx}{\textwidth}{lXp{1.2cm}p{2.3cm}p{1.2cm}p{2.3cm}}\toprule
+% {\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\\midrule
+% Both  & generate primes                                                  & $nu^4$  & Rabin-Miller & $n u^3$  & Rabin-Miller             \\
+% Both  & compute redundancies $c$ and $c'$                                & $n \cdot \mu(u t)$  & na\"{i}ve product & $n u t$  & using {\sc fft}             \\
+% Neil & compute $s = c' / c \bmod p$                                     & $\mu(u t)$    & na\"{i}ve inversion& $u t$    & using {\sc fft}               \\
+% Neil & find $a,b$ such that $s = a / b \bmod p$                         & $(u t)^2$   & na\"{i}ve ext. {\sc gcd} & $u t$ &  using~\cite{pan2004rational,wang2003acceleration} \\
+% Both  & factor $a$ (resp. $b$) by modular reductions                     & $n \cdot \mu(u t)$  & na\"{i}ve reduction & $n u t$  & using {\sc fft}             \\
+%       & {\bf Overwhelming complexity:}                                   &
+%     \multicolumn{2}{c}{$\max(nu^4,n \cdot \mu(ut),(u t)^2)$}    &
+%     \multicolumn{2}{c}{$n u \max(t,u^3)$}              \\\bottomrule
+%   \end{tabularx}
+%   \caption{Global Protocol Complexity. In practice $\max((u t)^2,n \cdot \mu(ut))=n(u t)^2$ because $(u t)^2 \ll n \cdot \mu(ut)=n(u t)^2$. This boils down to $\max(n(u t)^2, nu^4)=n(u\max(t,u))^2$.}
+%   \label{tab:workload}
+% \end{table}
 
-\subsubsection{Variant 2:} $p_i=\mbox{{\tt Prime}}[i]^{r_i}$ where the exponents $r_i$ are chosen to ensure that each $p_i$ has the proper size.
+\subsection{Remove Hashing to Prime Numbers}
 
-\subsubsection{Variant 3:} Progressively work modulo a growing power of two. This variant, is probably the most efficient of all, but somewhat complex to explain. We hence describe it in detail in Appendix \ref{powtwo}. This variant is compatible with the use of {\sc fft}-multiplication, hence asymptotic complexity is preserved. In addition, it avoids all modular reductions and all {\sc crt} re-combinations and hence offers considerable constant-factor accelerations.\smallskip
+In most cases, the most costly operation is the hashing to prime number.
+That is why, a further optimization can consist in removing the need to hash to prime numbers by hashing to any integer coprime with all the $p_i$.
+The problem is that, even if there are no collision and $a$ and $b$ are correctly recovered, the fact that $h_i$ divides $a$ does not mean $F_i$ should be a file in $\mathcal{S}$, because, for example, we can have $a = 150$, $h_1 = 10$, $h_2 = 15$, $h_3 = 6$, and $a = h_1 \times h_2$, but $h_3$ divides $a$.
+Therefore, we need a slightly more complex method for the factorization and a careful probability analysis to ensure this case does not come too often.
+This is left for future work.
 
-\begin{verbatim}
 
-Have this written by Fabrice...
-
-(les modulos etant $2^{ut}, 2^{2ut}, ...$):
-- calcul des $H_j$ comme dans 4.1 par product tree
-- produit des $H_j$ de la facon suivante pour round 1:
-  - $\mbox{prod} = 1$ (de taille $ut$)
-  - pour $j=1,...$
-      $\mbox{carry}_j | \mbox{prod} = \mbox{prod} \times H_j$
-  - retourner prod, et garder carry
-- produit des $H_j$ pour round suivants:
-  - prod = 0
-  - pour $j=1,...$
-      $\mbox{carry}_j | \mbox{prod} = \mbox{prod} \times H_j + \mbox{carry}_j$
-
-L'idee est la suivante (invariant): au round i et au tour j, prod contient les bits $(i-1)ut,...iut$ du produit reel de $H_1,...,H_j$ et
-$\mbox{carry}_j$ contient le carry genere par ces bits...
-\end{verbatim}
 
 Remarks Fabrice:
 \begin{itemize}
@@ -792,21 +877,12 @@ Remarks Fabrice:
 \item we should implement the non-prime version stuff... but difficult to find the correct subset of hi which factorizes...
 \end{itemize}
 
-\section{Implementation}
-\label{program}
+\section{From Efficient Set Reconciliation to Efficient Files Synchronization}
 
-We implemented and benchmarked the Divide \& Factor protocol described in the previous sections. The implementation is called \btrsync, its source code is available from~\cite{Robin}.\smallskip
+TODO: expliquer que l'on utilise d'abord le hashé du path+content, puis ensuite on fait le move reconciliation sur le hashé des content (avant d'envoyer tous les fichiers) et enfin, on fait une copie intelligente des fichiers restants (via rsync)...
 
-\comm{on parle de "in the previous sections" mais de quelle variate s'agit il?}
-
-The program performs unidirectional synchronization, which is simpler to understand. The code is divided into two subprograms: a shell script and a Python program:
-\comm{Fabrice: in the paper, it is unidirectionnal too !}
-
-\subsubsection{The Shell Script} sets up two instances of the Python program on Oscar and Neil and establishes a bidirectional communication channel between them using two Unix pipes between their standard inputs and outputs.
-
-\subsubsection{The Python Program} uses {\sf gmp} to perform all the number theory operations and performs the actual synchronization. It proceeds in two phases:
-
-\subsubsection{Finding Different Files}
+\subsection{TODO}
+TODO: rewrite this as explained in the previous TODO !!!!
 
 \begin{enumerate}
 \item Hash of files' contents concatenated with their paths, types (folder/file), and permissions (not supported yet).
@@ -834,11 +910,12 @@ We could check for move (since we have the list of hash of contents of files) an
 
 We can even try to detect moves of complete subtrees...\smallskip
 
+
 \subsection{Move Resolution Algorithm}
 
-To reproduce the structure of Oscar on Neil's disk, we need to perform a sequence of file moves. Sadly, moves are not straightforward to apply the moves, because, if we take a file to move, its destination might be blocked, either because a file already exists (we want to move $a$ to $b$, but $b$ already exists), or because a folder cannot be created (we want to move $a$ to $b/c$, but $b$ already exists as a file and not as a folder). Note that for a move operation $a \rightarrow b$, there is at most one file blocking the location $b$: we will call it the {\sl blocker}.
+To reproduce the structure of Oscar on Neil's disk, we need to perform a sequence of file moves. Sadly, it is not straightforward to apply the moves, because, if we take a file to move, its destination might be blocked, either because a file already exists (we want to move $a$ to $b$, but $b$ already exists), or because a folder cannot be created (we want to move $a$ to $b/c$, but $b$ already exists as a file and not as a folder). Note that for a move operation $a \rightarrow b$, there is at most one file blocking the location $b$: we will call it the {\sl blocker}.
 
-If the blocker absent on Oscar, then we can just delete the blocker. However, if a blocker exists, then we might need to move it somewhere else before we solve the move we are interested in. This move itself might have a blocker, and so on. It seems that we just need to continue until we reach a move which has no blocker or whose blocker can be deleted, but we can get caught in a cycle: if we must move $a$ to $b$, $b$ to $c$ and $c$ to $a$, then we will not be able to perform the operations without using a temporary location.
+If the blocker is absent on Oscar, then we can just delete the blocker. However, if a blocker exists, then we might need to move it somewhere else before we solve the move we are interested in. This move itself might have a blocker, and so on. It seems that we just need to continue until we reach a move which has no blocker or whose blocker can be deleted, but we can get caught in a cycle: if we must move $a$ to $b$, $b$ to $c$ and $c$ to $a$, then we will not be able to perform the operations without using a temporary location.
 
 How can we perform the moves? A simple way would be to move each file to a unique temporary location and then rearrange files to our liking: however, this performs many unnecessary moves and could lead to problems if the program is interrupted. We can do something more clever by performing a decomposition in Strongly Connected Components ({\sc scc}) of the {\sl move graph} (with one vertex per file and one edge per move operation going from to the file to its blocker or to its destination if no blocker exists). The computation of the {\sc scc} decomposition is simplified by the observation that because two files being moved to the same destination must be equal, we can only keep one arbitrary in-edge per node, and look at the graph pruned in this fashion: its nodes have in-degree at most one, so the strongly connected components are either single nodes or cycles. Once the {\sc scc} decomposition is known, the moves can be applied by applying each {\sc scc} in a bottom-up fashion, an {\sc scc}'s moves being solved either trivially (for single files) or using one intermediate location (for cycles).
 
@@ -899,7 +976,43 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
   \end{algorithmic}
 \end{algorithm}
 
-An optimization implemented by \btrsync over the algorithm described here is to move files instead of copying them and then remove the original file. Moves are faster than copies on most filesystems as the OS does not need to copy the actual file contents to perform moves.
+
+\section{Implementation}
+\label{program}
+
+We implemented and benchmarked the Divide \& Factor protocol described in the previous sections. The implementation is called \btrsync, its source code is available from~\cite{Robin}.\smallskip
+
+\comm{on parle de "in the previous sections" mais de quelle variate s'agit il?}
+
+TODO REMOVE THIS !
+The program performs unidirectional synchronization, which is simpler to understand. The code is divided into two subprograms: a shell script and a Python program:
+\comm{Fabrice: in the paper, it is unidirectionnal too !!!!!!}
+
+---------------------------------------------------------------------
+
+\subsection{Organization}
+
+The program is composed of three parts: shell script, python program cmd, python program... TODO
+
+\subsubsection{The Shell Script} sets up two instances of the Python program on Oscar and Neil and establishes a bidirectional communication channel between them using two Unix pipes between their standard inputs and outputs.
+
+\subsubsection{The Python Program} uses {\sf gmp} to perform all the number theory operations and performs the actual synchronization. It proceeds in two phases:
+
+
+\subsection{What is Implemented ?}
+
+\begin{itemize}
+\item variant 2 of adapting $p_i$ (power of small primes)
+\item hash to prime (remove use of hash to prime, not supported yet, though it WOULD be VERY interesting)
+\item $t_i = t' \times 2^i$ with $t'$ a constant, i.e., doubling $t$ at each round, for complexity reasons...
+\end{itemize}
+
+Small difference with theory:
+\begin{itemize}
+\item move reconciliation: An optimization implemented by \btrsync over the algorithm described here is to move files instead of copying them and then remove the original file. Moves are faster than copies on most filesystems as the OS does not need to copy the actual file contents to perform moves.
+\item hash to prime: slightly different, I should correct this and use the fast version described in appendix if I have time (Fabrice)
+\end{itemize}
+
 
 \subsection{Experimental Comparison to \rsync}
 
@@ -957,12 +1070,6 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 
 \begin{itemize}
 
-\item Pourquoi on a deux biblios?! Laquelle est la bonne ?
-
-\item Merge two reference files rsynch and wagner.\smallskip
-
-\item @Fabrice: Fig. 1 pas clair, je pense qu'il faut mieux créer une notation mu gcd car en fait la FFT ne modifie que le mu... Et on pourrait plut\^ot indiquer dans ce tableau la complexité (avec mu et mu gcd) en utilisant l'optimisation décrite ou sans utiliser l'optimisation décrite). N'oublions pas de préciser que les temps des expériences d'Antoine comptent aussi le tirage des nombres premiers (qui doit \^etre négligeable peut-\^etre dans notre cas, je ne me rappelle plus...)
-
 \item @Fabrice: Pour éviter le cas empty $\rightarrow$ source trop gros, on pourrait imaginer l'astuce suivante: si jamais Neil la taille de c est plus petite que la taille du produit des nombres premiers $p_1$...$p_n$ utilisés, Neil envoie un message pour l'indiquer, et on arr\^ete là le protocole. Et Oscar peut directement factoriser ce nombre envoyé...
 
 \item @Fabrice: il faut discuter de la taille de la taille maximale des ``petits'' premiers utilisés pour les variantes de $p$ et montrer que cela n'enlève pas trop d'entropie pour les $h_i$. Encore une fois, je m'en occupe la semaine prochaine si besoin.
@@ -973,24 +1080,6 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 
 \item Fabrice: comparer nos perfs avec http://ipsit.bu.edu/programs/reconcile/ ? ou pas ?
 
-\item Prendre en compte les remq suivants de Fabrice
-\begin{verbatim}
-
-- je pense que l'événement bottom_bandwidth est ou bien l'événement "on n'a pas réussi à factoriser" ou bien "on n'a pas réussi à factoriser ou bien %la factorisation obtenue est abusive". Dans l'article, il semble que tu as choisi le premier, donc je pense que la phrase "bottom_... went undetected" n'est pas tout à fait correcte, mais je me trompe peut-être. J'aurai dis "even if bottom_... are not output, this does not mean the protocol is a success, since there may be misfactorization..."
-
-- je pense que tu essayes de traiter 2 cas ensembles: modulus trop petit (t0 > t) et collisions. Le problème est que ces deux problèmes sont compliqués, et que j'ai peur que le lecteur soit embrouillé... Et en fait, ton protocole fig. 2/3 ne traite que le problème de collisions d'une certaine manière, ... car tu ne change pas le "t" ni ne précise d'utiliser le CRT pour augmenter la taille du modulus.
-- dans l'intro, au lieu de "This article proposes a new reconciliation protocol based on number theory. In terms
-of asymptotic transmission complexity, the proposed procedure reaches optimality as well."
-j'aurai dis quelque chose comme:
-"In this article, we first propose a new reconciliation protocol based on number theory. In terms
-of asymptotic transmission complexity, the proposed procedure reaches optimality as well.
-
-Then, we show how to apply this set reconciliation protocol to efficiently synchronize real files.
-We show that the naive method of hashing the files and synchronizing these hashes can be improved in two ways.
-First, we show that the size of the hashes can be carefully optimize to reduce the bandwidth by a constant factor compared to a naive choice of his size (to avoid all collisions.
-Then, we show that a protocol to detect moves of files and carefully use this information to avoid transmitting files which have only be moved.
-Finally, we run some practical experiments and compare ... rsync ..."
-\end{verbatim}
 \end{itemize}
 
 \nocite{rsync}
