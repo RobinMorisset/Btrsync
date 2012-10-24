@@ -658,8 +658,10 @@ Generating such a prime is much faster than generating a big prime $p_i$.
 This variant is even faster than the previous one, but require to choose $h_i$ bigger than all
 $\mbox{{\tt Prime}}[i]^{r_i}$. 
 
-\subsubsection{Variant 3:} $p_i = 2^{ut_i}$. This variant, is probably the most efficient of all, but somewhat complex to explain. We hence describe it in detail in Appendix \ref{powtwo}. This variant is compatible with the use of {\sc fft}-multiplication, hence asymptotic complexity is preserved. In addition, it avoids all modular reductions and all {\sc crt} re-combinations and hence offers considerable constant-factor accelerations.\smallskip
-\comm{Actually it is easier to explain since there is no CRT, isn't it ???}
+\subsubsection{Variant 3:} $p_i = 2^{ut_i}$. 
+Using Algorithm~TODO for the computation of $c_i$, this variant offers substantial constant-factor accelerations compared to previous variants, because it removes the need of all modulo operations and of {\sc crt} re-combination when multiple $p_i$ are needed, since $C_i$ is just the binary concatenation of $c_i$ and $C'_{i-1}$ !
+%This variant, is probably the most efficient of all, but somewhat complex to explain. We hence describe it in detail in Appendix \ref{powtwo}. This variant is compatible with the use of {\sc fft}-multiplication, hence asymptotic complexity is preserved. In addition, it avoids all modular reductions and all {\sc crt} re-combinations and hence offers considerable constant-factor accelerations.\smallskip
+
 
 \begin{verbatim}
 
@@ -685,8 +687,10 @@ $\mbox{carry}_j$ contient le carry genere par ces bits...
 \subsection{Algorithmic Optimizations using Product Trees}
 \label{sec:algo-opt-prod-trees}
 
-\comm{Indiquer clairement à quelles lignes du tableau ça se réfère, et si la complexité donnée dans le tableau prend ces optims en compte.}
-The non-overwhelming (but nonetheless important) complexities of the computations of $(c,c')$ and of the factorizations can be even reduced to $\Oapp(\frac{n}{t} \mu(u t))$ using convolutive methods. These complexities can be reduced to $\Oapp(n u)$ with {\sc fft}~\cite{schonhage1971schnelle}. To simplify the presentation, assume that $t=2^\tau$ is a power of two dividing $n$.
+The non-overwhelming (but nonetheless important) complexities of the computations of $(c,c')$ and of the factorizations can be even reduced to $\Oapp(\frac{n}{t_i} \mu(u t_i))$ and $\Oapp(\frac{n}{T_i} \mu(u T_i)$ using product trees. 
+Therefore, the cost drops to $\Oapp(n u)$ with {\sc fft}~\cite{schonhage1971schnelle}. 
+To simplify the presentation, we suppose there is only one round, and $p=p_1$, $t=t_1=T_1$, and we assume that $t=2^\tau$ is a power of two dividing $n$.
+We also only focus on the case $p$ prime, for the sake of simplicity.
 
 The idea is the following: group $h_i$'s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$.
 \[ H_j = \prod_{i=j t}^{j t + t - 1} h_i\in\mathbb{N} \]
