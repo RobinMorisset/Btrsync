@@ -1130,16 +1130,9 @@ Oscar is now aware of all of Neil's files and their location.
 
 We implemented and benchmarked the Divide \& Factor protocol described in the previous sections. The implementation is called \btrsync, its source code is available from~\cite{Robin}.\smallskip
 
-\comm{on parle de "in the previous sections" mais de quelle variate s'agit il?}
-
-TODO REMOVE THIS !
-The program performs unidirectional synchronization, which is simpler to understand. The code is divided into two subprograms: a shell script and a Python program:
-\comm{Fabrice: in the paper, it is unidirectionnal too !!!!!!}
-
----------------------------------------------------------------------
-
 \subsection{Organization}
 
+\comm{Fabrice: Finish that stuff and put it in appendix ?}
 The program is composed of three parts: shell script, python program cmd, python program... TODO
 
 \subsubsection{The Shell Script} sets up two instances of the Python program on Oscar and Neil and establishes a bidirectional communication channel between them using two Unix pipes between their standard inputs and outputs.
@@ -1148,6 +1141,9 @@ The program is composed of three parts: shell script, python program cmd, python
 
 
 \subsection{What is Implemented ?}
+
+TODO: write this beautyfully
+
 \begin{itemize}
 \item variant 2 of adapting $p_i$ (power of small primes)
 \item hash to prime (remove use of hash to prime, not supported yet, though it WOULD be VERY interesting)
@@ -1157,33 +1153,13 @@ The program is composed of three parts: shell script, python program cmd, python
 Small difference with theory:
 \begin{itemize}
 \item move reconciliation: An optimization implemented by \btrsync over the algorithm described here is to move files instead of copying them and then remove the original file. Moves are faster than copies on most filesystems as the OS does not need to copy the actual file contents to perform moves.
+TODO: Fabrice@Antoine, que voualis-tu dire ici ? J'ai juste copié-collé ce que tu avais écris
 \item hash to prime: slightly different, I should correct this and use the fast version described in appendix if I have time (Fabrice)
 \end{itemize}
 
 The only metadata managed by \btrsync is the file path (name and location).
 Other kinds of metadata (modification date, owner, permissions) are not
 implemented, though it would be easy to do so.
-
-TODO: what to do with this? More precisely:
-\begin{itemize}
-\item Oscar sends it product of hashes modulo a first prime number $p_1$.
-\comm{sur "a first prime number $p_1$", l'implem marche avec $p_i$ ou des $2^u$?}
-\item Neil receives the product, divides by its own product of hashes, reconstructs the fraction modulo $p_1$ and checks if he can factor the denominator using his hashes base. If he can, he stops and sends the numerator and the list of tuples (path, type, hash of content of the file) corresponding to the denominator's factors. Otherwise he sends "None" [is this the ASCII string "None"? if not what does he send precisely?].
-\item If Neil sent "None", Oscar computes the product of hashes modulo another prime $p_2$, sends it... CRT mechanism... [can we elaborate more on what happens here? which functions in GMP are used to do the CRT?]
-\item If Neil sent the numerator and a list of tuples, then Oscar factors the numerator over his own hash values. Now each party (Neil, Oscar) knows precisely the list of files (path + type + hash of content) that differs from the other party.
-\end{itemize}
-
-[please structure the following:]\smallskip
-
-2. synchronize all the files. This part is not completely optimized.\smallskip
-
-We just remove all folders Oscar should not have and create new folders.\smallskip
-
-Then we remove all files Oscar should not have and synchronize using rsync the last files.\smallskip
-
-We could check for move (since we have the list of hash of contents of files) and do moves locally.\smallskip
-
-We can even try to detect moves of complete subtrees...\smallskip
 
 \subsection{Experimental Comparison to \rsync}
 
@@ -1193,6 +1169,7 @@ and our Divide \& Factor implementation (called \btrsync) under the following ex
 \subsubsection{Test Directories:} The directories used for transmission and time
 comparisons are described in Table~\ref{tab:benchdirec}.\smallskip
 
+\comm{Fabrice: Can't we move this in appendix ? I'm not sure it's really essential. We can replace it by a sentence as: ``We call \rsync with carefully chosen options in order to do a fair comparison (cf Appendix)''}
 \subsubsection{Command-Line Options:} \rsync was called with the following options, for the reasons below:
 
 $\blacktriangleright$ {\tt --delete} to delete existing files on Oscar which do
@@ -1245,11 +1222,11 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 
 \item @Fabrice: Pour éviter le cas empty $\rightarrow$ source trop gros, on pourrait imaginer l'astuce suivante: si jamais Neil la taille de c est plus petite que la taille du produit des nombres premiers $p_1$...$p_n$ utilisés, Neil envoie un message pour l'indiquer, et on arr\^ete là le protocole. Et Oscar peut directement factoriser ce nombre envoyé...
 
-\item @Fabrice: il faut discuter de la taille de la taille maximale des ``petits'' premiers utilisés pour les variantes de $p$ et montrer que cela n'enlève pas trop d'entropie pour les $h_i$. Encore une fois, je m'en occupe la semaine prochaine si besoin.
+\item @Fabrice: il faut discuter de la taille de la taille maximale des ``petits'' premiers utilisés pour les variantes de $p$ et montrer que cela n'enlève pas trop d'entropie pour les $h_i$. Encore une fois, je m'en occupe la semaine prochaine si besoin. ................. OK on s'en moque (Fabrice)
 
 \item Refaire une dernière fois les expériences, vu que Fabrice a significativement amélioré les perfs.
 
-\item Faire clarifier par Fabrice l'histoire du doublement...
+\item Faire clarifier par Fabrice l'histoire du doublement... Oui, il faudrait expliciter un peu
 
 \item Fabrice: comparer nos perfs avec http://ipsit.bu.edu/programs/reconcile/ ? ou pas ?
 

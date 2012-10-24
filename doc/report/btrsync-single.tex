@@ -79,6 +79,25 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 
 \comm{Est-ce que c'est vrai qu'on apporte quelque chose de nouveau dans le cas où c'est des fichiers de taille non fixe ? --- Fabrice: je ne sais pas, il faudrait que l'on réanalyse la complexité propre de la dernière variante.}
 \section{Introduction}
+
+\subsection*{Notations}
+
+Cette section est temporaire et ne sert que pour assurer des notations cohérentes le long du papier, notamment pour les indices:
+\begin{itemize}
+\item $i,j$: pour les fichiers/hashés $h_i$,$F_i$
+\item $k$: pour les rounds avec changement de modulo: $p_k,c_k,s_k,C_k,S_k,t_k,T_k$
+\item $\ell$: pour les rounds liés aux traitements des collisions
+\item $\lambda$: pour une borne sur le $k$ ou le $\ell$
+\end{itemize}
+
+TODO: Corriger les $n$,$n'$,$\eta$,$\eta'$.
+
+TODO: faire commencer le $i$ à 1 ou 0 partout
+
+TODO: change $t_0$ because it is quite confusing !
+
+\subsection*{Old Introduction}
+
 This work revisits {\sl set reconciliation}, a problem consisting in
 synchronizing two multisets while minimizing the amount of data transmitted. Set
 reconciliation arises in many practical situations, the most typical of which is
@@ -100,7 +119,7 @@ synchronization. Section~\ref{program} presents our implementation \btrsync and
 reports practical experiments and benchmarks against the popular software
 \rsync.\smallskip
 
-\section{New Introduction}
+\subsection*{New Introduction}
 
 \emph{File synchronization} is the important practical problem consisting of
 retrieving a hierarchy of files on a remote host given some outdated or
@@ -368,17 +387,17 @@ $$H=\mbox{{\tt Hash}}(\{\mbox{{\tt Hash}}(F'_i),~F'_i\in \mathfrak{F}'\})$$
 \subsection{Handling a High Number of Differences}
 \label{insuf}
 
-To extend the protocol to an arbitrary $t_0$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ status, Neil and Oscar redo the protocol with a new $p_i$ and Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in Appendix \ref{sec:extended}. 
+To extend the protocol to an arbitrary $t_0$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ status, Neil and Oscar redo the protocol with a new $p_\ell$ and Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in Appendix \ref{sec:extended}. 
 Each of this repetition is called a round.
 Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$. \smallskip
 
-More precisely, let us suppose $2^{2 u t_i} \le p_i < 2^{2 u t_i +1}$.
-Let us write $P_i = p_1 \dots p_i$ and $T_i = u (t_1 + \dots t_i)$.
-After receiving the redundancies $c_1,\dots,c_i$ corresponding to $p_1,\dots,p_i$, Neil has as many information as if Oscar had transmitted a redundancy $C_i$ corresponding to the modulo $P_i$, and can compute $S_i = C'_i / C_i$ from $s_i = c'_i/c_i$ and $S_{i-1}$ using the CRT (TODO ref ?).
-Therefore, the number $\lambda$ of rounds used is the minimum number $\lambda$ such that $T_i \ge t_0$.
+More precisely, let us suppose $2^{2 u t_k} \le p_\ell < 2^{2 u t_k +1}$.
+Let us write $P_k = p_1 \dots p_k$ and $T_k = u (t_1 + \dots t_k)$.
+After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as many information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the CRT (TODO ref ?).
+Therefore, the number $\lambda$ of rounds used is the minimum number $k$ such that $T_k \ge t_0$.
 If $t_1 = t_2 = \dots = t$, then $\lambda = \lceil t/t_0 \rceil$.
 
-All $\bot$ treatments were removed from Appendix \ref{sec:extended} for the sake of clarity (these can be very easily added by modifying Appendix \ref{sec:extended} {\sl mutatis mutandis}). In essence, the rules are: add information modulo a new $p_i$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ and increment $k$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf collision}}},\square}$.\smallskip
+All $\bot$ treatments were removed from Appendix \ref{sec:extended} for the sake of clarity (these can be very easily added by modifying Appendix \ref{sec:extended} {\sl mutatis mutandis}). In essence, the rules are: add information modulo a new $p_\ell$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ and increment $k$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf collision}}},\square}$.\smallskip
 \comm{Fabrice: plus clair si on le met dans une deuxième figure en appendix quand même, je pense...}
 
 A typical execution sequence is thus expected to be something like:
@@ -389,10 +408,11 @@ $$\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1
 \label{trans}
 This section explores two strategies for reducing the size of $p$ and hence improving transmission by {\sl constant factors} (from an asymptotic communication standpoint, improvements cannot be expected as the protocol already transmits information proportional to $t_0$, the difference to settle). Excluding the core information $\mathfrak{S}$ and assuming that no $\bot_{\mbox{{\tiny {\sf collision}}},\square}$ events occurred, the transmission complexity of the protocol of Appendix \ref{sec:extended} is:
 $$
-\lambda \log (\max_{i=1}^\lambda c_i) + \log b \leq \lambda \log (\max_{i=1}^\lambda p_i) + \frac12 \log \prod_{i=1}^\lambda p_i \leq 3\lambda (ut_0+1)=O(\lambda ut_0)=O(ut),
+\lambda \log (\max_{k=1}^\lambda c_k) + \log b \,\leq\, \lambda \log (\max_{k=1}^\lambda p_k) + \frac12 \log \prod_{k=1}^\lambda p_k \,\leq\, 3\lambda (ut_0+1)=O(\lambda ut_0)=O(ut),
 $$
 %where $\lambda=\lceil t_0/t \rceil$ is the number of rounds required to complete the protocol. 
 As we have no control over $t$, decreasing $u$ is the main natural optimization option. We will get back to this later on in this paper (section \ref{shortu}).
+\comm{Fabrice: maybe deal with the case when doubling ? and precise that we deal with constant $t$ ???}
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
@@ -460,10 +480,10 @@ For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of c
 However, it is important to note that a collision can only yield a {\sl false positive}, and never a {\sl false negative}. In other words, while a collision may obliviate a difference\footnote{{\sl e.g.} make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create a nonexistent difference {\sl ex nihilo}.\smallskip
 \comm{Fabrice: difference or discrepancy ?}
 
-Thus, it suffices to replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_\ell(F)=\mbox{{\tt HashPrime}}(\ell|F)$ to quickly filter-out file differences by repeating the protocol for $k=1,2,\ldots$ At each iteration the parties will detect new files and new deletions, fix these and ``launder'' again the remaining multisets.\smallskip
+Thus, it suffices to replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_\ell(F)=\mbox{{\tt HashPrime}}(\ell|F)$ to quickly filter-out file differences by repeating the protocol for $\ell=1,2,\ldots$ At each iteration the parties will detect new files and new deletions, fix these and ``launder'' again the remaining multisets.\smallskip
 \comm{Fabrice: already said in Section 2.3... and maybe it is better to say that, in this first analysis, we suppose we do not filter out files, because this only improves the algo...}
 
-Assume that the diversified $\hbar_k(F)$'s are random and independent. To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $k$, assume that $\eta$ remains invariant between iterations and define the following random variables:\smallskip
+Assume that the diversified $\hbar_\ell(F)$'s are random and independent. To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $\lambda$, assume that $\eta$ remains invariant between iterations and define the following random variables:\smallskip
 
 $$
 \begin{array}{rcl}
@@ -476,10 +496,10 @@ X^{\ell}_i & = &
 \end{array}
 \right.\\
 \\
-Y_i = \prod_{\ell=1}^k X^{\ell}_i & = &
+Y_i = \prod_{\ell=1}^\lambda X^{\ell}_i & = &
 \left\{
 \begin{array}{lcl}
-1 & ~~~~&  \parbox[t]{.6\textwidth}{if file $F_i$ collides with another file during all the $k$ first protocol iterations.}\\
+1 & ~~~~&  \parbox[t]{.6\textwidth}{if file $F_i$ collides with another file during all the $\lambda$ first protocol iterations.}\\
 \\
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
@@ -491,19 +511,19 @@ Y_i = \prod_{\ell=1}^k X^{\ell}_i & = &
 By independence, we have:
 
 \[
-  \Prob{Y_i = 1} = \prod_{\ell=1}^k \Prob{X^{\ell}_i = 1} = \Prob{X^1_i = 1} \dots \Prob{X^k_i = 1} \le \left( \frac{\eta -1}{2^u} \right)^k
+  \Prob{Y_i = 1} = \prod_{\ell=1}^\lambda \Prob{X^{\ell}_i = 1} = \Prob{X^1_i = 1} \dots \Prob{X^\lambda_i = 1} \le \left( \frac{\eta -1}{2^u} \right)^\lambda
 \]
 
 Therefore the average number of colliding files is:
 
 \[
- \EE{\sum_{i=0}^{\eta-1} Y_i} \le \sum_{i=0}^{\eta-1} \left( \frac{\eta -1}{2^u} \right)^k =  \eta \left(\frac{\eta - 1}{2^u}\right)^k
+ \EE{\sum_{i=0}^{\eta-1} Y_i} \le \sum_{i=0}^{\eta-1} \left( \frac{\eta -1}{2^u} \right)^\lambda =  \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
 \]
 
 And the probability that at least one false positive will survive $k$ rounds is:
 
 \[
-\epsilon_k \le \eta \left(\frac{\eta - 1}{2^u}\right)^k
+\epsilon_k \le \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
 \]
 
 For the previously considered instance\footnote{$\eta=10^6$,$u=32$.} we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3}\%$.
@@ -552,9 +572,9 @@ X^{\ell}_{i,j} &=
 Set $Z^0_i = 1$ and write $p_\ell = \Prob{Z^{\ell}_{i} = 1 \text{ and } Z^{\ell}_{j} = 1} $ for all $\ell$ and $i \neq j$.
 For $k \ge 1$, we have:
 \begin{align*}
-\Prob{Z^k_i=1} &= \Prob{\exists j\neq i \text{, } X^k_{i,j} = 1 \text{, } Z^{k-1}_{i} = 1  \text{ and } Z^{\ell-1}_{j} = 1}  \\
-&\le \sum_{j=0, j\neq i}^{\eta-1} \Prob{X^{k}_{i,j} = 1} \Prob{Z^{k-1}_{i} = 1 \text{ and } Z^{k-1}_{j} = 1}  \\
-&\le \frac{\eta-1}{2^u} p_{k-1}
+\Prob{Z^\lambda_i=1} &= \Prob{\exists j\neq i \text{, } X^\lambda_{i,j} = 1 \text{, } Z^{\lambda-1}_{i} = 1  \text{ and } Z^{\ell-1}_{j} = 1}  \\
+&\le \sum_{j=0, j\neq i}^{\eta-1} \Prob{X^{\lambda}_{i,j} = 1} \Prob{Z^{\lambda-1}_{i} = 1 \text{ and } Z^{\lambda-1}_{j} = 1}  \\
+&\le \frac{\eta-1}{2^u} p_{\lambda-1}
 \end{align*}
 Furthermore $p_0 = 1$ and\comm{Fabrice: maybe put this in appendix and add a few comments...}
 \begin{align*}
@@ -569,23 +589,24 @@ p_\ell &= \Prob{X^{\ell}_{0,1} = 1 \text{, } Z^{\ell}_{0} = 1 \text{ and } Z^{\e
 hence:
 \[ p_\ell \le \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^\ell, \]
 and
-\[ \Prob{Z^\ell_i=1} \le \frac{\eta-1}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{k-1} \]
+\[ \Prob{Z^\lambda_i=1} \le \frac{\eta-1}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{\lambda-1} \]
 And finally, the survival probability of at least one false positive after $k$ iterations satisfies:
 \nopagebreak
 \[
-\epsilon'_k \le \frac{\eta(\eta-1)}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{k-1}
+\epsilon'_\lambda \le \frac{\eta(\eta-1)}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{\lambda-1}
 \]
 
-For $(\eta=10^6,u=32,k=2)$, we get $\epsilon'_2 \le 0.013\%$.\smallskip
+For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.\smallskip
 
 \subsubsection{How to select $u$?}
 %
-For a fixed $k$, $\epsilon'_k$ decreases as $u$ grows. For a fixed $u$, $\epsilon'_k$ also decreases as $k$ grows. Transmission, however, grows with both $u$ (bigger digests) and $k$ (more iterations). We write for the sake of clarity: $\epsilon'_k = \epsilon'_{k,u,\eta}$.\smallskip
+For the sake of simplicity, we consider $t=t_1=t_2=\dots$.
+For a fixed $\lambda$, $\epsilon'_\lambda$ decreases as $u$ grows. For a fixed $u$, $\epsilon'_\lambda$ also decreases as $\lambda$ grows. Transmission, however, grows with both $u$ (bigger digests) and $k$ (more iterations). We write for the sake of clarity: $\epsilon'_\lambda = \epsilon'_{\lambda,u,\eta}$.\smallskip
 
 Fix $\eta$. Note that the number of bits transmitted per iteration ($\simeq 3ut$), is proportional to $u$. This yields an expected transmission complexity bound $T_{u,\eta}$ such that:\smallskip
 
-\[T_{u,\eta} \propto u \sum_{k=1}^{\infty} k \cdot \epsilon'_{k,u,\eta}=
-\frac{u \eta\left(\eta-1\right)}{2^u} \sum_{k=1}^{\infty} k \left( \frac{1}{2^u} + \frac{\left(\eta-2\right)^2}{2^{2u}} \right)^{k-1}=
+\[T_{u,\eta} \propto u \sum_{\lambda=1}^{\infty} \lambda \cdot \epsilon'_{\lambda,u,\eta}=
+\frac{u \eta\left(\eta-1\right)}{2^u} \sum_{\lambda=1}^{\infty} \lambda \left( \frac{1}{2^u} + \frac{\left(\eta-2\right)^2}{2^{2u}} \right)^{\lambda-1}=
 \frac{u \eta\left(\eta-1\right) 8^u}{\left(2^u-4^u+\left(\eta-2\right)^2\right)^2}\]
 
 Dropping the proportionality factor $\eta\left(\eta-1\right)$, neglecting $2^u \ll 2^{2u}$ and approximating $(\eta-2)\simeq\eta$, we can optimize the function:
@@ -600,14 +621,16 @@ $\phi_{10^6}(u)$ admits an optimum for $u=19$.
 \begin{itemize}
 \item We consider $u$-bit prime digests while $u$-bit strings contain only about $2^u/u$ primes.
 
-\item We used a fixed $u$ in all rounds. Nothing forbids using a different $u_k$ at each iteration, or even fine-tuning the $u_k$s adaptively as a function of the laundry's effect on the progressively reconciliated multisets..
+\item We used a fixed $u$ in all rounds. Nothing forbids using a different $u_\ell$ at each iteration, or even fine-tuning the $u_\ell$'s adaptively as a function of the laundry's effect on the progressively reconciliated multisets..
 
 \item Our analysis treats $t$ as a constant, but large $t$ values increase $p$ and hence the number of potential files detected as different per iteration - an effect disregarded {\sl supra}.
 \end{itemize}
 
 A different approach is to optimize $t$ and $u$ experimentally, {\sl e.g.} using the open source {\sc d\&f} program \btrsync\ developed by the authors ({\sl cf.} section  \ref{program}).
 
-\subsection{How to Stop a Probabilistic Washing Machine?} We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a half-sized $p$. By opposition to section \ref{basic}, confirming correct protocol termination is now non-trivial.\smallskip
+\subsection{How to Stop a Probabilistic Washing Machine?} 
+\comm{Remplacer $\ell$ par $\lambda$}
+We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a half-sized $p$. By opposition to section \ref{basic}, confirming correct protocol termination is now non-trivial.\smallskip
 \comm{Fabrice: oups, pas sûr de tout comprendre ici, il faudrait que l'on en rediscute... En particulier, le CRT n'a pas d'erreur a priori, sauf erreur de ma part...}
 
 \comm{La définition de $\zeta(u)$ est assez gratuite vu que ça n'intervient pas dans la suite.}
@@ -631,10 +654,10 @@ A summary of all costs can be found in Table~\ref{tab:workload}.
 
 \subsection{Basic Complexity}
 
-Let $\mu(k)$ be the time required to multiply two $k$-bit numbers\footnote{We assume that $\forall k,k', \mu(k+k') \ge \mu(k) + \mu(k')$.}.
-For na\"{i}ve ({\sl i.e.} convolutive) algorithms $\mu(k) = O(k^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(k) = \Oapp(k)$. {\sc fft} is experimentally faster than convolutive methods starting at $k \sim 10^6$.
-The modular division of two $k$-bit numbers and the reduction of $2k$-bit number modulo a $k$-bit number are also known to cost $\Oapp(\mu(k))$~\cite{burnikel1998fast}.
-Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(k)$.for sufficiently large $k$.\smallskip
+Let $\mu(l)$ be the time required to multiply two $l$-bit numbers\footnote{We assume that $\forall l,l', \mu(l+l') \ge \mu(l) + \mu(l')$.}.
+For naive ({\sl i.e.} convolutive) algorithms $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$. {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
+The modular division of two $l$-bit numbers and the reduction of $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
+Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.\smallskip
 
 As proven in TODO APPENDIX, the complexity of $\tt HashPrime$ is $u^2 \mu(u)$.
 Hence, we have the costs depicted in the third column of Table~\ref{tab:workload}.
@@ -643,54 +666,77 @@ Hence, we have the costs depicted in the third column of Table~\ref{tab:workload
 
 % TODO: conflit de notations: i pour fichier et i pour round !
 
-\subsection{Adapting $p_i$}
+\subsection{Adapting $p_k$}
 
-Using $p_i$ $ut_i$-primes is not very practical, because generating a big prime number is slow, and storing a list of such primes require to be able to bound the number of rounds, and to fix all the parameters ($u$ and $t_1,t_2,\dots$).
-That is why, in this section we show that we can adapt $p_i$ to be able to generate them easily and also, to speed up the computations with a constant factor.
+Using $p_k$ $ut_k$-bit primes is not very practical, because generating a big prime number is slow, and storing a list of such primes require to be able to bound the number of rounds, and to fix all the parameters ($u$ and $t_1,t_2,\dots$).
+That is why, in this section we show that we can adapt $p_k$ to be able to generate them easily and also, to speed up the computations with a constant factor.
 
-Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the {\sl only} property required from $p$ is to be co-prime with all the $h_i$ and all the $h'_i$. We can hence consider the following variants:
-\subsubsection{Variant 1:} Smooth $p_i$:
-\[ p_i=\prod_{j=r_i}^{r_{i+1}-1} \mbox{{\tt Prime}}[j], \]
-where the bounds $r_i$ are chosen to ensure that each $p_i$ has the proper size.
-Generating such a prime is much faster than generating a big prime $p_i$.
+Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the {\sl only} property required from $p$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants:
+\subsubsection{Variant 1:} Smooth $p_k$:
+\[ p_k=\prod_{j=r_k}^{r_{k+1}-1} \mbox{{\tt Prime}}[j], \]
+where the bounds $r_k$ are chosen to ensure that each $p_k$ has the proper size.
+Generating such a prime is much faster than generating a big prime $p_k$.
 
-\subsubsection{Variant 2:} $p_i=\mbox{{\tt Prime}}[i]^{r_i}$ where the exponents $r_i$ are chosen to ensure that each $p_i$ has the proper size.
-This variant is even faster than the previous one, but require to choose $h_i$ bigger than all
-$\mbox{{\tt Prime}}[i]^{r_i}$. 
+\subsubsection{Variant 2:} $p_k=\mbox{{\tt Prime}}[k]^{r_k}$ where the exponents $r_k$ are chosen to ensure that each $p_k$ has the proper size.
+This variant is even faster than the previous one, but require to choose $h_k$ bigger than all
+$\mbox{{\tt Prime}}[k]^{r_k}$. 
 
-\subsubsection{Variant 3:} $p_i = 2^{ut_i}$. 
-Using Algorithm~TODO for the computation of $c_i$, this variant offers substantial constant-factor accelerations compared to previous variants, because it removes the need of all modulo operations and of {\sc crt} re-combination when multiple $p_i$ are needed, since $C_i$ is just the binary concatenation of $c_i$ and $C'_{i-1}$ !
-%This variant, is probably the most efficient of all, but somewhat complex to explain. We hence describe it in detail in Appendix \ref{powtwo}. This variant is compatible with the use of {\sc fft}-multiplication, hence asymptotic complexity is preserved. In addition, it avoids all modular reductions and all {\sc crt} re-combinations and hence offers considerable constant-factor accelerations.\smallskip
+\subsubsection{Variant 3:} $p_k = P_k = 2^{ut_k}$. 
+In this case, $C_k = \prod_{i=1}^n h_i \bmod p_k$, $c_1 = C_1$ and $c_k = (C_k - C_{k-1}) / p_{k-1}$, {\it i.e.}, $c_k$ is the slice of bits $ut_{k-1}\dots ut_k-1$ of $C_k$ (with $t_0 = 0$), which we write $c_k = C_k[ut_{k-1}\dots ut_k]$.
+Using Algorithm~\ref{alg:even-p-c} for the computation of $c_k$, this variant offers substantial constant-factor accelerations compared to previous variants, because it removes the need of all modulo operations and of {\sc crt} re-combination when multiple $p_k$ are needed, since $C_k$ is just the binary concatenation of $c_k$ and $C_{k-1}$ !
+
+Let us explain the main ideas of Algorithm~\ref{alg:even-p-c}.
+Let $X_i = \prod_{j=1}^n h_j$ ($X_0 = 1$), $X_{i,k} = X_i[ut_{k-1}\dots ut_{k}]$ and let $D_{i,k}$ be the $u$ upper-bits of the product of $Y_{i,k} = X_i[0\dots ut_{k}]$ and $h_i$, {\it i.e.}, $D_{i,k} = (Y_{i,k} \times h_i)[ut_k\dots u(t_k+1)]$ ($D_{i,0} = 0$ and $D_{0,k} = 0$).
+Since $X_{i+1} = X_i \times h_{i+1}$, we have, for $k \ge 0$, $i \ge 0$:
+\begin{align*}
+  D_{i+1,k+1} \times 2^{ut_{k+1}} + Y_{i+1,k+1} &= Y_{i,k+1} \times h_{i+1} \\
+                 &= (X_{i,k+1} \times 2^{ut_{k}} + Y_{i,k}) \times h_{i+1} \\
+                 &= X_{i,k+1} \times 2^{ut_k} \times h_{i+1} + Y_{i,k} \times h_{i+1} \\
+                 &= X_{i,k+1}  \times h_{i+1} \times 2^{ut_k} + (D_{i,k} \times 2^{ut_k} + \dots).
+\end{align*}
+Therefore, if we only consider bits $[ut_k \dots u(t_{k+1}+1)]$, for $k\ge1$,$i\ge0$:
+\begin{align*}
+  D_{i+1,k+1} \times 2^{u(t_{k+1}} + X_{i+1,k+1} &= X_{i,k+1} \times h_{i+1} + D_{i,k}. \\
+\end{align*}
+Since $c_k = X_{n,k}$, the algorithm is correct.
+
+We remark we only need to store $D_{k,i}$ and $D_{k+1,i}$ during round $k$ (for all $i$).
+So the space complexity is $O(nu)$.
 
 
-\begin{verbatim}
+\begin{algorithm}
+\newcommand{\vstart}{\ensuremath{\mathrm{start}}}
+\newcommand{\vmid}{\ensuremath{\mathrm{mid}}}
+\newcommand{\vend}{\ensuremath{\mathrm{end}}}
+\begin{algorithmic}[1]
+\Require{$k$, the set $h_i$, $(D_{k,i})$ as explained in the article}
+\Ensure{$c_{k+1} = \prod_{i=1}^{n} h_i \bmod p_{k+1}$, $(D_{k+1})$ as explained in the article}
 
-Have this written by Fabrice...
+\If{$k=0$}
+  \State $X \gets 1$
+\Else
+  \State $X \gets 0$
+\EndIf
 
-(les modulos etant $2^{ut}, 2^{2ut}, ...$):
-- calcul des $H_j$ comme dans 4.1 par product tree
-- produit des $H_j$ de la facon suivante pour round 1:
-  - $\mbox{prod} = 1$ (de taille $ut$)
-  - pour $j=1,...$
-      $\mbox{carry}_j | \mbox{prod} = \mbox{prod} \times H_j$
-  - retourner prod, et garder carry
-- produit des $H_j$ pour round suivants:
-  - prod = 0
-  - pour $j=1,...$
-      $\mbox{carry}_j | \mbox{prod} = \mbox{prod} \times H_j + \mbox{carry}_j$
+\For{$i = 0,\dots,n-1$}
+  \State $Z \gets X \times h_{i+1}$
+  \State $D_{i+1,k+1} \gets Z[u(t_{k+1}-t_k)\dots u(t_{k+1}-t_k+1)]$
+  \State $X \gets Z[0\dots u(t_{k+1}-t_k)]$
+\EndFor
 
-L'idee est la suivante (invariant): au round i et au tour j, prod contient les bits $(i-1)ut,...iut$ du produit reel de $H_1,...,H_j$ et
-$\mbox{carry}_j$ contient le carry genere par ces bits...
-\end{verbatim}
-
+\State $c_{k+1} \gets X$
+\end{algorithmic}
+\caption{Computation of $c_k$ for $p_k = 2^{ut_k}$}\label{alg:even-p-c}
+\end{algorithm}
 
 \subsection{Algorithmic Optimizations using Product Trees}
 \label{sec:algo-opt-prod-trees}
 
-The non-overwhelming (but nonetheless important) complexities of the computations of $(c,c')$ and of the factorizations can be even reduced to $\Oapp(\frac{n}{t_i} \mu(u t_i))$ and $\Oapp(\frac{n}{T_i} \mu(u T_i)$ using product trees. 
+The non-overwhelming (but nonetheless important) complexities of the computations of $(c,c')$ and of the factorizations can be even reduced to $\Oapp(\frac{n}{t_k} \mu(u t_k))$ and $\Oapp(\frac{n}{T_k} \mu(u T_k))$ using product trees. 
 Therefore, the cost drops to $\Oapp(n u)$ with {\sc fft}~\cite{schonhage1971schnelle}. 
 To simplify the presentation, we suppose there is only one round, and $p=p_1$, $t=t_1=T_1$, and we assume that $t=2^\tau$ is a power of two dividing $n$.
 We also only focus on the case $p$ prime, for the sake of simplicity.
+But the algorithm can be easily adapt to the other variants.
 
 The idea is the following: group $h_i$'s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$.
 \[ H_j = \prod_{i=j t}^{j t + t - 1} h_i\in\mathbb{N} \]
@@ -764,7 +810,7 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 \newcommand{\vend}{\ensuremath{\mathrm{end}}}
 \begin{algorithmic}[1]
 \Require{the set $h_i$}
-\Ensure{$\pi = \pi_1 = \prod_0^{t-1} h_i$, and $\pi_i$ for $i \in \{1,\dots,2t-1\}$ as in Figure~\ref{fig:prod-tree}}
+\Ensure{$\pi = \pi_1 = \prod_{i=0}^{t-1} h_i$, and $\pi_i$ for $i \in \{1,\dots,2t-1\}$ as in Figure~\ref{fig:prod-tree}}
 \State $\pi \gets $ array of size $t$
 \Function{prodTree}{$i$,$\vstart$,$\vend$}
   \If{$\vstart = \vend$}
@@ -788,9 +834,7 @@ The same technique applies to factorization\footnote{We explain the process with
 
 After computing the tree product, we can compute the residues of $a$ modulo $H_0$.
 Then we can compute the residues of $a \bmod{H_0}$ modulo the two children $\pi_2$ and $\pi_3$ of $H_0 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end ({\sl i.e.}, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{0,\dots,t-1\}$). This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
-We can use the same method for the tree product associated to any $H_j$, and the residues of $a$ modulo each of the $h_i$ ($i \in \{jt,\dots,jt+t-1\}$) for any $j$, {\sl i.e.}, $a$ modulo each of the $h_i$ for any $i$.
-\comm{Does it make sense to nest $\Oapp$'s?}
-Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexity of $\Oapp(\frac{n}{t} \Oapp(\mu(u t)))$.
+We can use the same method for the tree product associated to any $H_j$, and the residues of $a$ modulo each of the $h_i$ ($i \in \{jt,\dots,jt+t-1\}$) for any $j$, {\sl i.e.}, $a$ modulo each of the $h_i$ for any $i$. Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexity of $\Oapp(\frac{n}{t} \mu(u t))$.
 
 \begin{figure}[t]
 \centering
@@ -1086,16 +1130,9 @@ Oscar is now aware of all of Neil's files and their location.
 
 We implemented and benchmarked the Divide \& Factor protocol described in the previous sections. The implementation is called \btrsync, its source code is available from~\cite{Robin}.\smallskip
 
-\comm{on parle de "in the previous sections" mais de quelle variate s'agit il?}
-
-TODO REMOVE THIS !
-The program performs unidirectional synchronization, which is simpler to understand. The code is divided into two subprograms: a shell script and a Python program:
-\comm{Fabrice: in the paper, it is unidirectionnal too !!!!!!}
-
----------------------------------------------------------------------
-
 \subsection{Organization}
 
+\comm{Fabrice: Finish that stuff and put it in appendix ?}
 The program is composed of three parts: shell script, python program cmd, python program... TODO
 
 \subsubsection{The Shell Script} sets up two instances of the Python program on Oscar and Neil and establishes a bidirectional communication channel between them using two Unix pipes between their standard inputs and outputs.
@@ -1104,6 +1141,9 @@ The program is composed of three parts: shell script, python program cmd, python
 
 
 \subsection{What is Implemented ?}
+
+TODO: write this beautyfully
+
 \begin{itemize}
 \item variant 2 of adapting $p_i$ (power of small primes)
 \item hash to prime (remove use of hash to prime, not supported yet, though it WOULD be VERY interesting)
@@ -1113,33 +1153,13 @@ The program is composed of three parts: shell script, python program cmd, python
 Small difference with theory:
 \begin{itemize}
 \item move reconciliation: An optimization implemented by \btrsync over the algorithm described here is to move files instead of copying them and then remove the original file. Moves are faster than copies on most filesystems as the OS does not need to copy the actual file contents to perform moves.
+TODO: Fabrice@Antoine, que voualis-tu dire ici ? J'ai juste copié-collé ce que tu avais écris
 \item hash to prime: slightly different, I should correct this and use the fast version described in appendix if I have time (Fabrice)
 \end{itemize}
 
 The only metadata managed by \btrsync is the file path (name and location).
 Other kinds of metadata (modification date, owner, permissions) are not
 implemented, though it would be easy to do so.
-
-TODO: what to do with this? More precisely:
-\begin{itemize}
-\item Oscar sends it product of hashes modulo a first prime number $p_1$.
-\comm{sur "a first prime number $p_1$", l'implem marche avec $p_i$ ou des $2^u$?}
-\item Neil receives the product, divides by its own product of hashes, reconstructs the fraction modulo $p_1$ and checks if he can factor the denominator using his hashes base. If he can, he stops and sends the numerator and the list of tuples (path, type, hash of content of the file) corresponding to the denominator's factors. Otherwise he sends "None" [is this the ASCII string "None"? if not what does he send precisely?].
-\item If Neil sent "None", Oscar computes the product of hashes modulo another prime $p_2$, sends it... CRT mechanism... [can we elaborate more on what happens here? which functions in GMP are used to do the CRT?]
-\item If Neil sent the numerator and a list of tuples, then Oscar factors the numerator over his own hash values. Now each party (Neil, Oscar) knows precisely the list of files (path + type + hash of content) that differs from the other party.
-\end{itemize}
-
-[please structure the following:]\smallskip
-
-2. synchronize all the files. This part is not completely optimized.\smallskip
-
-We just remove all folders Oscar should not have and create new folders.\smallskip
-
-Then we remove all files Oscar should not have and synchronize using rsync the last files.\smallskip
-
-We could check for move (since we have the list of hash of contents of files) and do moves locally.\smallskip
-
-We can even try to detect moves of complete subtrees...\smallskip
 
 \subsection{Experimental Comparison to \rsync}
 
@@ -1149,6 +1169,7 @@ and our Divide \& Factor implementation (called \btrsync) under the following ex
 \subsubsection{Test Directories:} The directories used for transmission and time
 comparisons are described in Table~\ref{tab:benchdirec}.\smallskip
 
+\comm{Fabrice: Can't we move this in appendix ? I'm not sure it's really essential. We can replace it by a sentence as: ``We call \rsync with carefully chosen options in order to do a fair comparison (cf Appendix)''}
 \subsubsection{Command-Line Options:} \rsync was called with the following options, for the reasons below:
 
 $\blacktriangleright$ {\tt --delete} to delete existing files on Oscar which do
@@ -1201,11 +1222,11 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 
 \item @Fabrice: Pour éviter le cas empty $\rightarrow$ source trop gros, on pourrait imaginer l'astuce suivante: si jamais Neil la taille de c est plus petite que la taille du produit des nombres premiers $p_1$...$p_n$ utilisés, Neil envoie un message pour l'indiquer, et on arr\^ete là le protocole. Et Oscar peut directement factoriser ce nombre envoyé...
 
-\item @Fabrice: il faut discuter de la taille de la taille maximale des ``petits'' premiers utilisés pour les variantes de $p$ et montrer que cela n'enlève pas trop d'entropie pour les $h_i$. Encore une fois, je m'en occupe la semaine prochaine si besoin.
+\item @Fabrice: il faut discuter de la taille de la taille maximale des ``petits'' premiers utilisés pour les variantes de $p$ et montrer que cela n'enlève pas trop d'entropie pour les $h_i$. Encore une fois, je m'en occupe la semaine prochaine si besoin. ................. OK on s'en moque (Fabrice)
 
 \item Refaire une dernière fois les expériences, vu que Fabrice a significativement amélioré les perfs.
 
-\item Faire clarifier par Fabrice l'histoire du doublement...
+\item Faire clarifier par Fabrice l'histoire du doublement... Oui, il faudrait expliciter un peu
 
 \item Fabrice: comparer nos perfs avec http://ipsit.bu.edu/programs/reconcile/ ? ou pas ?
 
