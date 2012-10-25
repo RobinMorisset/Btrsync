@@ -73,8 +73,7 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 
 \comm{Si cet abstract vous convient, il faudrait en reprendre des bouts dans l'introduction.}
 \begin{abstract}
-  This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new number theoretic reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}) which achieves optimal asymptotic transmission complexity like prior proposals. We then study the problem of synchronizing sets of variable-size files, and describe how constant-factor improvements can be achieved through the use of hashing with a carefully chosen hash size (balancing the quantity of data transferred and the risk of collisions). We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync uses more CPU time but transmits less data.
-\comm{Fabrice: j'écrirai quelque chose de plus positif comme: ``\btrsync transmits much less data at the expense of a small computationnal overhead.''}
+  This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new number theoretic reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}) which achieves optimal asymptotic transmission complexity like prior proposals. We then study the problem of synchronizing sets of variable-size files, and describe how constant-factor improvements can be achieved through the use of hashing with a carefully chosen hash size (balancing the quantity of data transferred and the risk of collisions). We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync transmits much less data at the expense of a small computational overhead.
 \end{abstract}
 
 \comm{Est-ce que c'est vrai qu'on apporte quelque chose de nouveau dans le cas où c'est des fichiers de taille non fixe ? --- Fabrice: je ne sais pas, il faudrait que l'on réanalyse la complexité propre de la dernière variante.}
@@ -1152,8 +1151,7 @@ TODO: write this beautyfully
 
 Small difference with theory:
 \begin{itemize}
-\item move reconciliation: An optimization implemented by \btrsync over the algorithm described here is to move files instead of copying them and then remove the original file. Moves are faster than copies on most filesystems as the OS does not need to copy the actual file contents to perform moves.
-TODO: Fabrice@Antoine, que voualis-tu dire ici ? J'ai juste copié-collé ce que tu avais écris
+  \item An optimization implemented by \btrsync over the move resolution algorithm described in Section~\ref{moving} is to avoid doing a copy of a file $F$ and then removing $F$: the implementation replaces such operations by move operations, which are faster than copies on most filesystems as the OS does not need to copy the actual file contents.
 \item hash to prime: slightly different, I should correct this and use the fast version described in appendix if I have time (Fabrice)
 \end{itemize}
 
@@ -1365,10 +1363,9 @@ On a alors une accélération d'environ 10 si on prend $d=60$.
     \bottomrule
   \end{tabular*}
 
-  \caption{Experimental results. {\tt rs} and {\tt bt} subscripts respectively denote {\tt rsync} and {\tt btrsync}. The two first columns indicate the datasets. Synchronization is performed {\sl from} Neil {\sl to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between the two programs. The last two columns show timing results.}
+  \caption{Experimental results. {\tt rs} and {\tt bt} subscripts respectively denote {\tt rsync} and {\tt btrsync}. The two first columns indicate the datasets. Synchronization is performed {\sl from} Neil {\sl to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between the two programs. The last two columns show timing results. This evaluation was performed on an HP ProBook 5330m laptop using an Intel Core i3-2310M CPU clocked at 2.10 Ghz.}
   \label{tab:results}
 \end{table}
-\comm{Antoine sur quelle plate-formes ont ete obtenus les resultats experimentaux? quelles vitesses de processeur etc?}
 
 \begin{table}
 \begin{center}
