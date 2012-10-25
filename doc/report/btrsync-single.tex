@@ -73,8 +73,7 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 
 \comm{Si cet abstract vous convient, il faudrait en reprendre des bouts dans l'introduction.}
 \begin{abstract}
-  This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new number theoretic reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}) which achieves optimal asymptotic transmission complexity like prior proposals. We then study the problem of synchronizing sets of variable-size files, and describe how constant-factor improvements can be achieved through the use of hashing with a carefully chosen hash size (balancing the quantity of data transferred and the risk of collisions). We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync uses more CPU time but transmits less data.
-\comm{Fabrice: j'écrirai quelque chose de plus positif comme: ``\btrsync transmits much less data at the expense of a small computationnal overhead.''}
+  This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new number theoretic reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}) which achieves optimal asymptotic transmission complexity like prior proposals. We then study the problem of synchronizing sets of variable-size files, and describe how constant-factor improvements can be achieved through the use of hashing with a carefully chosen hash size (balancing the quantity of data transferred and the risk of collisions). We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync transmits much less data at the expense of a small computational overhead.
 \end{abstract}
 
 \comm{Est-ce que c'est vrai qu'on apporte quelque chose de nouveau dans le cas où c'est des fichiers de taille non fixe ? --- Fabrice: je ne sais pas, il faudrait que l'on réanalyse la complexité propre de la dernière variante.}
@@ -1152,8 +1151,7 @@ TODO: write this beautyfully
 
 Small difference with theory:
 \begin{itemize}
-\item move reconciliation: An optimization implemented by \btrsync over the algorithm described here is to move files instead of copying them and then remove the original file. Moves are faster than copies on most filesystems as the OS does not need to copy the actual file contents to perform moves.
-TODO: Fabrice@Antoine, que voualis-tu dire ici ? J'ai juste copié-collé ce que tu avais écris
+  \item An optimization implemented by \btrsync over the move resolution algorithm described in Section~\ref{moving} is to avoid doing a copy of a file $F$ and then removing $F$: the implementation replaces such operations by move operations, which are faster than copies on most filesystems as the OS does not need to copy the actual file contents.
 \item hash to prime: slightly different, I should correct this and use the fast version described in appendix if I have time (Fabrice)
 \end{itemize}
 
@@ -1163,27 +1161,13 @@ implemented, though it would be easy to do so.
 
 \subsection{Experimental Comparison to \rsync}
 
-We compared \rsync\footnote{\rsync version 3.0.9, used both as a competitor to benchmark against and as an underlying call in our own code.}
-and our Divide \& Factor implementation (called \btrsync) under the following experimental conditions:
-
-\subsubsection{Test Directories:} The directories used for transmission and time
-comparisons are described in Table~\ref{tab:benchdirec}.\smallskip
-
-\comm{Fabrice: Can't we move this in appendix ? I'm not sure it's really essential. We can replace it by a sentence as: ``We call \rsync with carefully chosen options in order to do a fair comparison (cf Appendix)''}
-\subsubsection{Command-Line Options:} \rsync was called with the following options, for the reasons below:
-
-$\blacktriangleright$ {\tt --delete} to delete existing files on Oscar which do
-not exist on Neil like \btrsync does.\smallskip
-
-$\blacktriangleright$ {\tt -I} to ensure that \rsync did not cheat by looking at file modification times (which \btrsync does not do).\smallskip
-
-$\blacktriangleright$ {\tt --chmod="a=rx,u+w"} in an attempt to disable the transfer of file permissions (which \btrsync does not transfer). Although these settings ensure that \rsync does not need to transfer permissions, verbose logging suggests that it does transfer them anyway, so \rsync must lose a few bytes per file as compared to \btrsync for this reason.\smallskip
-
-$\blacktriangleright$ {\tt -v} Transmission accounting was performed by calling \rsync with the {\tt -v} flag (which reports the number of sent and received bytes). For \btrsync we added a piece of code counting the amount of data transmitted during \btrsync's own negotiations.\smallskip
-
-\subsubsection{Network Configuration:} Experiments were performed without any network transfer, by synchronizing two folders on the same host. Hence, time measurements should mostly represent the {\sc cpu} cost of the synchronization.
-
-\subsubsection{Results:}
+We compared \rsync\footnote{\rsync version 3.0.9, used both as a competitor to
+benchmark against and as an underlying call in our own code.} and our implementation \btrsync. The directories used for the
+benchmark are described in Table~\ref{tab:benchdirec}, and the options used
+when benchmarking \rsync are given in Table~\ref{tab:rsyncopt}. Experiments
+were performed without any network transfer, by synchronizing two folders on
+the same host. Hence, time measurements mostly represent the {\sc cpu} cost of
+the synchronization.\smallskip
 
 Results are given in Table \ref{tab:results}. In general, \btrsync spent more time than \rsync on computation (especially when the number of files is large, which is typically seen in the experiments involving {\tt synthetic}). Transmission results, however, turn out to be favorable to \btrsync.\smallskip
 
@@ -1421,23 +1405,6 @@ On a alors une accélération d'environ 10 si on prend $d=60$.
 \end{algorithm}
 
 \begin{table}
-  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}ll r r r r r r r r }
-    \toprule
-    \multicolumn{2}{c}{\bf Entities and Datasets} & \multicolumn{6}{c}{\bf Transmission (Bytes)} & \multicolumn{2}{c}{\bf Time (s)} \\
-    \midrule {\bf \hfill Neil's $\mathfrak{F}'$ \hfill \null} & {\bf \hfill Oscar's $\mathfrak{F}$ \hfill \null}
-    & $\mbox{{\tt TX}}_{\mbox{{\tiny {\tt rs}}}}$ & $\mbox{{\tt RX}}_{\mbox{{\tiny {\tt rs}}}}$  & $\mbox{{\tt TX}}_{\mbox{{\tiny {\tt bt}}}}$  & $\mbox{{\tt RX}}_{\mbox{{\tiny {\tt bt}}}}$  & $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ &
-    $\frac{\delta_{\mbox{{\tiny {\tt bt}}}}}{\delta_{\mbox{{\tiny {\tt rs}}}}}$ & $\mbox{{\tt time}}_{\mbox{{\tiny {\tt rs}}}}$ & $\mbox{{\tt time}}_{\mbox{{\tiny {\tt bt}}}}$ \\\midrule
-    &&&&&&&&&\\[-1em]
-    \input{results.tex}
-    \bottomrule
-  \end{tabular*}
-
-  \caption{Experimental results. {\tt rs} and {\tt bt} subscripts respectively denote {\tt rsync} and {\tt btrsync}. The two first columns indicate the datasets. Synchronization is performed {\sl from} Neil {\sl to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between the two programs. The last two columns show timing results.}
-  \label{tab:results}
-\end{table}
-\comm{Antoine sur quelle plate-formes ont ete obtenus les resultats experimentaux? quelles vitesses de processeur etc?}
-
-\begin{table}
 \begin{center}
 \begin{tabular}{ll}\toprule
 ~~{\bf Directory}              ~~&~~{\bf Description}\\\midrule
@@ -1456,6 +1423,45 @@ On a alors une accélération d'environ 10 si on prend $d=60$.
   \caption{Test Directories.}
   \label{tab:benchdirec}
 \end{center}
+\end{table}
+
+\begin{table}
+  \begin{tabular}{p{\dimexpr 0.25\linewidth-2\tabcolsep} p{\dimexpr
+    0.75\linewidth-2\tabcolsep}}
+    \toprule
+    $\blacktriangleright$ {\tt --delete} & Delete existing files on Oscar which
+    do not exist on Neil like \btrsync does.\\
+    $\blacktriangleright$ {\tt -I} & Ensure that \rsync does not cheat by
+    looking at file modification times (which \btrsync does not do).\\
+    $\blacktriangleright$ {\tt --chmod="a=rx,u+w"} & Attempt to disable the
+    transfer of file permissions (which \btrsync does not transfer). Although
+    these settings ensure that \rsync does not need to transfer permissions,
+    verbose logging suggests that it does transfer them anyway, so \rsync must
+    lose a few bytes per file as compared to \btrsync for this
+    reason.\\
+    $\blacktriangleright$ {\tt -v} & Count the number of sent and received
+    bytes. For \btrsync we added a piece of code counting the amount of data
+    transmitted during \btrsync's own negotiations.\\
+    \bottomrule
+  \end{tabular}
+  \caption{Options used when benchmarking \rsync}
+  \label{tab:rsyncopt}
+\end{table}
+
+\begin{table}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}ll r r r r r r r r }
+    \toprule
+    \multicolumn{2}{c}{\bf Entities and Datasets} & \multicolumn{6}{c}{\bf Transmission (Bytes)} & \multicolumn{2}{c}{\bf Time (s)} \\
+    \midrule {\bf \hfill Neil's $\mathfrak{F}'$ \hfill \null} & {\bf \hfill Oscar's $\mathfrak{F}$ \hfill \null}
+    & $\mbox{{\tt TX}}_{\mbox{{\tiny {\tt rs}}}}$ & $\mbox{{\tt RX}}_{\mbox{{\tiny {\tt rs}}}}$  & $\mbox{{\tt TX}}_{\mbox{{\tiny {\tt bt}}}}$  & $\mbox{{\tt RX}}_{\mbox{{\tiny {\tt bt}}}}$  & $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ &
+    $\frac{\delta_{\mbox{{\tiny {\tt bt}}}}}{\delta_{\mbox{{\tiny {\tt rs}}}}}$ & $\mbox{{\tt time}}_{\mbox{{\tiny {\tt rs}}}}$ & $\mbox{{\tt time}}_{\mbox{{\tiny {\tt bt}}}}$ \\\midrule
+    &&&&&&&&&\\[-1em]
+    \input{results.tex}
+    \bottomrule
+  \end{tabular*}
+
+  \caption{Experimental results. {\tt rs} and {\tt bt} subscripts respectively denote {\tt rsync} and {\tt btrsync}. The two first columns indicate the datasets. Synchronization is performed {\sl from} Neil {\sl to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between the two programs. The last two columns show timing results. This evaluation was performed on an HP ProBook 5330m laptop using an Intel Core i3-2310M CPU clocked at 2.10 Ghz.}
+  \label{tab:results}
 \end{table}
 
 
