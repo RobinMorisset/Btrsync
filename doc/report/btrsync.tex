@@ -1050,11 +1050,12 @@ However, in practice, we do not wish to synchronize file \emph{sets}, but file
 \emph{hierarchies}: we are not just interested in the \emph{content} of the
 files but in their \emph{metadata}. The most important metadata is the file's
 path (i.e., its name and its location in the filesystem), though other kinds of
-metadata exist (e.g., modification time, owner, permissions). In many use cases,
-the file metadata can change without changes in the file content: for instance,
-files can be \emph{moved} to a different location. When performing
+metadata exist (e.g., modification time, owner, permissions). In many use
+cases, the file metadata can change without changes in the file content: for
+instance, files can be \emph{moved} to a different location. When performing
 reconciliation, we must be aware of this fact, and reflect file moves without
-re-transferring the contents of the moved files.
+re-transferring the contents of the moved files (which is something that the
+most used synchronization tool, namely \texttt{rsync}, doesn't do).
 
 In this section, we present how to solve this \emph{file synchronization}
 problem, using our set reconciliation program as a building block.
@@ -1112,7 +1113,7 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
     \Function{unblock\_copy}{$f, t$}
       \If{$t$ is blocked by some $b$}
         \If{$b$ is not in $\mathfrak{D}$'s keys}
-          \State unlink($b$) \Comment{We don't need $b$}
+          \State delete($b$) \Comment{We don't need $b$}
         \Else
           \State \Call{resolve}{$b$} \Comment{Take care of $b$ and make it go away}
         \EndIf
@@ -1135,14 +1136,14 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
       \Let{$M[f]$}{doing}
       \For{$d \in \mathfrak{D}[f]$}
         \If{$d \neq f$}
-          \State unblock\_copy($f$, $d$) \Comment{Perform all the moves}
+          \State \Call{unblock\_copy}($f$, $d$) \Comment{Perform all the moves}
         \EndIf
       \EndFor
       \If{$f \notin \mathfrak{D}[f]$ and $T[f]$ was not set}
-        \State unlink($f$)
+        \State delete($f$)
       \EndIf
       \If{$T[f]$ was set}
-        \State unlink($T[f]$)
+        \State delete($T[f]$)
       \EndIf
     \EndFunction
 
