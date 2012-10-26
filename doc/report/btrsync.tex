@@ -32,8 +32,8 @@
 
 \newcommand{\sig}{{\sf $($Gene\-rate, Sign, Verify$)$} }
 \newcommand{\ignore}[1]{}
-\newcommand{\btr}{{\tt btrsync}}
-\newcommand{\rsy}{{\tt rsync}}
+%\newcommand{\btr}{{\tt btrsync}}
+%\newcommand{\rsy}{{\tt rsync}}
 \newcommand{\abs}[1]{\left|#1\right|}
 \newcommand{\Cov}[0]{\mbox{Cov}}
 \newcommand{\Var}[0]{\mbox{Var}}
@@ -42,9 +42,20 @@
 \newcommand{\Prob}[1]{{\Pr\left[\,{#1}\,\right]}}
 \newcommand{\EE}[1]{{\mathbb{E}\left[{#1}\right]}}
 \newcommand{\Oapp}{\ensuremath{\tilde{O}}}
+\newcommand{\Set}{\mathcal{H}}
+\newcommand{\SetD}{\mathcal{D}}
+\newcommand{\Files}{\mathcal{F}}
 
 \newcommand{\btrsync}{\texttt{btrsync}\xspace}
 \newcommand{\rsync}{\texttt{rsync}\xspace}
+
+\newcommand{\ie}{\textit{i.e.}}
+
+\newcommand{\Hash}{\texttt{Hash}\xspace}
+
+\newcommand{\Rflow}[1]{\stackrel{\displaystyle #1}{\hbox to 5em{\rightarrowfill}}}
+\newcommand{\Lflow}[1]{\stackrel{\displaystyle #1}{\hbox to 5em{\leftarrowfill}}}
+
 
 \newcommand{\comm}[1]{\marginpar{%
 \vskip-\baselineskip %raise the marginpar a bit
@@ -91,7 +102,7 @@ Cette section est temporaire et ne sert que pour assurer des notations cohérent
 
 TODO: Corriger les $n$,$n'$,$\eta$,$\eta'$.
 
-TODO: faire commencer le $i$ à 1 ou 0 partout
+TODO: faire commencer le $i$ à 1  PARTOUT
 
 \subsection*{Old Introduction}
 
@@ -177,6 +188,103 @@ are as follows:
 \section{``Divide \& Factor'' Set Reconciliation}
 \comm{TODO: Récrire cette section en parlant juste de set reconciliation et pas de hashing.}
 \label{dandf}
+
+This section shows our new set reconciliation protocol D\&F for set two of $u$-bit primes $\Set$ and $\Set'$, which is based on number theory.
+After introducing the problem and the notations, we first present a basic version of D\&F for a bounded number of differences between the two sets.
+Then we show how to extend this protocol to deal with any number of differences.
+
+\subsection{Problem Definition and Notations}
+
+\underline{O}scar possesses an \underline{o}ld version of a set $\Set$ of $n$ $u$-bit primes $\Set$ that he wished to update.
+\underline{N}eil has the \underline{n}ew, up-to-date version of this set, denoted $\Set'$ and containing $n'$ $u$-bit primes.
+\comm{Fabrice: should we speak about the fact we are limited to primes ???}
+
+Let us write $\Set = \{h_1,\dots,h_n\}$ and $\Set' = \{h'_1,\dots,h'_n\}$, such that: $h_1 < h_2 < \dots < h_n$ and $h'_1 < h'_2 < \dots < h'_{n'}$.
+Let $\SetD = \Set \setminus \Set'$ be the numbers deleted in Neil's version (compared to Oscar's version), and $\SetD' = \Set' \setminus \Set$ be the numbers added in Neil's version.
+Let $T$ be the number of discrepancies or differences between $\Set$ and $\Set'$:
+\[ T = \# \SetD + \# \SetD' = \# \Set + \# \Set' - 2 \# \left( \Set \bigcap \Set' \right) = \# \left(\Set \bigcup \Set' \right) - \# \left(\Set \bigcap \Set'\right), \]
+
+Let also suppose we have a collision-resistant hash function $\Hash$ which takes as input a tuple of integers and output a short binary string of, for example, $160$-bits\footnote{TODO: comment on such hash function for Antoine}.
+
+\subsection{Basic Protocol with Bounded $T$}
+
+In this section, we present a basic version of D\&F when the number of differences $T$ is at most $t$, with $t$ a known constant.
+
+The protocol works as follows.
+We first generate a prime $p$ such that
+\begin{equation}
+\label{equp}
+2^{2ut} \leq p < 2^{2ut+1}.
+\end{equation}
+
+Given $\Set$, Oscar generates and sends to Neil the redundancy:
+\[
+c = \prod_{i=1}^n h_i \bmod p.
+\]
+Neil computes:
+\[
+c' = \prod_{i=1}^n \bmod p {~~~\mbox{and}~~~} s=\frac{c'}{c} \bmod p.
+\]
+
+Since $T \leq t$, $\Set$ and $\Set'$ differ by at most $t$ elements and so $s$ can be written
+\[
+ s = \frac{a}{b} \bmod p \text{ where } \left\{ \begin{array}{lcr}
+  a &=& \prod_{h'_i \in \Set' \setminus \Set} h'_i \le 2^{ut} - 1 \\
+  b &=& \prod_{h_i \in Set \setminus \Set'} h_i \le 2^{ut} - 1
+\end{array} \right. \text  .
+\]
+The problem of recovering $a$ and $b$ from $s$ efficiently is known as {\sl Rational Number Reconstruction}~\cite{pan2004rational,wang2003acceleration}.
+And the following theorem, which is a slightly modified version of Theorem~1 in \cite{cryptorational}, guarantees that it can be solved efficiently in this setting.
+\begin{theorem}
+\label{theo}
+Let $a,b \in {\mathbb Z}$ two co-prime integers such that $0 \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a,b$ are uniquely defined given $s$ and $p$, and can be recovered from $A,B,s,p$ in polynomial time.
+\end{theorem}
+
+Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
+\comm{Fabrice: certes, mais on utilise directement un Euclide étendu tronqué. Et pourquoi citer Vallée qui est un peu incompréhensible dans notre cas... TODO: check that in our program we ensure $a$ and $b$ co-prime !! otherwise, it may fail !!!!!}
+By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can attempt to identify the discrepancies between $\Set$ and $\Set'$ and settle them.
+
+The basic protocol is depicted in Figure~\ref{fig:basic-df}.
+
+\begin{figure}
+\centering
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{|lcl|}
+\hline
+\textbf{Oscar}                    &                                        & \textbf{Neil}\\
+$c \gets \prod_{i=1}^n h_i$        &                                        & $c' \gets \prod_{i=1}^{n'} h'_i$ \\
+                                  & $\Rflow{c}$                            & \\
+                                  &                                        & reconstruct  $a,b$ \\
+                                  &                                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
+                                  & $\Lflow{\SetD',b}$                     & \\
+$\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i \}$ & & \\ \hline
+\end{tabular}
+\caption{Basic D\&F Protocol (when $t \le T$).}\label{fig:basic-df}
+\end{figure}
+
+\subsection{Handling an Unbounded Number of Differences}
+
+In practice, we often do not know any reasonnable bound $t$ on the number of differences $T$.
+that is why, in this section, we extend our protocol to work with any $T$.
+We do this in two steps: we first show that we can slightly change our basic protocol to detect when its output is incorrect, when $t < T$. 
+Then we construct a protocol which works with any $T$.
+
+\subsubsection{Detecting Bad Reconciliation}
+We first remark, that if we execute the previous protocol when $t < T$, either $a$ and $b$ are still correct (in which case, the protocol works correctly), or $a$ and $b$ are not correct.
+In the second case, with high probability, the product of the $h_i$'s which divide $a$ is not equal to $a$ (TODO: prove this claim).
+This check has the advantage to be very fast and not needing Neil to send any data to Oscar.
+But, if we are unlucky, it can happen that this check is not sufficient.
+
+That is why, we need to add another (more costly) check which can detect any bad reconciliation.
+This second check is very simple: at the beginning, before the first flow, Neil sends to Oscar a hash of its sets: $H = \Hash((h'_1,\dots,h'_{n'}))$, and at the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and check the hash of this new set if $H$.
+
+\subsubsection{Complete D\&F Protocol}
+
+Let us now present our complete D\&F protocol.
+
+
+\section{Old D\&F Set Reconciliation Section}
+
 Section \ref{basic} presents a basic
 version of the proposed protocol. This basic version suffers from two
 limitations: it works only if the number of differences to reconcile is bound
