@@ -1050,12 +1050,12 @@ However, in practice, we do not wish to synchronize file \emph{sets}, but file
 \emph{hierarchies}: we are not just interested in the \emph{content} of the
 files but in their \emph{metadata}. The most important metadata is the file's
 path (i.e., its name and its location in the filesystem), though other kinds of
-metadata exist (e.g., modification time, owner, permissions). In many use cases,
-the file metadata can change without changes in the file content: for instance,
-files can be \emph{moved} to a different location. When performing
+metadata exist (e.g., modification time, owner, permissions). In many use
+cases, the file metadata can change without changes in the file content: for
+instance, files can be \emph{moved} to a different location. When performing
 reconciliation, we must be aware of this fact, and reflect file moves without
 re-transferring the contents of the moved files (which is an improvement over
-other tools such as \rsync).
+popular synchronization tools such as \rsync).
 
 In this section, we present how to solve this \emph{file synchronization}
 problem, using our set reconciliation program as a building block.
