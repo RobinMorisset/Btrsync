@@ -659,29 +659,22 @@ But how can we confirm the solution? As mentioned in section \ref{reco}, Neil wi
 
 \section{Computational Complexity}
 \label{comp}
-In this section, we are interested in computing the computational complexity of our protocol. To simplify the analysis, we assume that there are no collisions.
+In this section, we are interested in computing the computational complexity of our protocol. 
+To simplify the analysis, we assume that there are no collisions, and that $n=n'$.
 
-We first present some variants of the protocol we described above, and then we analyse the complexity of all these variants.
+%We first present some variants of the protocol we described above, and then we analyse the complexity of all these variants.
+In this section, after briefly mentioning the cost of a naive implementation, we propose four optimizations to speed up our algorithms.
 A summary of all costs can be found in Table~\ref{tab:workload}.
 
 \subsection{Basic Complexity}
 
 Let $\mu(l)$ be the time required to multiply two $l$-bit numbers\footnote{We assume that $\forall l,l', \mu(l+l') \ge \mu(l) + \mu(l')$.}.
 For naive ({\sl i.e.} convolutive) algorithms $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$. {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
-The modular division of two $l$-bit numbers and the reduction of $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
+The modular division of two $l$-bit numbers and the reduction of a $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
 Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.\smallskip
 
-As proven in TODO APPENDIX, the complexity of $\tt HashPrime$ is $u^2 \mu(u)$.
-Hence, we have the costs depicted in the third column of Table~\ref{tab:workload}.
-
-%Given that $p \sim 2^{ut}$, we obtain the following complexity analysis (if we suppose $n=n'$):
-
-% TODO: conflit de notations: i pour fichier et i pour round !
-
-\subsection{Doubling}
-\label{sec:doubling}
-
-TODO expliquer l'évolution des $t_i$, cf. la partie en annexe. Dire que ça affecte défavorablement la transmission complexity.
+As proven in Section~\ref{sec:hashprime}, the naive complexity of $\tt HashPrime$ is $u^2 \mu(u)$, but it can be slightly improved at the expense of making the hashing less uniform.
+Hence, we have the costs depicted in the third column of Table~\ref{tab:workload}, if we use the same $t$ for each round ($t=t_1=t_2=\dots$).
 
 \subsection{Hashing Into Primes}
 \label{sec:hashprime}
@@ -693,7 +686,9 @@ Fabrice: Cela accélère un peu, car il y a environ $\frac{n}{\log(n) \varphi(\a
 Dans l'algo \ref{alg:scanprime}, $h$ est donc premier avec proba $\dfrac{\frac{n}{\log(n) \varphi(a)}}{\frac{n}{\alpha}} = \frac{\alpha}{\log(n) \varphi(\alpha)}$, tandis que dans l'algo \ref{alg:primes}, $h$ est premier avec proba $\frac{1}{\log(n)}$.
 On a alors une accélération d'environ 10 si on prend $d=60$.
 
-\begin{algorithm}
+TODO: no more uniform $\longrightarrow$ slightly decrease entropy of hashing
+
+\begin{algorithm}[t]
   \caption{Fast Nonuniform Hashing Into Primes}
   \label{alg:scanprime}
   \begin{algorithmic}[1]
@@ -705,7 +700,7 @@ On a alors une accélération d'environ 10 si on prend $d=60$.
   \end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}
+\begin{algorithm}[t]
   \caption{Possible Implementation of $\mbox{{\tt HashPrime}}(F)$}
   \label{alg:primes}
   \begin{algorithmic}[1]
@@ -721,7 +716,7 @@ On a alors une accélération d'environ 10 si on prend $d=60$.
 \subsection{Adapting $p_k$}
 \label{sec:choicep}
 
-Using $p_k$ $ut_k$-bit primes is not very practical, because generating a big prime number is slow, and storing a list of such primes require to be able to bound the number of rounds, and to fix all the parameters ($u$ and $t_1,t_2,\dots$).
+Taking the $p_k$'s as $ut_k$-bit primes is not very practical, because generating a big prime number is slow, and storing a list of such primes require to be able to bound the number of rounds, and to fix all the parameters ($u$ and $t_1,t_2,\dots$).
 That is why, in this section we show that we can adapt $p_k$ to be able to generate them easily and also, to speed up the computations with a constant factor.
 
 Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the {\sl only} property required from $p$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants:
@@ -789,7 +784,7 @@ The non-overwhelming (but nonetheless important) complexities of the computation
 Therefore, the cost drops to $\Oapp(n u)$ with {\sc fft}~\cite{schonhage1971schnelle}. 
 To simplify the presentation, we suppose there is only one round, and $p=p_1$, $t=t_1=T_1$, and we assume that $t=2^\tau$ is a power of two dividing $n$.
 We also only focus on the case $p$ prime, for the sake of simplicity.
-But the algorithm can be easily adapt to the other variants.
+But the algorithm can be easily adapted to the other variants.
 
 The idea is the following: group $h_i$'s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$.
 \[ H_j = \prod_{i=j t}^{j t + t - 1} h_i\in\mathbb{N} \]
@@ -970,50 +965,71 @@ We can use the same method for the tree product associated to any $H_j$, and the
 \caption{Division Using a Product Tree}\label{alg:div-prod-tree}
 \end{algorithm}
 
+\subsection{Doubling}
+\label{sec:doubling}
+
+
+
+TODO expliquer l'évolution des $t_i$, cf. la partie en annexe. Dire que ça affecte défavorablement la transmission complexity.
 
 \subsection{Summary}
 
 Summary of costs is depicted in Table~\ref{tab:workload}.
-\comm{Refaire ce tableau: ajouter une ligne "total", garder uniquement la pire colonne et la meilleure colonne, ajouter une colonne "section" avec une reference vers la section qui explique.}
 
 \begin{table}[ht]
-\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
-\newcommand{\mcqc}[1]{\multicolumn{4}{c}{#1}}
+%\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
+%\newcommand{\mcqc}[1]{\multicolumn{4}{c}{#1}}
  \begin{threeparttable}
-  \begin{tabularx}{\textwidth}{lXC{2cm}C{2cm}C{2cm}C{2cm}}
+  \begin{tabularx}{\textwidth}{lXC{2cm}C{2cm}p{4cm}}
 \toprule
-{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\
-\cmidrule(l){3-6}
-& & \mcdc{\bf Basic algo.} & \mcdc{\bf Opt. algo.} \\
-& & $p_i$ prime & $p_i = 2^{ut_i}$ & $p_i$ prime & $p_i = 2^{u t_i}$ \\
+{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{2}{c}{{\bf Complexity in $\Oapp$ of}} & {\bf \hfill Optimization used \hfill \null} \\
+\cmidrule(lr){3-4}
+& & {\bf Basic algo.} & {\bf Opt. algo.\tnote{a}} \\
 \midrule
 Both  & computation of $h_i$ and $h'_i$ 
-      & \mcqc{$n u^2 \mu(u)$}  \\
+      & $n u^2 \mu(u)$ 
+      & $\frac{a}{\phi(a)} n u^2 \mu(u)$
+      & fast hashing (\ref{sec:hashprime}) \\
 \midrule
       & \textit{for round $i$} &  &  \\
 Both  & compute redundancies $c_i$ and $c'_i$ 
-      & \mcdc{$n \cdot \mu(ut_i)$} & \mcdc{$\frac{n}{t_i} \cdot \mu(ut_i)$}  \\
-Neil  & compute $s_i = c'_i/c_i$\tnote{a} or $S_i = C'_i / C_i$
-      & \mcqc{$\mu(uT_i)$}  \\
-Neil  & compute $S_i$ from $S_{i-1}$ and $s_i$ (CRT)\tnote{a}
-      & $\mu(u T_i)$ & n/a & $\mu(u T_i)$ & n/a \\
+      & $n \cdot \mu(ut_i)$ 
+      & $\frac{n}{t_i} \cdot \mu(ut_i)$
+      & product trees (\ref{sec:algo-opt-prod-trees}) \\
+Neil  & compute $s_i = c'_i/c_i$\tnote{b} or $S_i = C'_i / C_i$\tnote{c}
+      & $\mu(uT_i)$
+      & $\mu(uT_i)$
+      &   \\
+Neil  & compute $S_i$ from $S_{i-1}$ and $s_i$ (CRT)\tnote{b}
+      & $\mu(u T_i)$ 
+      & n/a
+      & use $p_k = 2^{ut_k}$ (\ref{sec:choicep}) \\
 Neil  & find $a_i,b_i$ such that $S_i = a_i/b_i \bmod p_i$
-      & \mcqc{$\mu(u T_i)$\tnote{3}} \\
+      & $\mu(u T_i)$
+      & $\mu(u T_i)$
+      & \\
 Neil  & factor $a_i$
-      & \mcdc{$n \cdot \mu(uT_i)$} & \mcdc{$\frac{n}{T_i} \cdot \mu(uT_i)$}  \\
+      & $n \cdot \mu(uT_i)$ 
+      & $\frac{n}{T_i} \cdot \mu(uT_i)$
+      & product trees (\ref{sec:algo-opt-prod-trees})  \\
 \midrule
       & \textit{last round} \\
 Oscar & factor $b_i$
-      & \mcdc{$n \cdot \mu(ut_i)$} & \mcdc{$\frac{n}{t_i} \cdot \mu(ut_i)$}  \\
+      & $n \cdot \mu(ut_i)$ 
+      & $\frac{n}{t_i} \cdot \mu(ut_i)$
+      & product trees (\ref{sec:algo-opt-prod-trees}) \\
 \midrule
-      & \textbf{Overwhelming complexity}
-      & TODO & TODO & TODO & TODO \\
+      & \textbf{overwhelming complexity}
+      & TODO 
+      & TODO 
+      & previous opt. + doubling (\ref{sec:doubling}) \\
 \bottomrule
   \end{tabularx}
   \begin{tablenotes}
-    \item[a] only for $p_i$ prime or equivalent TODO;
-    \item[b] only for $p_i = 2^{ut_i}$.
-    \item[c] using advanced algorihms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
+    \item[a] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling}. In addition, choosing $p_k = 2^{ut_k}$ provides substantial constant factor accelerations which cannot be seen in this table due to the fact only asymptotic complexity is showed.
+    \item[b] only for $p_i$ prime or equivalent TODO;
+    \item[c] only for $p_i = 2^{ut_i}$.
+    \item[d] using advanced algorihms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
   \end{tablenotes}
  \end{threeparttable}
   \caption{Global Protocol Complexity}
@@ -1439,6 +1455,7 @@ information on the difference~~}} \\\midrule
   \label{tab:rsyncopt}
 \end{table}
 
+\comm{TODO: utiliser des préfixes SI pour une meilleure lisibilité}
 \begin{table}
   \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}ll r r r r r r r r }
     \toprule
