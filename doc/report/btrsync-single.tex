@@ -267,14 +267,16 @@ That is why, we need to add another (more costly) check which can detect any bad
 This second check is very simple: at the beginning, before the first flow, Neil sends to Oscar a hash of its sets: $H = \Hash(\Set') = \Hash((h'_1,\dots,h'_{n'}))$, and at the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and check the hash of this new set if $H$.
 
 \subsubsection{Complete \df Protocol}
-To extend the protocol to an arbitrary $T$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails (\ie, yields a bad reconciliation), Neil and Oscar redo the protocol with a new $p_\ell$ and Neil will keep accumulating information about the difference between $\Set$ and $\Set'$ as shown in Appendix \ref{sec:extended}. 
-Each of this repetition is called a round.
+\label{sec:complete-df}
 
+To extend the protocol to an arbitrary $T$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails (\ie, yields a bad reconciliation), Neil and Oscar redo the protocol with a new $p_\ell$ and Neil will keep accumulating information about the difference between $\Set$ and $\Set'$. 
+Each of this repetition is called a round.
 
 More precisely, let us suppose $2^{2 u t_k} \le p_k < 2^{2 u t_k +1}$.
 Let us write $P_k = p_1 \dots p_k$ and $T_k = t_1 + \dots + t_k$.
 After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as many information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the CRT (TODO ref ?): 
 \[ S_k = \CRT(S_{k-1},P_{k-1},s_k,p_k) = S_{k-1} (p_k^{-1} \bmod P_{k-1}) p_k + s_k (P_{k-1}^{-1} \bmod p_k) P_{k-1} \bmod P_k. \]
+The full protocol is depicted in Figure~\ref{fig:complete-df}.
 Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\Set$ and $\Set'$.
 Therefore, the number $\kappa$ of rounds used is the minimum number $k$ such that $T_k \ge T$.
 
@@ -758,9 +760,8 @@ We can use the same method for the tree product associated to any $H_j$, and the
 \subsection{Doubling}
 \label{sec:doubling}
 
-$t_k = 2^k t'$
-
-TODO expliquer l'évolution des $t_i$, cf. la partie en annexe. Dire que ça affecte défavorablement la transmission complexity.
+As seen in Section~\ref{sec:complete-df}, instead of naively using $t_1 = t_2 = \dots = t$, we can use $t_k = 2^k t'$, and double $t_k$ at each iteration.
+This increases slightly the transmission complexity, but reduces drastically the computational complexity as you can see in Table~\ref{tab:workload}.
 
 \subsection{Summary}
 
