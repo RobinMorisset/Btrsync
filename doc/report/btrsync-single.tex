@@ -186,7 +186,7 @@ Let $\SetD = \Set \setminus \Set'$ be the numbers deleted in Neil's version (com
 Let $T$ be the number of discrepancies or differences between $\Set$ and $\Set'$:
 \[ T = \# \SetD + \# \SetD' = \# \Set + \# \Set' - 2 \# \left( \Set \bigcap \Set' \right) = \# \left(\Set \bigcup \Set' \right) - \# \left(\Set \bigcap \Set'\right), \]
 
-Let also suppose we have a collision-resistant hash function $\Hash$ which takes as input any bitstring and output a short binary string of, for example, $160$-bits\footnote{TODO: comment on such hash function for Antoine}.
+Let also suppose we have a collision-resistant hash function $\Hash$ which takes as input any bit string and output a short binary string of, for example, $160$-bits\footnote{TODO: comment on such hash function for Antoine}.
 
 \subsection{Basic Protocol with Bounded $T$}
 \label{sec:basic}
@@ -251,8 +251,8 @@ $\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i \}$ & & \\
 
 \subsection{Handling an Unbounded Number of Differences}
 
-In practice, we often do not know any reasonnable bound $t$ on the number of differences $T$.
-that is why, in this section, we extend our protocol to work with any $T$.
+In practice, we often do not know any reasonable bound $t$ on the number of differences $T$.
+That is why, in this section, we extend our protocol to work with any $T$.
 We do this in two steps: we first show that we can slightly change our basic protocol to detect when its output is incorrect, when $t < T$. 
 Then we construct a protocol which works with any $T$.
 
@@ -267,7 +267,7 @@ That is why, we need to add another (more costly) check which can detect any bad
 This second check is very simple: at the beginning, before the first flow, Neil sends to Oscar a hash of its sets: $H = \Hash(\Set') = \Hash((h'_1,\dots,h'_{n'}))$, and at the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and check the hash of this new set if $H$.
 
 \subsubsection{Complete \df Protocol}
-To extend the protocol to an arbitrary $T$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails (\ie, yields a bad reconcilitation), Neil and Oscar redo the protocol with a new $p_\ell$ and Neil will keep accumulating information about the difference between $\Set$ and $\Set'$ as shown in Appendix \ref{sec:extended}. 
+To extend the protocol to an arbitrary $T$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails (\ie, yields a bad reconciliation), Neil and Oscar redo the protocol with a new $p_\ell$ and Neil will keep accumulating information about the difference between $\Set$ and $\Set'$ as shown in Appendix \ref{sec:extended}. 
 Each of this repetition is called a round.
 
 
@@ -360,12 +360,12 @@ Here are the complexity in the two cases we are interested in:
 \item if $t_k = 2^k t'$, $\kappa = \lceil \log(T/t') \rceil$, $T_\kappa < 2T$ and the transmission complexity is at most $\frac{5}{2} 2uT + \lceil \log(T/t') \rceil = O(ut)$.
 \end{itemize}
 We can remark that the first case is slightly better: it may use twice less data.
-But, as you will see in Section~\ref{sec:doubling}, the second case is computationnaly faster.
+But, as you will see in Section~\ref{sec:doubling}, the second case is computationally faster.
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
 In this section, we focus on the basic \df protocol, for the sake of simplicity.
-However, it can easily be adapted to the complete \df procotol.
+However, it can easily be adapted to the complete \df protocol.
 
 The idea is to generate a prime $p$ about twice shorter than the $p$ recommended in section \ref{sec:basic}, namely:
 \begin{equation}
@@ -411,8 +411,8 @@ Then, when the protocol succeed, Neil can send to Oscar the actual content of th
 
 More formally, we have:
 \begin{align*}
-h_1 &= \HashPrime(F_1) & \dots & h_n &= \HashPrime(F_n) & \Set = \{h_1,\dots,h_n\} \\
-h'_1 &= \HashPrime(F'_1) & \dots & h'_{n'} &= \HashPrime(F'_{n'}) & \Set = \{h'_1,\dots,h'_{n'}\}, \\
+h_1 &= \HashPrime(F_1) & &\dots & h_n &= \HashPrime(F_n) & \Set &= \{h_1,\dots,h_n\} \\
+h'_1 &= \HashPrime(F'_1) & &\dots & h'_{n'} &= \HashPrime(F'_{n'}) & \Set' &= \{h'_1,\dots,h'_{n'}\},
 \end{align*}
 where $\HashPrime$ is a collision-resistant hash function $\HashPrime$ to prime numbers, in order for any $h_i$ or $h'_i$ to identify uniquely its corresponding file $F_i$ or $F'_i$.
 In Section~\ref{hashing}, we show how to construct such hash function from classical collision-resistant hash functions (to bit-strings of fixed length).
@@ -477,7 +477,7 @@ X_i =
 
 Clearly, we have $\Prob{X_i = 1} \le \frac{\eta -1}{2^u}$.
 The average number of colliding files is hence:
-\[ \EE{\sum_{i=0}^{\eta-1} X_i} \le \sum_{i=0}^{\eta-1} \frac{\eta -1}{2^u} = \frac{\eta (\eta - 1)}{2^u}. \]
+\[ \EE{\sum_{i=1}^{\eta} X_i} \le \sum_{i=1}^{\eta} \frac{\eta -1}{2^u} = \frac{\eta (\eta - 1)}{2^u}. \]
 
 For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of colliding files is less than $233$.
 
@@ -514,7 +514,7 @@ By independence, we have:
 
 Therefore the average number of colliding files is:
 \[
- \EE{\sum_{i=0}^{\eta-1} Y_i} \le \sum_{i=0}^{\eta-1} \left( \frac{\eta -1}{2^u} \right)^\lambda =  \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
+ \EE{\sum_{i=1}^{\eta} Y_i} \le \sum_{i=1}^{\eta} \left( \frac{\eta -1}{2^u} \right)^\lambda =  \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
 \]
 
 And the probability that at least one false positive will survive $k$ rounds is:
@@ -565,23 +565,6 @@ $\phi_{10^6}(u)$ admits an optimum for $u=19$.
 
 A different approach is to optimize $t$ and $u$ experimentally, \eg, using the open source \df program \btrsync developed by the authors (\cf Section~\ref{program}).
 
-\subsection{How to Stop a Probabilistic Washing Machine?} 
-\comm{Remplacer $\ell$ par $\lambda$}
-We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a half-sized $p$. By opposition to Section~\ref{sec:basic}, confirming correct protocol termination is now non-trivial.
-\comm{Fabrice: oups, pas sûr de tout comprendre ici, il faudrait que l'on en rediscute... En particulier, le CRT n'a pas d'erreur a priori, sauf erreur de ma part...}
-
-\comm{La définition de $\zeta(u)$ est assez gratuite vu que ça n'intervient pas dans la suite.}
-We say that a \textit{round failure} occurs whenever a round results in an $(a',b')\neq (a,b)$ satisfying Equation~\eqref{eqab}. Let the round failure probability be some function $\zeta(u)$ (that we did not estimate). If $u$ is kept small (for efficiency reasons), the probability $\left(1-\zeta(u)\right)^{\ell}$ that the protocol will properly terminate may dangerously drift away from one.
-
-If $v$ of $\ell+v$ rounds fail, Oscar needs to solve a problem called \textit{Chinese Remaindering With Errors}~\cite{phong}:
-
-\begin{problem}{\it (Chinese Remaindering With Errors Problem: {\sc crwep}).} Given as input integers $v$, $B$ and $\ell+v$ points $(s_1,p_1),\ldots,(s_{\ell+v},p_{\ell+v})\in \mathbb{N}^2$ where the $p_i$'s are coprime, output all numbers $0 \leq s < B$ such that $s \equiv s_i \bmod p_i$ for at least $\ell$ values of $i$.
-\end{problem}
-
-We refer the reader to~\cite{phong} for more on this problem, which is beyond our scope. Boneh~\cite{boneh} provides a polynomial-time algorithm for solving the {\sc crwep} under certain conditions satisfied in our setting.
-
-But how can we confirm the solution? As mentioned in section \ref{reco}, Neil will send to Oscar $H=\Hash(\mathfrak{F}')$ as the interaction starts. As long as Oscar's {\sc crwep} resolution will not yield a state matching $H$, the parties will continue the interaction.
-
 \section{Computational Complexity}
 \label{comp}
 In this section, we are interested in computing the computational complexity of our protocol. 
@@ -603,7 +586,7 @@ Hence, we have the costs depicted in the third column of Table~\ref{tab:workload
 
 \subsection{Hashing Into Primes}
 \label{sec:hashprime}
-Hashing into primes is frequently needed in cryptography. A recommended implementation of $\HashPrime(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough (\eg $160$) one might sacrifice uniformity to avoid repeated file hashings by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
+Hashing into primes is frequently needed in cryptography. A recommended implementation of $\HashPrime(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough (\eg $160$) one might sacrifice uniformity to avoid repeated file hashing by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
 Yet another acceleration (that further destroys uniformity) consists in replacing $\mbox{{\tt NextPrime}}$ by Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
 \comm{analyse ci-contre}
 
@@ -617,10 +600,10 @@ TODO: no more uniform $\longrightarrow$ slightly decrease entropy of hashing
   \caption{Possible Implementation of $\HashPrime(F)$}
   \label{alg:primes}
   \begin{algorithmic}[1]
-  \State $i=0$
+  \State $j=0$
 \Repeat
 \State $h = 2\cdot\Hash(F|i)+1$
-\State $i = i+1$
+\State $j = j+1$
 \Until{$h$ is prime}
 \State \Return{$h$}
   \end{algorithmic}
@@ -711,10 +694,11 @@ To simplify the presentation, we suppose there is only one round, and $p=p_1$, $
 We also only focus on the case $p$ prime, for the sake of simplicity.
 But the algorithm can be easily adapted to the other variants.
 
-The idea is the following: group $h_i$'s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$.
-\[ H_j = \prod_{i=j t}^{j t + t - 1} h_i\in\mathbb{N} \]
+The idea is the following: group $h_i$'s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$:
+\[ H_j = \prod_{i=(j-1) t + 1}^{j t} h_i\in\mathbb{N}, \]
+for $j \in \{1,\dots,n/t\}$.
 
-Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm~\ref{alg:prod-tree} (for $j=0$) illustrated in Figure~\ref{fig:prod-tree}.
+Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm~\ref{alg:prod-tree} (for $j=1$) illustrated in Figure~\ref{fig:prod-tree}.
 Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu(u t))$. We can then compute $c$ by multiplying the $H_j$ modulo $p$, which costs $\Oapp(\frac{n}{t} \mu(u t))$.
 
 \begin{algorithm}
@@ -723,13 +707,13 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 \newcommand{\vend}{\ensuremath{\mathrm{end}}}
 \begin{algorithmic}[1]
 \Require{the set $h_i$}
-\Ensure{$\pi = \pi_1 = \prod_{i=0}^{t-1} h_i$, and $\pi_i$ for $i \in \{1,\dots,2t-1\}$ as in Figure~\ref{fig:prod-tree}}
+\Ensure{$\pi = \pi_1 = \prod_{i=1}^{t} h_i$, and $\pi_i$ for $i \in \{1,\dots,2t-1\}$ as in Figure~\ref{fig:prod-tree}}
 \State $\pi \gets $ array of size $t$
 \Function{prodTree}{$i$,$\vstart$,$\vend$}
   \If{$\vstart = \vend$}
     \State \Return $1$
   \ElsIf{$\vstart+1 = \vend$}
-    \State \Return $h_{\mbox{\tiny \vstart}}$
+    \State \Return $h_{\mbox{\tiny \vstart+1}}$
   \Else
     \State $\vmid \gets \lfloor \frac{\vstart+\vend}{2} \rfloor$
     \State $\pi_{2i} \gets $\Call{prodTree}{$2i$,$\vstart$,$\vmid$}
@@ -745,9 +729,9 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 \comm{What is the caveat?}
 The same technique applies to factorization\footnote{We explain the process with $a$, this is applicable \textit{ne variatur} to $b$ as well.}, but with a slight \textit{caveat}.
 
-After computing the tree product, we can compute the residues of $a$ modulo $H_0$.
-Then we can compute the residues of $a \bmod{H_0}$ modulo the two children $\pi_2$ and $\pi_3$ of $H_0 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end (\ie, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{0,\dots,t-1\}$). This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
-We can use the same method for the tree product associated to any $H_j$, and the residues of $a$ modulo each of the $h_i$ ($i \in \{jt,\dots,jt+t-1\}$) for any $j$, \ie, $a$ modulo each of the $h_i$ for any $i$. Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexity of $\Oapp(\frac{n}{t} \mu(u t))$.
+After computing the tree product, we can compute the residues of $a$ modulo $H_1$.
+Then we can compute the residues of $a \bmod{H_1}$ modulo the two children $\pi_2$ and $\pi_3$ of $H_1 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end (\ie, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{1,\dots,t\}$). This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
+We can use the same method for the tree product associated to any $H_j$, and the residues of $a$ modulo each of the $h_i$ ($i \in \{(j-1)t+1,\dots,jt\}$) for any $j$, \ie, $a$ modulo each of the $h_i$ for any $i$. Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexity of $\Oapp(\frac{n}{t} \mu(u t))$.
 
 \begin{algorithm}
 \newcommand{\vstart}{\ensuremath{\mathrm{start}}}
@@ -835,7 +819,7 @@ Oscar & factor $b_i$
     \item[a] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling} (we suppose that the basic algo use $t_1=t_2=\dots=t$. In addition, choosing $p_k = 2^{ut_k}$ provides substantial constant factor accelerations which cannot be seen in this table due to the fact only asymptotic complexity is showed.
     \item[b] only for $p_i$ prime or equivalent TODO;
     \item[c] only for $p_i = 2^{ut_i}$.
-    \item[d] using advanced algorihms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
+    \item[d] using advanced algorithms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
   \end{tablenotes}
  \end{threeparttable}
   \caption{Global Protocol Complexity}
@@ -1062,16 +1046,6 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 Amarilli, A., {Ben Hamouda}, F., Bourse, F., Morisset, R., Naccache, D., Rauzy,
   P.: \url{https://github.com/RobinMorisset/Btrsync}
 
-\bibitem{phong}
-Bleichenbacher, D., Nguyen, P.Q.: Noisy polynomial interpolation and noisy
-  chinese remaindering. In: Advances in Cryptology -- Proceedings of Eurocrypt
-  2000. pp. 53--69. Springer-Verlag (2000)
-
-\bibitem{boneh}
-Boneh, D.: Finding smooth integers in short intervals using crt decoding. In:
-  Proceedings of the 32nd Annual ACM Symposium on Theory of Computing. pp.
-  265--272 (2000)
-
 \bibitem{burnikel1998fast}
 Burnikel, C., Ziegler, J., Stadtwald, I., D-Saarbrucken: Fast recursive
   division (1998)
@@ -1210,30 +1184,30 @@ Figures~\ref{fig:prod-tree} and~\ref{fig:div-prod-tree}.
 \centerline{
 \begin{turn}{90}
 \begin{tikzpicture}[level/.style={sibling distance=60mm/#1}]
-\node (z){$\displaystyle \pi=\pi_1=\prod_{i=0}^{t-1} h_i$}
-  child {node (a) {$\displaystyle \pi_2=\prod_{i=0}^{t/2-1} h_i$}
-    child {node (b) {$\displaystyle \pi_4=\prod_{i=0}^{t/4-1} h_i$}
+\node (z){$\displaystyle \pi=\pi_1=\prod_{i=1}^{t} h_i$}
+  child {node (a) {$\displaystyle \pi_2=\prod_{i=1}^{t/2} h_i$}
+    child {node (b) {$\displaystyle \pi_4=\prod_{i=1}^{t/4} h_i$}
       child {node {$\vdots$}
-        child {node (d) {\begin{turn}{270}{$\displaystyle \pi_t=h_0$}\end{turn}}}
-        child {node (e) {\begin{turn}{270}{$\displaystyle \pi_{t+1}=h_1$}\end{turn}}}
+        child {node (d) {\begin{turn}{270}{$\displaystyle \pi_t=h_1$}\end{turn}}}
+        child {node (e) {\begin{turn}{270}{$\displaystyle \pi_{t+1}=h_2$}\end{turn}}}
       }
       child {node {$\vdots$}}
     }
-    child {node (g) {$\displaystyle \pi_5=\prod_{i=t/4}^{2t/4-1} h_i$}
+    child {node (g) {$\displaystyle \pi_5=\prod_{i=t/4+1}^{2t/4} h_i$}
       child {node {$\vdots$}}
       child {node {$\vdots$}}
     }
   }
-  child {node (j) {$\displaystyle \pi_3=\prod_{i=t/2}^{2t/2-1} h_i$}
-    child {node (k) {$\displaystyle \pi_6=\prod_{i=t/2}^{3t/4-1} h_i$}
+  child {node (j) {$\displaystyle \pi_3=\prod_{i=t/2+1}^{2t/2} h_i$}
+    child {node (k) {$\displaystyle \pi_6=\prod_{i=t/2+1}^{3t/4} h_i$}
       child {node {$\vdots$}}
       child {node {$\vdots$}}
     }
-    child {node (l) {$\displaystyle \pi_7=\prod_{i=3t/4}^{4t/4-1} h_i$}
+    child {node (l) {$\displaystyle \pi_7=\prod_{i=3t/4+1}^{4t/4} h_i$}
       child {node {$\vdots$}}
       child {node (c){$\vdots$}
-        child {node (o) {\begin{turn}{270}{$\displaystyle \pi_{2t-2}=h_{t-2}$}\end{turn}}}
-        child {node (p) {\begin{turn}{270}{$\displaystyle \pi_{2t-1}=h_{t-1}$}\end{turn}}
+        child {node (o) {\begin{turn}{270}{$\displaystyle \pi_{2t-2}=h_{t-1}$}\end{turn}}}
+        child {node (p) {\begin{turn}{270}{$\displaystyle \pi_{2t-1}=h_{t}$}\end{turn}}
 %
 %
           child [grow=right] {node (qe) {} edge from parent[draw=none]
@@ -1274,8 +1248,8 @@ Figures~\ref{fig:prod-tree} and~\ref{fig:div-prod-tree}.
   child {node (a) {$\displaystyle a \bmod \pi_2$}
     child {node (b) {$\displaystyle a \bmod \pi_3$}
       child {node {$\vdots$}
-        child {node (d) {\begin{turn}{270}{$\displaystyle a \bmod h_{0}$}\end{turn}}}
-        child {node (e) {\begin{turn}{270}{$\displaystyle a \bmod h_{1}$}\end{turn}}}
+        child {node (d) {\begin{turn}{270}{$\displaystyle a \bmod h_{1}$}\end{turn}}}
+        child {node (e) {\begin{turn}{270}{$\displaystyle a \bmod h_{2}$}\end{turn}}}
       }
       child {node {$\vdots$}}
     }
@@ -1292,8 +1266,8 @@ Figures~\ref{fig:prod-tree} and~\ref{fig:div-prod-tree}.
     child {node (l) {$\displaystyle a \bmod \pi_7$}
       child {node {$\vdots$}}
       child {node (c){$\vdots$}
-        child {node (o) {\begin{turn}{270}{$\displaystyle a \bmod h_{t-2}$}\end{turn}}}
-        child {node (p) {\begin{turn}{270}{$\displaystyle a \bmod h_{t-1}$}\end{turn}}
+        child {node (o) {\begin{turn}{270}{$\displaystyle a \bmod h_{t-1}$}\end{turn}}}
+        child {node (p) {\begin{turn}{270}{$\displaystyle a \bmod h_{t}$}\end{turn}}
 %
 %
           child [grow=right] {node (qe) {} edge from parent[draw=none]

@@ -22,6 +22,25 @@ reports practical experiments and benchmarks against the popular software
 \rsync.\smallskip
 
 
+\subsection{USELESS --- How to Stop a Probabilistic Washing Machine?} 
+\comm{Remplacer $\ell$ par $\lambda$}
+We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a half-sized $p$. By opposition to Section~\ref{sec:basic}, confirming correct protocol termination is now non-trivial.
+\comm{Fabrice: oups, pas sûr de tout comprendre ici, il faudrait que l'on en rediscute... En particulier, le CRT n'a pas d'erreur a priori, sauf erreur de ma part...}
+
+\comm{La définition de $\zeta(u)$ est assez gratuite vu que ça n'intervient pas dans la suite.}
+We say that a \textit{round failure} occurs whenever a round results in an $(a',b')\neq (a,b)$ satisfying Equation~\eqref{eqab}. Let the round failure probability be some function $\zeta(u)$ (that we did not estimate). If $u$ is kept small (for efficiency reasons), the probability $\left(1-\zeta(u)\right)^{\ell}$ that the protocol will properly terminate may dangerously drift away from one.
+
+If $v$ of $\ell+v$ rounds fail, Oscar needs to solve a problem called \textit{Chinese Remaindering With Errors}~\cite{phong}:
+
+\begin{problem}{\it (Chinese Remaindering With Errors Problem: {\sc crwep}).} Given as input integers $v$, $B$ and $\ell+v$ points $(s_1,p_1),\ldots,(s_{\ell+v},p_{\ell+v})\in \mathbb{N}^2$ where the $p_i$'s are coprime, output all numbers $0 \leq s < B$ such that $s \equiv s_i \bmod p_i$ for at least $\ell$ values of $i$.
+\end{problem}
+
+We refer the reader to~\cite{phong} for more on this problem, which is beyond our scope. Boneh~\cite{boneh} provides a polynomial-time algorithm for solving the {\sc crwep} under certain conditions satisfied in our setting.
+
+But how can we confirm the solution? As mentioned in section \ref{reco}, Neil will send to Oscar $H=\Hash(\mathfrak{F}')$ as the interaction starts. As long as Oscar's {\sc crwep} resolution will not yield a state matching $H$, the parties will continue the interaction.
+
+
+
 \section{Old D\&F Set Reconciliation Section}
 
 Section \ref{basic} presents a basic
