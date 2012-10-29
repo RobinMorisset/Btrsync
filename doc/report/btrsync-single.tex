@@ -279,240 +279,17 @@ That is why, we need to add another (more costly) check which can detect any bad
 This second check is very simple: at the beginning, before the first flow, Neil sends to Oscar a hash of its sets: $H = \Hash((h'_1,\dots,h'_{n'}))$, and at the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and check the hash of this new set if $H$.
 
 \subsubsection{Complete D\&F Protocol}
-
-Let us now present our complete D\&F protocol.
-
-
-\section{Old D\&F Set Reconciliation Section}
-
-Section \ref{basic} presents a basic
-version of the proposed protocol. This basic version suffers from two
-limitations: it works only if the number of differences to reconcile is bound
-and it may fail leave the synchronized party in an erroneous state. Failure
-avoidance is overcome in section \ref{reco} and an extension to arbitrary
-numbers of differences is given in section \ref{insuf}.
-
-\subsection{Problem Definition and Notations}
-
-\underline{O}scar possesses an \underline{o}ld version of a directory $\mathfrak{D}$ that he wishes to update. \underline{N}eil has the \underline{n}ew, up-to-date version $\mathfrak{D}'$: $\mathfrak{D}$ and
-$\mathfrak{D}'$ can differ both in their files and in their tree structures. Oscar wishes to obtain $\mathfrak{D}'$ but {\sl exchange as little data as possible} during the synchronization process.\smallskip
-
-To tackle this problem we separate the {\sl ``what''} from the {\sl ``where''} by considering files as a tuple of their location and content. 
-In other words, we will first synchronize all the file contents and then move files to the adequate location. 
-\comm{Fabrice: NON, ce n'est pas vrai: on considère vraiment qu'un fichier est ``path + content''}
-We consider that $\mathfrak{D}$ is a multiset of files which we denote as $\mathfrak{F}=\{F_0,\ldots,F_{n}\}$, and likewise represent $\mathfrak{D'}$ as $\mathfrak{F}'=\{F'_0,\ldots,F'_{n'}\}$.\smallskip
-\comm{Fabrice: Qu'est-ce que $\mathfrak{D}$ ? Est-ce $\mathfrak{F}$ ? Dans tous les cas, il s'agit d'un set, vu la représentation indiquée}
-
-Let $T$ be the number of discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ that Oscar wishes to learn, {\sl i.e.} the symmetric difference of $\mathfrak{F}$ and $\mathfrak{F}'$:
-
-$$T=\#\mathfrak{F}+\#\mathfrak{F}'-2 \#\left(\mathfrak{F} \bigcap \mathfrak{F}'\right)=\#\left(\mathfrak{F}\bigcup\mathfrak{F}'\right)-\#\left(\mathfrak{F}\bigcap\mathfrak{F}'\right)$$
-
-Given a file $F$, we denote by $\mbox{{\tt Hash}}(F)$ its image by a collision-resistant hash function such as {\sc sha}-1.\comm{Fabrice: ${\tt Hash}$ can be introduced latter when needed (section 2.3)} Let $\mbox{{\tt HashPrime}}(F)$\footnote{The design of \mbox{{\tt HashPrime}} is addressed in Appendix \ref{sec:hashprime}.} be a function hashing files (uniformly) into primes smaller than $2^u$ for some $u\in \mathbb{N}$. Define the shorthand notations: $h_i=\mbox{{\tt HashPrime}}(F_i)$ and $h'_i=\mbox{{\tt HashPrime}}(F'_i)$.\smallskip
-
-\subsection{Description of the Basic Exchanges}
-\label{basic}
-
-The number of differences $T$ is unknown to Oscar and Neil. However, for the time being, we will assume that $T$ is smaller than some $t$ and attempt to perform
-synchronization. If $T \leq t$, synchronization will succeed; if $T > t$ the parties will transmit more information later to complete the synchronization, as explained in section \ref{insuf}.
-
-We generate a prime $p$ such that:
-
-\begin{equation}
-\label{equp}
-2^{2ut} \leq p < 2^{2ut+1}
-\end{equation}
-
-TODO: such a prime exists (reference Chebychev, 1840).
-
-Given $\mathfrak{F}$, Oscar generates and sends to Neil the redundancy:
-
-$$
-c=\prod_{F_i\in \mathfrak{F}} \mbox{{\tt HashPrime}}(F_i)=\prod_{i=1}^n h_i \bmod p
-$$
-
-Neil computes:\smallskip
-
-$$c'=\prod_{F'_i\in \mathfrak{F'}} \mbox{{\tt HashPrime}}(F'_i)=\prod_{i=1}^{n'} h'_i \bmod p{~~~\mbox{and}~~~}s=\frac{c'}{c} \bmod p$$
-
-Using~\cite{vallee}\comm{Fabrice: Quel est l'intérêt de cette citation ???} the integer $s$ can be written as:
-$$s=\frac{a}{b} \bmod p{\mbox{~where the~}G_i\mbox{~denote files and~}}
-\left\{
-\begin{array}{lcr}
-a & =&  \prod\limits_{G_i \in \mathfrak{F}'\wedge G_i \not\in\mathfrak{F}} \mbox{{\tt HashPrime}}(G_i) \\
-\\
-b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox{{\tt HashPrime}}(G_i)
-\end{array}
-\right.
-$$
-\comm{Fabrice: je ne comprends pas le ``where the $G_i$ denote files...''}
-Note that if our assumption $T \leq t$ is correct, $\mathfrak{F}$ and $\mathfrak{F}'$ differ by at most $t$ elements and $a$ and $b$ are strictly less than $2^{ut}$. The problem of recovering $a$ and $b$ from $s$ efficiently is known as {\sl Rational Number Reconstruction}~\cite{pan2004rational,wang2003acceleration}.
- theorem \ref{theo} (see~\cite{cryptorational}) guarantees that it can be solved in this setting.
-The following theorem is a slightly modified version of Theorem~1 in \cite{cryptorational}:
-\begin{theorem}
-\label{theo}
-Let $a,b \in {\mathbb Z}$ two co-prime integers such that $0 \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a,b$ are uniquely defined given $s$ and $p$, and can be recovered from $A,B,s,p$ in polynomial time.
-\end{theorem}
-
-Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
-\comm{Fabrice: certes, mais on utilise directement un Euclide étendu tronqué. Et pourquoi citer Vallée qui est un peu incompréhensible dans notre cas... TODO: check that in our program we ensure $a$ and $b$ co-prime !! otherwise, it may fail !!!!!}
-By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can attempt to identify the discrepancies between $\mathfrak{F}$ and $\mathfrak{F}'$ and settle them.\smallskip
-
-\begin{figure}
-\begin{center}
-\begin{tabular}{|lcl|}\hline
-~~{\bf Oscar}                       &                                                      &   {\bf Neil}~\\
-~~compute $c$&                                                      &\\
-                                   &~~{{\LARGE $\stackrel{c}{\longrightarrow}$}}~~        &   \\
-                                   &                                                      &compute $a,b$~\\
-                                   &                                                      &if $a$ doesn't factor as a product of $h'_i$s~~\\
-                                   &                                                      &~~~~then output $\bot_{\mbox{{\tiny {\sf bandwidth}}},1}$ and halt~~\\
-                                   &                                                      &$\mathfrak{S}\leftarrow\{F'_i \mbox{~s.t.~} a \bmod h'_i =0\}$~~\\
-                                   &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
-~~if $b$ doesn't factor as a product of $h_i$'s&&\\
-~~~~~~then output $\bot_{\mbox{{\tiny {\sf bandwidth}}},2}$ and halt &&\\
-~~delete files s.t. $b \bmod h_i =0$&                                                      &\\
-~~add $\mathfrak{S}$ to the disk    &                                                      &\\\hline
-\end{tabular}
-\end{center}
-\caption{Basic Protocol.}\label{fig:one}
-\end{figure}
-
-The formal description of the protocol is given in Figure \ref{fig:one}. The ``output $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ '' protocol interruptions will:
-
-\begin{itemize}
-\item never occur if the assumption $T \leq t$ holds.
-
-\item occur with high probability if $T > t$. Indeed, for a potential $\bot_{\mbox{{\tiny {\sf bandwidth}}},1}$ to be overlooked, the $ut$-bit number $a$ must perfectly factor over a set of $n$ primes of size $u$. If we assume that $a$ is ``random'', the probability $\gamma$ that $a$ is divisible by some $h_i$ is essentially $\gamma \sim 1/h_i \sim 2^{-u}$, the probability that $a$ is divisible by exactly $t$ digests is:
-$$\alpha=\binom{n}{t} \gamma^t (1 - \gamma)^{n - t} \sim \binom{n}{t} 2^{-u t} (1 - 2^{-u})^{n - t}$$ and the probability that the protocol does not terminate by a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ when $T > t$ is $\sim\alpha^2$.
-\comm{However, we are not interested in the fact $a$ is divisible by ``exactly'' $t$ digests but the fact that $a$ can be factorized over of the basis of $h_i$...}
-\end{itemize}
-
-The very existence of $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$'s is annoying for two reasons:
-\begin{itemize}
-\item A file synchronization procedure that works {\sl only} for a limited number of differences is not really useful in practice. Thus, section \ref{insuf} explains how to extend the protocol to perform the synchronization even when the number of differences $T$ exceeds the initial estimation $t$.\smallskip
-\item If, by sheer bad luck, both $\bot_{\mbox{{\tiny {\sf
-  bandwidth}}},\square}$'s went undetected (double accidental factorization) the
-  Basic Protocol (Fig. \ref{fig:one}) may leave Oscar in an inconsistent state.
-\end{itemize}
-
-Double accidental factorization is not only possible source of inconsistent states: as we did not specifically require $\mbox{{\tt HashPrime}}$ to be collision-resistant, the events
-
-$$
-\begin{array}{lll}
-{
-\bot_{\mbox{{\tiny {\sf collision}}},1}=\left\{
-\begin{array}{l}
-h'_i = h'_j \mbox{~for~}i\neq j\\
-\\
-a \bmod h_i =0
-\end{array}
-\right.
-}&\mbox{~~~and/or~~~}&{
-\bot_{\mbox{{\tiny {\sf collision}}},2}=\left\{
-\begin{array}{l}
-h_i = h_j \mbox{~for~}i\neq j\\
-\\
-b \bmod h'_i =0
-\end{array}
-\right.}\\
-\end{array}
-$$
-
-will cause Neil to send wrong files in $\mathfrak{S}$ ($\bot_{\mbox{{\tiny {\sf collision}}},1}$) and/or have Oscar unduely delete files owned by Neil ($\bot_{\mbox{{\tiny {\sf collision}}},2}$).\smallskip
-
-Inconsistent states may hence stem from three events:
-
-\begin{center}
-\begin{tabular}{llll}
-$\bullet$~~&\multicolumn{3}{l}{accidental double factorization of $a$ and/or $b$ when $T > t$ (probability $\alpha^2$)}\\
-$\bullet$~~&$\bot_{\mbox{{\tiny {\sf collision}}},1}$   &$=$& collisions within the set $\{h'_i\}$\\
-$\bullet$~~&$\bot_{\mbox{{\tiny {\sf collision}}},2}$ &$=$& collisions within the set $\{h_i\}$\\
-\end{tabular}\smallskip
-\end{center}
-\comm{Fabrice: ce qui est un peu tordu, c'est que les collisions qui nous intéressent sont les collisions entre $\mathfrak{S}$ et $\mathfrak{F} \cup \mathfrak{F}'$... il faut qu'on en discute}
-
-Section \ref{reco} explains how protect the protocol from all inconsistent events at once.
-
-\subsection{Avoiding Inconsistency}
-\label{reco}
-
-\comm{Dire exactement ce que c'est qu'on avoid, et dire quand même qu'on a un risque minime de collision sur $H$ (mais que c'est juste un coût constant et on peut le prendre suffisamment grand pour que ce soit négligeable).}
-
-The Basic Protocol of Figure \ref{fig:one} is fully deterministic. Hence if any sort of trouble occurs, repeating the protocol will be of no help. We modify the protocol as follows:
-
-\begin{itemize}
-\item Let $H\leftarrow\mbox{{\tt Hash}}(\mathfrak{F}')$\comm{Fabrice: This notation (hash of a set) is not defined... and it may be useful to recall the definition of ${\tt Hash}$ here (collision-resistant) if the reader has forgotten it...}
-\item Replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_k(F)=\mbox{{\tt HashPrime}}(k|F)$.\smallskip
-\item Define the shorthand notations: $\hbar_{k,i}=\hbar_k(F_i)$ and $\hbar'_{k,i}=\hbar_k(F'_i)$.\smallskip
-\item Let $\mbox{{\sf StepProtocol}}(k)$ denote the sub-protocol shown in Figure \ref{fig:step}.
-\item Use the protocol of Figure \ref{fig:itera} as a fully functional reconciliation protocol for $T \leq t$.
-\end{itemize}
-
-\begin{figure}
-\begin{center}
-\begin{tabular}{|lcl|}\hline
-~~{\bf Oscar}                       &                                                      & {\bf Neil}~\\
-                                   &                                                       &if $a$ doesn't factor as a product of $\hbar'_{k,i}$s~~\\
-                                   &                                                       &~~~~then output $\bot_{\mbox{{\tiny {\sf bandwidth}}},1}$ and halt~~\\
-                                   &                                                       &$\mathfrak{S}\leftarrow\{F'_i \mbox{~s.t.~} a \bmod \hbar'_{k,i} =0\}$~~\\
-  ~~                                 &                                                       &if there are collisions between $\mathfrak{S}$ and $\mathfrak{F}$~~\\
-                                   &                                                       &~~~~then output $\bot_{\mbox{{\tiny {\sf collision}}},1}$ and halt~~\\
-                                   &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$} &\\
-~~if $b$ doesn't factor as a product of $\hbar_{k,i}$'s&&\\
-~~~~~~then output $\bot_{\mbox{{\tiny {\sf bandwidth}}},2}$ and halt &&\\
-~~$\mathfrak{A}\leftarrow\{F_i \mbox{~s.t.~} b \bmod \hbar_{k,i} =0\}$ &&\\
-~~if there are collisions in $\mathfrak{A}$ &                                   & \\
-~~~~~~then output $\bot_{\mbox{{\tiny {\sf collision}}},2}$ and halt~~&                      &~~\\
-~~if $H \neq \mbox{{\tt Hash}}(\mathfrak{F}\bigcup\mathfrak{S} - \mathfrak{A})$ &                                                      &\\
-~~~~~~then output $\bot_{\mbox{{\tiny {\sf bandwidth}}},3}$ and halt &&\\
-~~add $\mathfrak{S}$ to the disk and erase $\mathfrak{A}$ from the disk &                                                      &\\
-~~return {\sf success} &                                                      &\\\hline
-\end{tabular}
-\end{center}
-\caption{$\mbox{{\sf StepProtocol}}(k)$.}\label{fig:step}
-\end{figure}
-
-\subsubsection{Note:} To avoid transmitting the (potentially very voluminous) $\mathfrak{S}$ during {\sf StepProtocol} before knowing if one of the errors $\bot_{\mbox{{\tiny {\sf bandwidth}}},2},\bot_{\mbox{{\tiny {\sf bandwidth}}},3},\bot_{\mbox{{\tiny {\sf collision}}},2}$ will occur, Neil may transmit $$\mathfrak{S}'=\{\mbox{{\tt Hash}}(F'_i),~F'_i\in \mathfrak{S}\}$$ instead of $\mathfrak{S}$ and send $\mathfrak{S}$ only after successfully passing the $\bot_{\mbox{{\tiny {\sf bandwidth}}},3}$ test. The definition of $H$ must be changed accordingly to 
-
-$$H=\mbox{{\tt Hash}}(\{\mbox{{\tt Hash}}(F'_i),~F'_i\in \mathfrak{F}'\})$$
-\comm{Fabrice: en même temps, le Hash d'un ensemble, que l'on n'a pas définit, a tout intérêt à déjà être de cette forme, sinon, on a des problèmes pour avoir une concaténation ``propre''}
-
-\begin{figure}
-\begin{center}
-\begin{tabular}{|lcl|}\hline
-~~{\bf Oscar}                      &                                                      &   {\bf Neil}~\\
-~~                                 &                                                      & compute $H\leftarrow\mbox{{\tt Hash}}(\mathfrak{F}')$\\
-                                   &~~{{\LARGE $\stackrel{H}{\longleftarrow}$}}~~   &   \\
-~~compute $c$&                                                                             &\\
-                                   &~~{{\LARGE $\stackrel{c}{\longrightarrow}$}}~~         &   \\
-                                   &                                                       &compute $a,b$~\\
-                                   &                                                      &$k\leftarrow 1$~\\
-                                   &~~{{\LARGE $\stackrel{\mbox{{\small{\sf StepProtocol}}}(k)}{\longleftarrow}$}}~~   &while $\mbox{{\sf StepProtocol}}(k)=\bot_{\mbox{{\tiny {\sf collision}}},\square}$~~\\
-                                   &                                                      &~~~~$k\leftarrow k+1$~\\\hline
-\end{tabular}
-\end{center}
-\caption{Fully Functional Protocol for $T \leq t$.}\label{fig:itera}
-\end{figure}
-
-\subsection{Handling a High Number of Differences}
-\label{insuf}
-
-To extend the protocol to an arbitrary $T$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ status, Neil and Oscar redo the protocol with a new $p_\ell$ and Neil will keep accumulating information about the difference between $\mathfrak{F}$ and $\mathfrak{F}'$ as shown in Appendix \ref{sec:extended}. 
+To extend the protocol to an arbitrary $T$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails (\ie, yields a bad reconcilitation), Neil and Oscar redo the protocol with a new $p_\ell$ and Neil will keep accumulating information about the difference between $\Set$ and $\Set'$ as shown in Appendix \ref{sec:extended}. 
 Each of this repetition is called a round.
-Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\mathfrak{F}$ and $\mathfrak{F}'$. \smallskip
+
 
 More precisely, let us suppose $2^{2 u t_k} \le p_\ell < 2^{2 u t_k +1}$.
 Let us write $P_k = p_1 \dots p_k$ and $T_k = u (t_1 + \dots t_k)$.
 After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as many information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the CRT (TODO ref ?).
+Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\Set$ and $\Set'$.
 Therefore, the number $\lambda$ of rounds used is the minimum number $k$ such that $T_k \ge T$.
 If $t_1 = t_2 = \dots = t$, then $\lambda = \lceil t/T \rceil$.
 
-All $\bot$ treatments were removed from Appendix \ref{sec:extended} for the sake of clarity (these can be very easily added by modifying Appendix \ref{sec:extended} {\sl mutatis mutandis}). In essence, the rules are: add information modulo a new $p_\ell$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf bandwidth}}},\square}$ and increment $k$ whenever the protocol fails with a $\bot_{\mbox{{\tiny {\sf collision}}},\square}$.\smallskip
-\comm{Fabrice: plus clair si on le met dans une deuxième figure en appendix quand même, je pense...}
-
-A typical execution sequence is thus expected to be something like:
-
-$$\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf collision}}},1},\bot_{\mbox{{\tiny {\sf collision}}},1},\mbox{{\sf success}}$$
 
 \section{Transmission Complexity}
 \label{trans}
@@ -1174,12 +951,12 @@ However, in practice, we do not wish to synchronize file \emph{sets}, but file
 \emph{hierarchies}: we are not just interested in the \emph{content} of the
 files but in their \emph{metadata}. The most important metadata is the file's
 path (i.e., its name and its location in the filesystem), though other kinds of
-metadata exist (e.g., modification time, owner, permissions). In many use cases,
-the file metadata can change without changes in the file content: for instance,
-files can be \emph{moved} to a different location. When performing
+metadata exist (e.g., modification time, owner, permissions). In many use
+cases, the file metadata can change without changes in the file content: for
+instance, files can be \emph{moved} to a different location. When performing
 reconciliation, we must be aware of this fact, and reflect file moves without
 re-transferring the contents of the moved files (which is an improvement over
-other tools such as \rsync).
+popular synchronization tools such as \rsync).
 
 In this section, we present how to solve this \emph{file synchronization}
 problem, using our set reconciliation program as a building block.
