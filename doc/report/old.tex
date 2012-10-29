@@ -1,4 +1,25 @@
+\section*{Old Introduction}
 
+This work revisits {\sl set reconciliation}, a problem consisting in
+synchronizing two multisets while minimizing the amount of data transmitted. Set
+reconciliation arises in many practical situations, the most typical of which is
+certainly incremental backups performed over a slow network link.\smallskip
+
+Several efficient and elegant solutions are known to achieve set reconciliation of multisets containing atomic elements of a fixed size. For instance, \cite{PSRec} manages to perform set reconciliation using a bandwidth which is linear in the size of the symmetric difference of the multisets multiplied by the size of the elements, which is optimal in this setting. We refer the reader to~\cite{PSRec,Mins1,Whats} for more on this problem's history and its existing solutions.\smallskip
+
+However, in the case where the elements to be synchronized can be very large (e.g., files during a backup), we must use checksums to identify the differing files before transferring them, and the question of the size of the checksum to use is non-trivial. In this article, we propose a new reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}) based on number theory. In terms of asymptotic transmission complexity, the proposed procedure reaches optimality as well. 
+\comm{Fabrice@Antoine: Je ne suis pas tout à fait d'accord avec ce paragraphe, ton abstract est beaucoup mieux...}
+In addition, the new protocols offer a very interesting gamut of parameter trade-offs. We provide an analysis of the protocol's complexity in terms of transmission and computation, as well as a probabilistic analysis of the possible choices of checksum sizes; we also provide an implementation of the protocol and experimental results.\smallskip
+
+This paper is structured as follows: Section~\ref{dandf} presents ``Divide \&
+Factor'', our set reconciliation protocol. Section~\ref{trans} presents the
+transmission complexity of the protocol, introduces two transmission
+optimizations and analyzes them in detail. Section \ref{comp} analyzes the
+computational complexities of the proposed protocols. Section~\ref{files}
+explain how to use a set reconciliation algorithm to perform file
+synchronization. Section~\ref{program} presents our implementation \btrsync and
+reports practical experiments and benchmarks against the popular software
+\rsync.\smallskip
 
 
 \section{Old D\&F Set Reconciliation Section}
@@ -231,6 +252,90 @@ All $\bot$ treatments were removed from Appendix \ref{sec:extended} for the sake
 A typical execution sequence is thus expected to be something like:
 
 $$\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf bandwidth}}},1},\bot_{\mbox{{\tiny {\sf collision}}},1},\bot_{\mbox{{\tiny {\sf collision}}},1},\mbox{{\sf success}}$$
+
+\section{Extended Protocol}
+\label{sec:extended}
+
+\begin{center}
+\begin{tabular}{lcl}\toprule
+\multicolumn{3}{c}{{\sf First phase during which Neil amasses modular
+information on the difference~~}} \\\midrule
+~~{\bf Oscar}                      &                                                      &   {\bf Neil}~\\
+                                   &                                                      &start the protocol with $p_1$~\\
+                                   &~~{{\LARGE $\stackrel{c_1}{\longrightarrow}$}}~~      &   \\
+                                   &                                                      &computes $a,b$ using $p_1$~\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}\\
+                                   &                                                      &~~~~~~else perform the protocol with $p_2$~~\\
+                                   &~~{{\LARGE $\stackrel{c_2}{\longrightarrow}$}}~~      &   \\
+                                   &                                                      &computes $c \bmod p_1 p_2=\mbox{CRT}_{p_1,p_2}(c_1,c_2)$~~\\
+                                   &                                                      &computes $a,b$ using $p_1 p_2$~\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}\\
+                                   &                                                      &~~~~~~else perform the protocol with $p_3$~~\\
+                                   &~~{{\LARGE $\stackrel{c_3}{\longrightarrow}$}}~~      &   \\
+                                   &                                                      &computes $c \bmod p_1 p_2 p_3=\mbox{CRT}_{p_1,p_2,p_3}(c_1,c_2,c_3)$~~\\
+                                   &                                                      &computes $a,b$ using $p_1 p_2 p_3$~\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}\\
+                                   &                                                      &~~~~~~else perform the protocol with $p_4$ ~~\\
+                                   &                  $\vdots$
+& \\\midrule
+\multicolumn{3}{c}{{\sf Final Phase~~}} \\\midrule
+                                   &                                                      & \\
+                                   &                                                      &Let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod h'_i =0\}$~~\\
+                                   &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
+                                   ~~deletes files s.t. $b \bmod h_i =0$&                                                      &\\
+                                   ~~adds $\mathfrak{S}$ to the disk
+                                   &
+                                   &\\\bottomrule
+\end{tabular}
+\end{center}
+
+Note that parties do not need to store the $p_i$'s in full. Indeed, the $p_i$s could be subsequent primes sharing their most significant bits. This reduces storage per prime to a very small additive constant $ \cong \mbox{ln}(p_i) \cong \mbox{ln}(2^{2tu+2}) \cong 1.39(tu+1)$ of about $\log_2(tu)$ bits.
+
+\section{Power of Two Protocol}
+\label{powtwo}
+
+In this variant Oscar computes $c$ in $\mathbb{N}$:
+
+$$
+c=\prod_{F_i\in \mathfrak{F}} \mbox{{\tt HashPrime}}(F_i) = \prod_{i=1}^n h_i \in \mathbb{N}
+$$
+
+and considers $c=\bar{c}_{n-1}|\ldots|\bar{c}_2|\bar{c}_0$ as the concatenation of $n$ successive $u$-bit strings. Again, we omit the treatment of $\bot$s for the sake of clarity.
+
+\begin{center}
+\begin{tabular}{lcl}\toprule
+\multicolumn{3}{c}{{\sf First phase during which Neil amasses modular
+information on the difference~~}} \\\midrule
+~~{\bf Oscar}                      &                                                      &   {\bf Neil}~\\
+~~computes $c\in \mathbb{N}$       &                                                      &\\
+                                   &~~{{\LARGE $\stackrel{\bar{c}_0}{\longrightarrow}$}}~~&   \\
+                                   &                                                      &computes $a,b$ modulo $2^u$~\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}~~\\
+                                   &                                                      &~~~~~~else request next chunk $\bar{c}_1$~~\\
+                                   &~~{{\LARGE $\stackrel{\bar{c}_1}{\longrightarrow}$}}~~&   \\
+                                   &                                                      &construct $c \bmod 2^{2u}=\bar{c}_1|\bar{c}_0$~~\\
+                                   &                                                      &computes $a,b$ modulo $2^{2u}$~\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}~~\\
+                                   &                                                      &~~~~~~else request next chunk $\bar{c}_2$~~\\
+                                   &~~{{\LARGE $\stackrel{\bar{c}_2}{\longrightarrow}$}}~~      &   \\
+                                   &                                                      &construct $c\bmod 2^{3u}=\bar{c}_2|\bar{c}_1|\bar{c}_0$~~\\
+                                   &                                                      &computes $a,b$ modulo $2^{3u}$~\\
+                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}~~\\
+                                   &                                                      &~~~~~~else request next chunk $\bar{c}_3$~~\\
+                                   &                  $\vdots~(\mbox{~for~}2t
+\mbox{~rounds~})$    & \\\midrule
+\multicolumn{3}{c}{{\sf Final Phase~~}} \\\midrule
+                                   &                                                      & \\
+                                   &                                                      &Let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod 2^{2tu} =0\}$~~\\
+                                   &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
+                                   ~~deletes files s.t. $b \bmod 2^{2t u} =0$&        &\\
+                                   ~~adds $\mathfrak{S}$ to the disk
+                                   &
+                                   &\\\bottomrule
+\end{tabular}
+\end{center}
+
+
 
 
 %%% Local Variables: 

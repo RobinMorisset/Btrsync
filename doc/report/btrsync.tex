@@ -42,20 +42,25 @@
 \newcommand{\Prob}[1]{{\Pr\left[\,{#1}\,\right]}}
 \newcommand{\EE}[1]{{\mathbb{E}\left[{#1}\right]}}
 \newcommand{\Oapp}{\ensuremath{\tilde{O}}}
+
 \newcommand{\Set}{\mathcal{H}}
 \newcommand{\SetD}{\mathcal{D}}
 \newcommand{\Files}{\mathcal{F}}
 
+\newcommand{\df}{D\&F\xspace}
 \newcommand{\btrsync}{\texttt{btrsync}\xspace}
 \newcommand{\rsync}{\texttt{rsync}\xspace}
 
-\newcommand{\ie}{\textit{i.e.}}
+\newcommand{\ie}{\textit{i.e.}\xspace}
+\newcommand{\cf}{\textit{cf.}\xspace}
+\newcommand{\eg}{\textit{e.g.}\xspace}
 
 \newcommand{\Hash}{\texttt{Hash}\xspace}
 
 \newcommand{\Rflow}[1]{\stackrel{\displaystyle #1}{\hbox to 5em{\rightarrowfill}}}
 \newcommand{\Lflow}[1]{\stackrel{\displaystyle #1}{\hbox to 5em{\leftarrowfill}}}
 
+\DeclareMathOperator{\CRT}{CRT}
 
 \newcommand{\comm}[1]{\marginpar{%
 \vskip-\baselineskip %raise the marginpar a bit
@@ -83,10 +88,8 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 \comm{Penser à voir si on change le titre.}
 
 \begin{abstract}
-  This work revisits {\sl set reconciliation}, a problem consisting in synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}), based on number theory, which achieves optimal asymptotic transmission complexity like prior proposals. We then study the problem of synchronizing sets of variable-size files, and describe how constant-factor improvements can be achieved through the use of hashing with a carefully chosen hash size (balancing the quantity of data transferred and the risk of collisions). We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync transmits much less data at the expense of a small computational overhead.
+  This work revisits \textit{set reconciliation}, a problem consisting in synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new reconciliation protocol called ``Divide \& Factor'' (\df), based on number theory, which achieves optimal asymptotic transmission complexity like prior proposals. We then study the problem of synchronizing sets of variable-size files, and describe how constant-factor improvements can be achieved through the use of hashing with a carefully chosen hash size (balancing the quantity of data transferred and the risk of collisions). We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync transmits much less data at the expense of a small computational overhead.
 \end{abstract}
-
-\section{Introduction}
 
 \subsection*{Notations}
 
@@ -95,7 +98,8 @@ Cette section est temporaire et ne sert que pour assurer des notations cohérent
 \item $i,j$: pour les fichiers/hashés $h_i$,$F_i$
 \item $k$: pour les rounds avec changement de modulo: $p_k,c_k,s_k,C_k,S_k,t_k,T_k$
 \item $\ell$: pour les rounds liés aux traitements des collisions
-\item $\lambda$: pour une borne sur le $k$ ou le $\ell$
+\item $\lambda$: pour une borne sur le $\ell$
+\item $\kappa$: pour une borne pour le $k$
 \item $T_k = \sum_{j=1}^k t_j$, $T$ le nombre réel de différences, $t$ le nombre
   maximal accepté au cours d'un round, lorsqu'on ne présente qu'un round.
 \end{itemize}
@@ -104,30 +108,7 @@ TODO: Corriger les $n$,$n'$,$\eta$,$\eta'$.
 
 TODO: faire commencer le $i$ à 1  PARTOUT
 
-\subsection*{Old Introduction}
-
-This work revisits {\sl set reconciliation}, a problem consisting in
-synchronizing two multisets while minimizing the amount of data transmitted. Set
-reconciliation arises in many practical situations, the most typical of which is
-certainly incremental backups performed over a slow network link.\smallskip
-
-Several efficient and elegant solutions are known to achieve set reconciliation of multisets containing atomic elements of a fixed size. For instance, \cite{PSRec} manages to perform set reconciliation using a bandwidth which is linear in the size of the symmetric difference of the multisets multiplied by the size of the elements, which is optimal in this setting. We refer the reader to~\cite{PSRec,Mins1,Whats} for more on this problem's history and its existing solutions.\smallskip
-
-However, in the case where the elements to be synchronized can be very large (e.g., files during a backup), we must use checksums to identify the differing files before transferring them, and the question of the size of the checksum to use is non-trivial. In this article, we propose a new reconciliation protocol called ``Divide \& Factor'' ({\sc d\&f}) based on number theory. In terms of asymptotic transmission complexity, the proposed procedure reaches optimality as well. 
-\comm{Fabrice@Antoine: Je ne suis pas tout à fait d'accord avec ce paragraphe, ton abstract est beaucoup mieux...}
-In addition, the new protocols offer a very interesting gamut of parameter trade-offs. We provide an analysis of the protocol's complexity in terms of transmission and computation, as well as a probabilistic analysis of the possible choices of checksum sizes; we also provide an implementation of the protocol and experimental results.\smallskip
-
-This paper is structured as follows: Section~\ref{dandf} presents ``Divide \&
-Factor'', our set reconciliation protocol. Section~\ref{trans} presents the
-transmission complexity of the protocol, introduces two transmission
-optimizations and analyzes them in detail. Section \ref{comp} analyzes the
-computational complexities of the proposed protocols. Section~\ref{files}
-explain how to use a set reconciliation algorithm to perform file
-synchronization. Section~\ref{program} presents our implementation \btrsync and
-reports practical experiments and benchmarks against the popular software
-\rsync.\smallskip
-
-\subsection*{New Introduction}
+\section{Introduction}
 
 \emph{File synchronization} is the important practical problem consisting of
 retrieving a hierarchy of files on a remote host given some outdated or
@@ -156,18 +137,18 @@ synchronization from a theoretical and practical perspective. Our contribution
 are as follows:
 \begin{itemize}
   \item We introduce ``Divide \& Factor'', a new set reconciliation algorithm.
-    D\&F is based on number theory: it represents the items to synchronize as
+    \df is based on number theory: it represents the items to synchronize as
     prime numbers, accumulates information about the symmetric difference in
     a series of rounds through the Chinese remainder theorem (CRT), and reconstitutes
     the result through the use of rational number reconstruction. The algorithm
     is described in Section~\ref{dandf}.
-  \item We show that D\&F, like existing algorithms, has a transmission
+  \item We show that \df, like existing algorithms, has a transmission
     complexity which is linear in the size of the symmetric difference
-    (Section~\ref{trans}). We study the computational complexity of D\&F and
+    (Section~\ref{trans}). We study the computational complexity of \df and
     present possible trade-offs between constant-factor transmission complexity
     and computational complexity through alternative design choices
     (Section~\ref{comp}).
-  \item We explain in Section~\ref{hashing} how D\&F can be extended with hash
+  \item We explain in Section~\ref{hashing} how \df can be extended with hash
     functions to reconcile sets of files which do not have a fixed size, and
     analyze how the hash functions should be chosen to achieve a good tradeoff
     between the quantity of data to transfer and the risks of confusion. Some
@@ -180,17 +161,16 @@ are as follows:
     operations on a set of files in-place which avoids excessive use of
     temporary file locations.
   \item We present \btrsync, our implementation of file synchronization through
-    D\&F, in Section~\ref{program}, and benchmark it against \rsync. The results
+    \df, in Section~\ref{program}, and benchmark it against \rsync. The results
     show that \btrsync has a higher computational complexity but transmits less
     data in most scenarios.
 \end{itemize}
 
 \section{``Divide \& Factor'' Set Reconciliation}
-\comm{TODO: Récrire cette section en parlant juste de set reconciliation et pas de hashing.}
 \label{dandf}
 
-This section shows our new set reconciliation protocol D\&F for set two of $u$-bit primes $\Set$ and $\Set'$, which is based on number theory.
-After introducing the problem and the notations, we first present a basic version of D\&F for a bounded number of differences between the two sets.
+This section shows our new set reconciliation protocol \df for set two of $u$-bit primes $\Set$ and $\Set'$, which is based on number theory.
+After introducing the problem and the notations, we first present a basic version of \df for a bounded number of differences between the two sets.
 Then we show how to extend this protocol to deal with any number of differences.
 
 \subsection{Problem Definition and Notations}
@@ -207,8 +187,9 @@ Let $T$ be the number of discrepancies or differences between $\Set$ and $\Set'$
 Let also suppose we have a collision-resistant hash function $\Hash$ which takes as input a tuple of integers and output a short binary string of, for example, $160$-bits\footnote{TODO: comment on such hash function for Antoine}.
 
 \subsection{Basic Protocol with Bounded $T$}
+\label{sec:basic}
 
-In this section, we present a basic version of D\&F when the number of differences $T$ is at most $t$, with $t$ a known constant.
+In this section, we present a basic version of \df when the number of differences $T$ is at most $t$, with $t$ a known constant.
 
 The protocol works as follows.
 We first generate a prime $p$ such that
@@ -233,7 +214,7 @@ Since $T \leq t$, $\Set$ and $\Set'$ differ by at most $t$ elements and so $s$ c
   b &=& \prod_{h_i \in Set \setminus \Set'} h_i \le 2^{ut} - 1
 \end{array} \right. \text  .
 \]
-The problem of recovering $a$ and $b$ from $s$ efficiently is known as {\sl Rational Number Reconstruction}~\cite{pan2004rational,wang2003acceleration}.
+The problem of recovering $a$ and $b$ from $s$ efficiently is known as \textit{Rational Number Reconstruction}~\cite{pan2004rational,wang2003acceleration}.
 And the following theorem, which is a slightly modified version of Theorem~1 in \cite{cryptorational}, guarantees that it can be solved efficiently in this setting.
 \begin{theorem}
 \label{theo}
@@ -249,17 +230,20 @@ The basic protocol is depicted in Figure~\ref{fig:basic-df}.
 \begin{figure}
 \centering
 \setlength{\tabcolsep}{6pt}
-\begin{tabular}{|lcl|}
-\hline
-\textbf{Oscar}                    &                                        & \textbf{Neil}\\
-$c \gets \prod_{i=1}^n h_i$        &                                        & $c' \gets \prod_{i=1}^{n'} h'_i$ \\
-                                  & $\Rflow{c}$                            & \\
-                                  &                                        & reconstruct  $a,b$ \\
-                                  &                                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
-                                  & $\Lflow{\SetD',b}$                     & \\
-$\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i \}$ & & \\ \hline
+\begin{tabular}{lcl}
+\toprule
+\textbf{Oscar}                    &                        & \textbf{Neil}\\
+\midrule
+$c \gets \prod_{i=1}^n h_i \bmod p$        &                & $c' \gets \prod_{i=1}^{n'} h'_i \bmod p$ \\
+                                  & $\Rflow{c}$            & \\
+                                  &                        & $s \gets c'/c \bmod p$ \\
+                                  &                        & reconstruct  $a,b$ from $s$\\
+                                  &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
+                                  & $\Lflow{\SetD',b}$     & \\
+$\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i \}$ & & \\
+\bottomrule
 \end{tabular}
-\caption{Basic D\&F Protocol (when $t \le T$).}\label{fig:basic-df}
+\caption{Basic \df Protocol (when $T \le t$).}\label{fig:basic-df}
 \end{figure}
 
 \subsection{Handling an Unbounded Number of Differences}
@@ -274,46 +258,128 @@ We first remark, that if we execute the previous protocol when $t < T$, either $
 In the second case, with high probability, the product of the $h_i$'s which divide $a$ is not equal to $a$ (TODO: prove this claim).
 This check has the advantage to be very fast and not needing Neil to send any data to Oscar.
 But, if we are unlucky, it can happen that this check is not sufficient.
+Let us call $\bot$ the event that this check failed.
 
 That is why, we need to add another (more costly) check which can detect any bad reconciliation.
-This second check is very simple: at the beginning, before the first flow, Neil sends to Oscar a hash of its sets: $H = \Hash((h'_1,\dots,h'_{n'}))$, and at the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and check the hash of this new set if $H$.
+This second check is very simple: at the beginning, before the first flow, Neil sends to Oscar a hash of its sets: $H = \Hash(\Set') = \Hash((h'_1,\dots,h'_{n'}))$, and at the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and check the hash of this new set if $H$.
 
-\subsubsection{Complete D\&F Protocol}
+\subsubsection{Complete \df Protocol}
 To extend the protocol to an arbitrary $T$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails (\ie, yields a bad reconcilitation), Neil and Oscar redo the protocol with a new $p_\ell$ and Neil will keep accumulating information about the difference between $\Set$ and $\Set'$ as shown in Appendix \ref{sec:extended}. 
 Each of this repetition is called a round.
 
 
-More precisely, let us suppose $2^{2 u t_k} \le p_\ell < 2^{2 u t_k +1}$.
-Let us write $P_k = p_1 \dots p_k$ and $T_k = u (t_1 + \dots t_k)$.
-After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as many information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the CRT (TODO ref ?).
+More precisely, let us suppose $2^{2 u t_k} \le p_k < 2^{2 u t_k +1}$.
+Let us write $P_k = p_1 \dots p_k$ and $T_k = t_1 + \dots + t_k$.
+After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as many information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the CRT (TODO ref ?): 
+\[ S_k = \CRT(S_{k-1},P_{k-1},s_k,p_k) = S_{k-1} (p_k^{-1} \bmod P_{k-1}) p_k + s_k (P_{k-1}^{-1} \bmod p_k) P_{k-1} \bmod P_k. \]
 Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\Set$ and $\Set'$.
 Therefore, the number $\lambda$ of rounds used is the minimum number $k$ such that $T_k \ge T$.
-If $t_1 = t_2 = \dots = t$, then $\lambda = \lceil t/T \rceil$.
+
+In the sequel, we focus on two variants:
+\begin{itemize}
+\item $t_1 = t_2 = \dots = t$, in which case $\lambda = \lceil T/t \rceil$;
+\item $t_k = 2^k t'$, in which case $ \lambda = \lceil \log_2(T / t') \rceil $.
+\end{itemize}
+
+\begin{figure}
+\centering
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{p{7cm}cp{7cm}}
+\toprule
+\textbf{Oscar}                    &                                        & \textbf{Neil}\\
+\midrule
+\multicolumn{3}{c}{\textit{Phase 0: Hash of content for detection of bad reconciliation}} \\
+\midrule
+                                  &                        & $H \gets \Hash(\Set')$ \\
+                                  & $\Lflow{H}$            & \\
+\midrule
+\multicolumn{3}{c}{\textit{Phase 1: Neil amasses modular
+information on the difference}} \\
+\midrule
+\multicolumn{3}{l}{\textit{Round 1}} \\
+$c_1 \gets \prod_{i=1}^n h_i \bmod p_1$        &                & $c'_1 \gets \prod_{i=1}^{n'} h'_i \bmod p_1$ \\
+                                  & $\Rflow{c_1}$            & \\
+                                  &                        & $s_1 \gets c'_1/c_1 \bmod p_1$ \\
+                                  &                        & $S_1 \gets s_1$ \\
+                                  &                        & reconstruct  $a,b$ from $S_1$ (modulo $P_1$)\\
+                                  &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
+                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_1 = a$ then go to \text{final phase} \\
+\midrule
+\multicolumn{3}{l}{\textit{Round 2}} \\
+$c_2 \gets \prod_{i=1}^n h_i \bmod p_2$    &                & $c'_2 \gets \prod_{i=1}^{n'} h'_i \bmod p_2$ \\
+                                  & $\Rflow{c_2}$            & \\
+                                  &                        & $s_2 \gets c'_2/c_2 \bmod p_2$ \\
+                                  &                        & $S_2 \gets \CRT(S_1,P_1,s_2,p_2)$ \\
+                                  &                        & reconstruct $a,b$ from $S_2$ (modulo $P_2$)\\
+                                  &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
+                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_2 = a$ then go to \text{final phase} \\
+\midrule
+\multicolumn{3}{l}{\textit{Round 3}} \\
+$c_3 \gets \prod_{i=1}^n h_i \bmod p_3$    &                & $c'_3 \gets \prod_{i=1}^{n'} h'_i \bmod p_3$ \\
+                                  & $\Rflow{c_3}$            & \\
+                                  &                        & $s_3 \gets c'_3/c_3 \bmod p_3$ \\
+                                  &                        & $S_3 \gets \CRT(S_2,P_2,s_3,p_3)$ \\
+                                  &                        & reconstruct $a,b$ from $S_3$ (modulo $P_3$)\\
+                                  &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
+                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_3 = a$ then go to \text{final phase} \\
+\midrule
+ & \vdots & \\
+\midrule
+\multicolumn{3}{c}{\textit{Final phase}} \\
+\midrule
+                                  & $\Lflow{\SetD',b}$     & \\
+$\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i \}$ & & \\
+compute $S'$ from $S$, $\SetD$ and $\SetD'$ & & \\
+if $\Hash(S') \neq H$ go back in phase 1 (event $\bot$) & & \\
+\bottomrule
+\end{tabular}
+\caption{Complete \df Protocol (for any $T$).}\label{fig:complete-df}
+\end{figure}
 
 
 \section{Transmission Complexity}
 \label{trans}
 
-This section proves that D\&F achieves optimal asymptotic transmission complexity and explores two strategies for reducing the size of $p$ and hence improving transmission by {\sl constant factors}.
+This section proves that \df achieves optimal asymptotic transmission complexity and explores two strategies for reducing the size of $p$ and hence improving transmission by \textit{constant factors}.
 
 \subsection{Proof of Transmission Complexity Optimality}
 
-Excluding the core information $\mathfrak{S}$ and assuming that no $\bot_{\mbox{{\tiny {\sf collision}}},\square}$ events occurred, the transmission complexity of the protocol of Appendix \ref{sec:extended} is:
-$$
-\lambda \log (\max_{k=1}^\lambda c_k) + \log b \,\leq\, \lambda \log (\max_{k=1}^\lambda p_k) + \frac12 \log \prod_{k=1}^\lambda p_k \,\leq\, 3\lambda (uT+1)=O(\lambda uT)=O(ut),
-$$
-%where $\lambda=\lceil T/t \rceil$ is the number of rounds required to complete the protocol. 
-As we have no control over $t$, decreasing $u$ is the main natural optimization option. We will get back to this later on in this paper (section \ref{shortu}).
-\comm{Fabrice: maybe deal with the case when doubling ? and precise that we deal with constant $t$ ???}
+% Excluding the core information $\mathfrak{S}$ and assuming that no $\bot_{\mbox{{\tiny {\sf collision}}},\square}$ events occurred, the transmission complexity of the protocol of Appendix \ref{sec:extended} is:
+% $$
+% \lambda \log (\max_{k=1}^\lambda c_k) + \log b \,\leq\, \lambda \log (\max_{k=1}^\lambda p_k) + \frac12 \log \prod_{k=1}^\lambda p_k \,\leq\, 3\lambda (uT+1)=O(\lambda uT)=O(ut),
+% $$
+% %where $\lambda=\lceil T/t \rceil$ is the number of rounds required to complete the protocol. 
+% As we have no control over $t$, decreasing $u$ is the main natural optimization option. We will get back to this later on in this paper (section \ref{shortu}).
+% \comm{Fabrice: maybe deal with the case when doubling ? and precise that we deal with constant $t$ ???}
+
+Assuming that there is no event $\bot$ (since these events happen with negligible probability), the transmission complexity of \df is:
+\[  \sum_{k=1}^\lambda \log c_k + \log b + \log |\SetD'|
+ \,\leq\, \sum_{k=1}^\lambda (ut_k+1) + \frac{1}{2} (uT_\lambda) + u T
+ \,\leq\, u (T_\lambda + \lambda) + \frac{1}{2} u T_\lambda + u T
+ \,\leq\, \frac{5}{2} u T_\lambda + u \lambda, \]
+where $\lambda$ is the maximum number of rounds needed.
+
+Here are the complexity in the two cases we are interested in:
+\begin{itemize}
+\item if $t_1 = \dots = t$, $\lambda = \lceil T/t \rceil$, $T_\lambda = \lambda t < T+t$ and the transmission complexity is at most $\frac{5}{2} u (T+t) + \lceil T/t \rceil = O(uT)$;
+\item if $t_k = 2^k t'$, $\lambda = \lceil \log(T/t') \rceil$, $T_\lambda < 2T$ and the transmission complexity is at most $\frac{5}{2} 2uT + \lceil \log(T/t') \rceil = O(ut)$.
+\end{itemize}
+We can remark that the first case is slightly better: it may use twice less data.
+But, as you will see in Section~\ref{sec:doubling}, the second case is computationnaly faster.
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
-Generate a prime $p$ about twice shorter than the $p$ recommended in section \ref{basic}, namely:
+In this section, we focus on the basic \df protocol, for the sake of simplicity.
+However, it can easily be adapted to the complete \df procotol.
+
+The idea is to generate a prime $p$ about twice shorter than the $p$ recommended in section \ref{sec:basic}, namely:
 \begin{equation}
 \label{eqnewp}
-2^{ut}<p \leq 2^{ut+1}
+2^{ut-1}\leq p < 2^{ut}
 \end{equation}
 
+
+TODO: rewrite this section !
 Let $\eta=\max(n,n')$. The new redundancy $c$ is calculated as previously and is hence also approximately twice smaller. Namely:
 
 $$s=\frac{a}{b} \bmod p \mbox{~and~}
@@ -332,32 +398,39 @@ and since there are at most $t$ differences, we must have:
 a b \leq 2^{ut}
 \end{equation}
 
-By opposition to section \ref{basic} we do not have a fixed bound for $a$ and $b$ anymore; Equation \eqref{eqab} only provides a bound for the {\sl product} $a b$. Therefore, we define a sequence of $t+1$ couples of bounds:
+By opposition to section \ref{sec:basic} we do not have a fixed bound for $a$ and $b$ anymore; Equation \eqref{eqab} only provides a bound for the \textit{product} $a b$. Therefore, we define a sequence of $t+1$ couples of bounds:
 
 %$$\left(A_i,B_i\right)=\left(2^{(u+1)i},\left\lfloor \frac{p-1}{2^{(u+1)i+1}} %\right\rfloor\right)\mbox{~~where~~}B_i>1\mbox{~~and~~}\forall i>0,~2 A_i B_i<p$$
 \[\left(A_i, B_i\right) = \left(2^{ui}, 2^{u(t-i)}\right) \forall i \in \{0,\dots,t\} \]
 
 Equations (\ref{eqnewp}) and (\ref{eqab}) imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, since $A_i B_i = 2^{ut} < p$, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
 
-The problem is that (unlike section \ref{basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough, but this makes the modified protocol heuristic only. 
+The problem is that (unlike section \ref{sec:basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough, but this makes the modified protocol heuristic only. 
 \comm{Fabrice: ``heuristic'' $\longrightarrow$ not really, because of the final hash verification, though we cannot compute exactly the complexity...}
-If failures never occur, this variant will roughly halve the quantity of transmitted bits with respect to section \ref{basic}.\smallskip
+If failures never occur, this variant will roughly halve the quantity of transmitted bits with respect to section \ref{sec:basic}.\smallskip
 
 \section{From Set Reconciliation to File Reconciliation}
 \label{hashing}
 
-TODO présentation générale sur le hashing tiré de la section \ref{dandf}.
+In this section, we first show how hashing can enable to use \df or any set reconciliation protocol to do file reconciliation.
+Then we show how to methods to reduce size of hash, and so transmission cost.
+
+\subsection{From Set Reconciliation to File Reconciliation}
 
 \subsection{The File Laundry: Reducing $u$}
 \label{shortu}
-What happens if we brutally shorten $u$ in the basic Divide \& Factor protocol?\smallskip
-\comm{Fabrice: maybe say it in another way, since we already do not suppose HashPrime is collision-resistant}
+What happens if we brutally shorten the hash size $u$ in the \df protocol?\smallskip
 As expected by the birthday paradox, we should start seeing collisions. Let us analyze the statistics governing the appearance of collisions.
-\comm{Fabrice: What is $\eta$ exactly ? $n$, $n'$, $n+n'$, $|\mathfrak{F} \cup \mathfrak{F'}|$  ? I prefer the last one actually, i.e., the total number of files...}
+In this section, after showing how to deal with these collisions and adapting \df subsequently, we analyse the advantages of this size reduction and show how to select $u$.
+
+\subsubsection{New Protocol}
+
+\subsubsection{Naive Analysis}
+
+Let $\eta$ be the total number of files $\eta = | \Files \cup \Files'| \le n+n'$.
 
 Consider $\mbox{{\tt HashPrime}}$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^u-1\}$. Let $X_i$ be the random variable:
-
-$$
+\[
 X_i =
 \left\{
 \begin{array}{lcl}
@@ -366,7 +439,7 @@ X_i =
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
 \right.
-$$
+\]
 
 Clearly, we have $\Prob{X_i = 1} \le \frac{\eta -1}{2^u}$.
 The average number of colliding files is hence:
@@ -374,7 +447,7 @@ The average number of colliding files is hence:
 
 For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of colliding files is less than $233$.\smallskip
 
-However, it is important to note that a collision can only yield a {\sl false positive}, and never a {\sl false negative}. In other words, while a collision may obliviate a difference\footnote{{\sl e.g.} make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create a nonexistent difference {\sl ex nihilo}.\smallskip
+However, it is important to note that a collision can only yield a \textit{false positive}, and never a \textit{false negative}. In other words, while a collision may obliviate a difference\footnote{\eg, make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create a nonexistent difference \textit{ex nihilo}.\smallskip
 \comm{Fabrice: difference or discrepancy ?}
 
 Thus, it suffices to replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_\ell(F)=\mbox{{\tt HashPrime}}(\ell|F)$ to quickly filter-out file differences by repeating the protocol for $\ell=1,2,\ldots$ At each iteration the parties will detect new files and new deletions, fix these and ``launder'' again the remaining multisets.\smallskip
@@ -403,97 +476,32 @@ Y_i = \prod_{\ell=1}^\lambda X^{\ell}_i & = &
 \right.
 \end{array}$$
 
-\comm{Fabrice je ne vois pas la difference entre $X^{\ell}_i $ dans cette section et $Z^\ell_i $ dans la suivante. Peux-tu preciser STP}
 
 By independence, we have:
-
 \[
   \Prob{Y_i = 1} = \prod_{\ell=1}^\lambda \Prob{X^{\ell}_i = 1} = \Prob{X^1_i = 1} \dots \Prob{X^\lambda_i = 1} \le \left( \frac{\eta -1}{2^u} \right)^\lambda
 \]
 
 Therefore the average number of colliding files is:
-
 \[
  \EE{\sum_{i=0}^{\eta-1} Y_i} \le \sum_{i=0}^{\eta-1} \left( \frac{\eta -1}{2^u} \right)^\lambda =  \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
 \]
 
 And the probability that at least one false positive will survive $k$ rounds is:
-
 \[
 \epsilon_k \le \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
 \]
 
 For the previously considered instance\footnote{$\eta=10^6$,$u=32$.} we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3}\%$.
 
-\subsubsection{A more refined (but somewhat technical) analysis.} As mentioned previously, the parties can remove the files confirmed as different during iteration $k$ and work during iteration $k+1$ only with common and colliding files. Now, the only collisions that can fool round $k$, are the collisions of file-pairs $(F_i,F_j)$ such that $F_i$ and $F_j$ have both already collided during {\sl all the previous iterations}\footnote{Note that we \underline{do not} require that $F_i$ and $F_j$ repeatedly collide {\sl which each other}. {\sl e.g.} we may witness during the first round $\hbar_{1}(F_1)=\hbar_{1}(F_2)$, $\hbar_{1}(F_3)=\hbar_{1}(F_4)$ and $\hbar_{1}(F_5)=\hbar_{1}(F_6)$ while during the second round $\hbar_{2}(F_1)=\hbar_2(F_2)$, $\hbar_{2}(F_3)=\hbar_{1}(F_6)$ and $\hbar_{2}(F_5)=\hbar_{2}(F_4)$ as shown in Figure \ref{fig:masked}.}. TODO this sentence is unclear: We call such collisions ``masquerade balls'' ({\sl cf. } Figure \ref{fig:masked}). Define the two random variables:
-
-\begin{align*}
-Z^\ell_i &=
-\left\{
-\begin{array}{lcl}
-1 & ~~~~&  \parbox[t]{0.6\textwidth}{if $F_i$ participated in masquerade balls during all the $\ell$ first protocol iterations.}\\
-\\
-0 & ~~~~&  \mbox{otherwise.}
-\end{array}
-\right. \\
-X^{\ell}_{i,j} &=
-\left\{
-\begin{array}{lcl}
-1 & ~~~~&  \parbox[t]{0.6\textwidth}{if files $F_i$ and $F_j$ collide during iteration $\ell$.}\\
-\\
-0 & ~~~~&  \mbox{otherwise.}
-\end{array}
-\right.
-\end{align*}
-
-\def\bruijn{file $F_1$,file $F_2$,file $F_3$,file $F_4$,file $F_5$,file $F_6$}
-
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}[scale=4]
-    \foreach \v [count=\n] in \bruijn
-    \node[draw=black!30,fill=black!10,rounded corners] (\n) at (180-\n*60:1) {\v};
-  \path (1) edge [<->,above,double,thick]             node {round 1} (2)
-        (3) edge [<->,above,double,thick,sloped]             node {round 1} (4)
-        (5) edge [<->,above,double,thick,sloped]             node {round 1} (6)
-        (1) edge [<->,above,bend left]  node {round 2} (2)
-        (3) edge [<->,above]             node {round 2} (6)
-        (5) edge [<->,above]             node {round 2} (4)
-        (6) edge [<->,above,dashed,sloped]  node {round 3} (2)
-        (1) edge [<->,above,dashed,sloped]  node {round 3} (3)
-        (5) edge [<->,bend left,above,dashed]  node {round 3} (4);
-\end{tikzpicture}
-\caption{Illustration of three masquerade balls. Each protocol round is materialized by a different type of arrow. Arrows denotes collisions.}\label{fig:masked}
-\end{figure}
-
-Set $Z^0_i = 1$ and write $p_\ell = \Prob{Z^{\ell}_{i} = 1 \text{ and } Z^{\ell}_{j} = 1} $ for all $\ell$ and $i \neq j$.
-For $k \ge 1$, we have:
-\begin{align*}
-\Prob{Z^\lambda_i=1} &= \Prob{\exists j\neq i \text{, } X^\lambda_{i,j} = 1 \text{, } Z^{\lambda-1}_{i} = 1  \text{ and } Z^{\ell-1}_{j} = 1}  \\
-&\le \sum_{j=0, j\neq i}^{\eta-1} \Prob{X^{\lambda}_{i,j} = 1} \Prob{Z^{\lambda-1}_{i} = 1 \text{ and } Z^{\lambda-1}_{j} = 1}  \\
-&\le \frac{\eta-1}{2^u} p_{\lambda-1}
-\end{align*}
-Furthermore $p_0 = 1$ and\comm{Fabrice: maybe put this in appendix and add a few comments...}
-\begin{align*}
-p_\ell &= \Prob{X^{\ell}_{0,1} = 1 \text{, } Z^{\ell}_{0} = 1 \text{ and } Z^{\ell}_{1} = 1}
-  + \Prob{X^{\ell}_{0,1} = 0 \text{, } Z^{\ell}_{0} = 1 \text{ and } Z^{\ell}_{1} = 1} \\
-&\le \Prob{X^{\ell}_{0,1} = 1 \text{, } Z^{\ell-1}_{0} = 1 \text{ and } Z^{\ell-1}_{1} = 1} \\
-  &\quad+ \sum_{i \ge 2, j \ge 2} \Prob{X^\ell_{0,i} = 1 \text{, } X^\ell_{1,j} = 1 \text{, } Z^{\ell-1}_{0} = 1 \text{ and } Z^{\ell-1}_{1} = 1} \\
-&= \Prob{X^{\ell}_0 = X^{\ell}_1} \Prob{Z^{\ell-1}_{0} = 1 \text{ and } Z^{\ell-1}_{1} = 1} \\
-  &\quad+ \sum_{i \ge 2, j \ge 2} \Prob{X^\ell_{0,i} = 1} \Prob{X^\ell_{1,j} = 1} \Prob{Z^{\ell-1}_{0} = 1 \text{ and } Z^{\ell-1}_{1} = 1} \\
-&\le \frac{1}{2^u} p_{\ell-1} + \frac{(\eta-2)^2}{2^{2u}} p_{\ell-1} = p_{\ell-1}\left(\frac{1}{2^u}  + \frac{(\eta-2)^2}{2^{2u}}\right)
-\end{align*}
-hence:
-\[ p_\ell \le \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^\ell, \]
-and
-\[ \Prob{Z^\lambda_i=1} \le \frac{\eta-1}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{\lambda-1} \]
-And finally, the survival probability of at least one false positive after $k$ iterations satisfies:
-\nopagebreak
+\subsubsection{A more refined (but somewhat technical) analysis.}
+In Appendix~\ref{app:refined-file-laundry}, we show a more refined analysis, which proves that  the survival probability of at least one false positive after $k$ iterations satisfies:
 \[
 \epsilon'_\lambda \le \frac{\eta(\eta-1)}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{\lambda-1}
 \]
 
 For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.\smallskip
+
 
 \subsubsection{How to select $u$?}
 %
@@ -520,22 +528,22 @@ $\phi_{10^6}(u)$ admits an optimum for $u=19$.
 
 \item We used a fixed $u$ in all rounds. Nothing forbids using a different $u_\ell$ at each iteration, or even fine-tuning the $u_\ell$'s adaptively as a function of the laundry's effect on the progressively reconciliated multisets..
 
-\item Our analysis treats $t$ as a constant, but large $t$ values increase $p$ and hence the number of potential files detected as different per iteration - an effect disregarded {\sl supra}.
+\item Our analysis treats $t$ as a constant, but large $t$ values increase $p$ and hence the number of potential files detected as different per iteration - an effect disregarded \textit{supra}.
 \end{itemize}
 
-A different approach is to optimize $t$ and $u$ experimentally, {\sl e.g.} using the open source {\sc d\&f} program \btrsync\ developed by the authors ({\sl cf.} section  \ref{program}).
+A different approach is to optimize $t$ and $u$ experimentally, \eg, using the open source \df program \btrsync developed by the authors (\cf Section~\ref{program}).
 
 \subsection{How to Stop a Probabilistic Washing Machine?} 
 \comm{Remplacer $\ell$ par $\lambda$}
-We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a half-sized $p$. By opposition to section \ref{basic}, confirming correct protocol termination is now non-trivial.\smallskip
+We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a half-sized $p$. By opposition to Section~\ref{sec:basic}, confirming correct protocol termination is now non-trivial.\smallskip
 \comm{Fabrice: oups, pas sûr de tout comprendre ici, il faudrait que l'on en rediscute... En particulier, le CRT n'a pas d'erreur a priori, sauf erreur de ma part...}
 
 \comm{La définition de $\zeta(u)$ est assez gratuite vu que ça n'intervient pas dans la suite.}
-We say that a {\sl round failure} occurs whenever a round results in an $(a',b')\neq (a,b)$ satisfying Equation~\eqref{eqab}. Let the round failure probability be some function $\zeta(u)$ (that we did not estimate). If $u$ is kept small (for efficiency reasons), the probability $\left(1-\zeta(u)\right)^{\ell}$ that the protocol will properly terminate may dangerously drift away from one.\smallskip
+We say that a \textit{round failure} occurs whenever a round results in an $(a',b')\neq (a,b)$ satisfying Equation~\eqref{eqab}. Let the round failure probability be some function $\zeta(u)$ (that we did not estimate). If $u$ is kept small (for efficiency reasons), the probability $\left(1-\zeta(u)\right)^{\ell}$ that the protocol will properly terminate may dangerously drift away from one.\smallskip
 
-If $v$ of $\ell+v$ rounds fail, Oscar needs to solve a problem called {\sl Chinese Remaindering With Errors}~\cite{phong}:\smallskip
+If $v$ of $\ell+v$ rounds fail, Oscar needs to solve a problem called \textit{Chinese Remaindering With Errors}~\cite{phong}:\smallskip
 
-\begin{problem}{\sl (Chinese Remaindering With Errors Problem: {\sc crwep}).} Given as input integers $v$, $B$ and $\ell+v$ points $(s_1,p_1),\ldots,(s_{\ell+v},p_{\ell+v})\in \mathbb{N}^2$ where the $p_i$'s are coprime, output all numbers $0 \leq s < B$ such that $s \equiv s_i \bmod p_i$ for at least $\ell$ values of $i$.
+\begin{problem}{\it (Chinese Remaindering With Errors Problem: {\sc crwep}).} Given as input integers $v$, $B$ and $\ell+v$ points $(s_1,p_1),\ldots,(s_{\ell+v},p_{\ell+v})\in \mathbb{N}^2$ where the $p_i$'s are coprime, output all numbers $0 \leq s < B$ such that $s \equiv s_i \bmod p_i$ for at least $\ell$ values of $i$.
 \end{problem}
 
 We refer the reader to~\cite{phong} for more on this problem, which is beyond our scope. Boneh~\cite{boneh} provides a polynomial-time algorithm for solving the {\sc crwep} under certain conditions satisfied in our setting.\smallskip
@@ -554,7 +562,7 @@ A summary of all costs can be found in Table~\ref{tab:workload}.
 \subsection{Basic Complexity}
 
 Let $\mu(l)$ be the time required to multiply two $l$-bit numbers\footnote{We assume that $\forall l,l', \mu(l+l') \ge \mu(l) + \mu(l')$.}.
-For naive ({\sl i.e.} convolutive) algorithms $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$. {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
+For naive (\ie, convolutive) algorithms $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$. {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
 The modular division of two $l$-bit numbers and the reduction of a $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
 Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.\smallskip
 
@@ -563,7 +571,7 @@ Hence, we have the costs depicted in the third column of Table~\ref{tab:workload
 
 \subsection{Hashing Into Primes}
 \label{sec:hashprime}
-Hashing into primes is frequently needed in cryptography. A recommended implementation of $\mbox{{\tt HashPrime}}(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough ({\sl e.g.} $160$) one might sacrifice uniformity to avoid repeated file hashings by defining $\mbox{{\tt HashPrime}}(F)=\mbox{{\tt NextPrime}}(\mbox{{\tt Hash}}(F))$. 
+Hashing into primes is frequently needed in cryptography. A recommended implementation of $\mbox{{\tt HashPrime}}(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough (\eg $160$) one might sacrifice uniformity to avoid repeated file hashings by defining $\mbox{{\tt HashPrime}}(F)=\mbox{{\tt NextPrime}}(\mbox{{\tt Hash}}(F))$. 
 Yet another acceleration (that further destroys uniformity) consists in replacing $\mbox{{\tt NextPrime}}$ by Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
 \comm{analyse ci-contre}
 
@@ -604,7 +612,7 @@ TODO: no more uniform $\longrightarrow$ slightly decrease entropy of hashing
 Taking the $p_k$'s as $ut_k$-bit primes is not very practical, because generating a big prime number is slow, and storing a list of such primes require to be able to bound the number of rounds, and to fix all the parameters ($u$ and $t_1,t_2,\dots$).
 That is why, in this section we show that we can adapt $p_k$ to be able to generate them easily and also, to speed up the computations with a constant factor.
 
-Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the {\sl only} property required from $p$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants:
+Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the \textit{only} property required from $p$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants:
 \subsubsection{Variant 1:} Smooth $p_k$:
 \[ p_k=\prod_{j=r_k}^{r_{k+1}-1} \mbox{{\tt Prime}}[j], \]
 where the bounds $r_k$ are chosen to ensure that each $p_k$ has the proper size.
@@ -616,7 +624,7 @@ $\mbox{{\tt Prime}}[k]^{r_k}$.
 
 \subsubsection{Variant 3:} $p_k = P_k = 2^{ut_k}$. 
 In this case, $C_k = \prod_{i=1}^n h_i \bmod p_k$, $c_1 = C_1$ and $c_k = (C_k - C_{k-1}) / p_{k-1}$, {\it i.e.}, $c_k$ is the slice of bits $ut_{k-1}\dots ut_k-1$ of $C_k$ (with $T = 0$), which we write $c_k = C_k[ut_{k-1}\dots ut_k]$.
-Using Algorithm~\ref{alg:even-p-c} for the computation of $c_k$, this variant offers substantial constant-factor accelerations compared to previous variants, because it removes the need of all modulo operations and of {\sc crt} re-combination when multiple $p_k$ are needed, since $C_k$ is just the binary concatenation of $c_k$ and $C_{k-1}$ !
+Using Algorithm~\ref{alg:even-p-c} for the computation of $c_k$, this variant offers substantial constant-factor accelerations compared to previous variants, because it removes the need of all modulo operations and of CRT re-combination when multiple $p_k$ are needed, since $C_k$ is just the binary concatenation of $c_k$ and $C_{k-1}$ !
 
 Let us explain the main ideas of Algorithm~\ref{alg:even-p-c}.
 Let $X_i = \prod_{j=1}^n h_j$ ($X_0 = 1$), $X_{i,k} = X_i[ut_{k-1}\dots ut_{k}]$ and let $D_{i,k}$ be the $u$ upper-bits of the product of $Y_{i,k} = X_i[0\dots ut_{k}]$ and $h_i$, {\it i.e.}, $D_{i,k} = (Y_{i,k} \times h_i)[ut_k\dots u(t_k+1)]$ ($D_{i,0} = 0$ and $D_{0,k} = 0$).
@@ -677,66 +685,6 @@ The idea is the following: group $h_i$'s by subsets of $t$ elements and compute 
 Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm~\ref{alg:prod-tree} (for $j=0$) illustrated in Figure~\ref{fig:prod-tree}.
 Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu(u t))$. We can then compute $c$ by multiplying the $H_j$ modulo $p$, which costs $\Oapp(\frac{n}{t} \mu(u t))$.\smallskip
 
-\begin{figure}[t]
-\centering
-\centerline{
-\begin{turn}{90}
-\begin{tikzpicture}[level/.style={sibling distance=60mm/#1}]
-\node (z){$\displaystyle \pi=\pi_1=\prod_{i=0}^{t-1} h_i$}
-  child {node (a) {$\displaystyle \pi_2=\prod_{i=0}^{t/2-1} h_i$}
-    child {node (b) {$\displaystyle \pi_4=\prod_{i=0}^{t/4-1} h_i$}
-      child {node {$\vdots$}
-        child {node (d) {\begin{turn}{270}{$\displaystyle \pi_t=h_0$}\end{turn}}}
-        child {node (e) {\begin{turn}{270}{$\displaystyle \pi_{t+1}=h_1$}\end{turn}}}
-      }
-      child {node {$\vdots$}}
-    }
-    child {node (g) {$\displaystyle \pi_5=\prod_{i=t/4}^{2t/4-1} h_i$}
-      child {node {$\vdots$}}
-      child {node {$\vdots$}}
-    }
-  }
-  child {node (j) {$\displaystyle \pi_3=\prod_{i=t/2}^{2t/2-1} h_i$}
-    child {node (k) {$\displaystyle \pi_6=\prod_{i=t/2}^{3t/4-1} h_i$}
-      child {node {$\vdots$}}
-      child {node {$\vdots$}}
-    }
-    child {node (l) {$\displaystyle \pi_7=\prod_{i=3t/4}^{4t/4-1} h_i$}
-      child {node {$\vdots$}}
-      child {node (c){$\vdots$}
-        child {node (o) {\begin{turn}{270}{$\displaystyle \pi_{2t-2}=h_{t-2}$}\end{turn}}}
-        child {node (p) {\begin{turn}{270}{$\displaystyle \pi_{2t-1}=h_{t-1}$}\end{turn}}
-%
-%
-          child [grow=right] {node (qe) {} edge from parent[draw=none]
-            child [grow=right] {node (q) {$2^\tau \times \mu(\frac{ut}{2^\tau}) \le \mu(u t)$} edge from parent[draw=none]
-            child [grow=up] {node (r) {$\vdots$} edge from parent[draw=none]
-            child [grow=up] {node (s) {$4\times\mu(\frac{u t}4) \le \mu(u t)$} edge from parent[draw=none]
-            child [grow=up] {node (t) {$2\times\mu(\frac{u t}2) \le \mu(u t)$} edge from parent[draw=none]
-            child [grow=up] {node (u) {$\mu(u t)$} edge from parent[draw=none]}
-          }}}
-          child [grow=down] {node (v) {$\tau \times \mu(u t) = \Oapp(\mu(u t))$}edge from parent[draw=none]}
-            }
-          }
-        }
-    }
-  }
-};
-\path (q) -- (r) node [midway] {+};
-\path (s) -- (r) node [midway] {+};
-\path (s) -- (t) node [midway] {+};
-\draw[->,>=latex,dashed] (l) to (s);
-\path (t) -- (u) node [midway] {+};
-\draw[->,>=latex,dashed] (z) to (u);
-\draw[->,>=latex,dashed] (j) to (t);
-\draw[->,>=latex,dashed] (p) to (q);
-\path (q) -- (v) node [midway] {$\displaystyle \le$};
-\end{tikzpicture}
-\end{turn}
-}
-\caption{Product Tree}\label{fig:prod-tree}
-\end{figure}
-
 \begin{algorithm}
 \newcommand{\vstart}{\ensuremath{\mathrm{start}}}
 \newcommand{\vmid}{\ensuremath{\mathrm{mid}}}
@@ -763,70 +711,11 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 \end{algorithm}
 
 \comm{What is the caveat?}
-The same technique applies to factorization\footnote{We explain the process with $a$, this is applicable {\sl ne variatur} to $b$ as well.}, but with a slight {\sl caveat}.\smallskip
+The same technique applies to factorization\footnote{We explain the process with $a$, this is applicable \textit{ne variatur} to $b$ as well.}, but with a slight \textit{caveat}.\smallskip
 
 After computing the tree product, we can compute the residues of $a$ modulo $H_0$.
-Then we can compute the residues of $a \bmod{H_0}$ modulo the two children $\pi_2$ and $\pi_3$ of $H_0 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end ({\sl i.e.}, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{0,\dots,t-1\}$). This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
-We can use the same method for the tree product associated to any $H_j$, and the residues of $a$ modulo each of the $h_i$ ($i \in \{jt,\dots,jt+t-1\}$) for any $j$, {\sl i.e.}, $a$ modulo each of the $h_i$ for any $i$. Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexity of $\Oapp(\frac{n}{t} \mu(u t))$.
-
-\begin{figure}[t]
-\centering
-\centerline{
-\begin{turn}{90}
-\begin{tikzpicture}[level/.style={sibling distance=60mm/#1}]
-\node (z){$\displaystyle a \bmod \pi_1$}
-  child {node (a) {$\displaystyle a \bmod \pi_2$}
-    child {node (b) {$\displaystyle a \bmod \pi_3$}
-      child {node {$\vdots$}
-        child {node (d) {\begin{turn}{270}{$\displaystyle a \bmod h_{0}$}\end{turn}}}
-        child {node (e) {\begin{turn}{270}{$\displaystyle a \bmod h_{1}$}\end{turn}}}
-      }
-      child {node {$\vdots$}}
-    }
-    child {node (g) {$\displaystyle a \bmod \pi_5$}
-      child {node {$\vdots$}}
-      child {node {$\vdots$}}
-    }
-  }
-  child {node (j) {$\displaystyle a \bmod \pi_3$}
-    child {node (k) {$\displaystyle a \bmod \pi_6$}
-      child {node {$\vdots$}}
-      child {node {$\vdots$}}
-    }
-    child {node (l) {$\displaystyle a \bmod \pi_7$}
-      child {node {$\vdots$}}
-      child {node (c){$\vdots$}
-        child {node (o) {\begin{turn}{270}{$\displaystyle a \bmod h_{t-2}$}\end{turn}}}
-        child {node (p) {\begin{turn}{270}{$\displaystyle a \bmod h_{t-1}$}\end{turn}}
-%
-%
-          child [grow=right] {node (qe) {} edge from parent[draw=none]
-            child [grow=right] {node (q) {$2^{\tau} \times O(\mu(\frac{ut}{2^{\tau}}))= O(\mu(u t))$} edge from parent[draw=none]
-            child [grow=up] {node (r) {$\vdots$} edge from parent[draw=none]
-            child [grow=up] {node (s) {$4 \times O(\mu(\frac{u t}4)) = O(\mu(u t))$} edge from parent[draw=none]
-            child [grow=up] {node (t) {$2 \times O(\mu(\frac{u t}2)) = O(\mu(u t))$} edge from parent[draw=none]
-            child [grow=up] {node (u) {$1 \times O(\mu(u t))$} edge from parent[draw=none]}
-          }}}
-          child [grow=down] {node (v) {$\sum_{i=1}^\tau 2^{i} \times O(\mu(\frac{ut}{2^i})) = \tau O(\mu(u t)) = \Oapp(\mu(u t))$}edge from parent[draw=none]}
-            }
-          }
-        }
-    }
-  }
-};
-\path (q) -- (r) node [midway] {+};
-\path (s) -- (r) node [midway] {+};
-\path (s) -- (t) node [midway] {+};
-\draw[<-,>=latex,dashed] (s) to (l);
-\path (t) -- (u) node [midway] {+};
-\draw[->,>=latex,dashed] (z) to (u);
-\draw[->,>=latex,dashed] (j) to (t);
-\draw[->,>=latex,dashed] (p) to (q);
-\path (q) -- (v) node [midway] {$\displaystyle =$};
-\end{tikzpicture}
-\end{turn}}
-\caption{Modular Reduction From Product Tree}\label{fig:div-prod-tree}
-\end{figure}
+Then we can compute the residues of $a \bmod{H_0}$ modulo the two children $\pi_2$ and $\pi_3$ of $H_0 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end (\ie, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{0,\dots,t-1\}$). This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
+We can use the same method for the tree product associated to any $H_j$, and the residues of $a$ modulo each of the $h_i$ ($i \in \{jt,\dots,jt+t-1\}$) for any $j$, \ie, $a$ modulo each of the $h_i$ for any $i$. Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexity of $\Oapp(\frac{n}{t} \mu(u t))$.
 
 \begin{algorithm}
 \newcommand{\vstart}{\ensuremath{\mathrm{start}}}
@@ -853,7 +742,7 @@ We can use the same method for the tree product associated to any $H_j$, and the
 \subsection{Doubling}
 \label{sec:doubling}
 
-
+$t_k = 2^k t'$
 
 TODO expliquer l'évolution des $t_i$, cf. la partie en annexe. Dire que ça affecte défavorablement la transmission complexity.
 
@@ -991,13 +880,15 @@ files: this is explained in Section~\ref{transferring}.
 \subsection{Moving Existing Files}
 \label{moving}
 
-To reproduce the structure of Oscar on Neil's disk, we need to perform a sequence of file moves. Sadly, it is not straightforward to apply the moves, because, if we take a file to move, its destination might be blocked, either because a file already exists (we want to move $a$ to $b$, but $b$ already exists), or because a folder cannot be created (we want to move $a$ to $b/c$, but $b$ already exists as a file and not as a folder). Note that for a move operation $a \rightarrow b$, there is at most one file blocking the location $b$: we will call it the {\sl blocker}.
+To reproduce the structure of Oscar on Neil's disk, we need to perform a sequence of file moves. Sadly, it is not straightforward to apply the moves, because, if we take a file to move, its destination might be blocked, either because a file already exists (we want to move $a$ to $b$, but $b$ already exists), or because a folder cannot be created (we want to move $a$ to $b/c$, but $b$ already exists as a file and not as a folder). Note that for a move operation $a \rightarrow b$, there is at most one file blocking the location $b$: we will call it the \textit{blocker}.
 
 If the blocker is absent on Oscar, then we can just delete the blocker. However, if a blocker exists, then we might need to move it somewhere else before we solve the move we are interested in. This move itself might have a blocker, and so on. It seems that we just need to continue until we reach a move which has no blocker or whose blocker can be deleted, but we can get caught in a cycle: if we must move $a$ to $b$, $b$ to $c$ and $c$ to $a$, then we will not be able to perform the operations without using a temporary location.
 
-How can we perform the moves? A simple way would be to move each file to a unique temporary location and then rearrange files to our liking: however, this performs many unnecessary moves and could lead to problems if the program is interrupted. We can do something more clever by performing a decomposition in Strongly Connected Components ({\sc scc}) of the {\sl move graph} (with one vertex per file and one edge per move operation going from to the file to its blocker or to its destination if no blocker exists). The computation of the {\sc scc} decomposition is simplified by the observation that because two files being moved to the same destination must be equal, we can only keep one arbitrary in-edge per node, and look at the graph pruned in this fashion: its nodes have in-degree at most one, so the strongly connected components are either single nodes or cycles. Once the {\sc scc} decomposition is known, the moves can be applied by applying each {\sc scc} in a bottom-up fashion, an {\sc scc}'s moves being solved either trivially (for single files) or using one intermediate location (for cycles).
+How can we perform the moves? A simple way would be to move each file to a unique temporary location and then rearrange files to our liking: however, this performs many unnecessary moves and could lead to problems if the program is interrupted. We can do something more clever by performing a decomposition in Strongly Connected Components ({\sc scc}) of the \textit{move graph} (with one vertex per file and one edge per move operation going from to the file to its blocker or to its destination if no blocker exists). The computation of the {\sc scc} decomposition is simplified by the observation that because two files being moved to the same destination must be equal, we can only keep one arbitrary in-edge per node, and look at the graph pruned in this fashion: its nodes have in-degree at most one, so the strongly connected components are either single nodes or cycles. Once the {\sc scc} decomposition is known, the moves can be applied by applying each {\sc scc} in a bottom-up fashion, an {\sc scc}'s moves being solved either trivially (for single files) or using one intermediate location (for cycles).
 
 The detailed algorithm is implemented as two mutually recursive functions and presented as Algorithm \ref{alg:moves}.
+
+TODO: $\mathfrak{D}$: collision of notation with $\SetD$.
 
 % TODO check this algo
 \begin{algorithm}
@@ -1068,7 +959,7 @@ Oscar is now aware of all of Neil's files and their location.
 \section{Implementation}
 \label{program}
 
-We implemented the D\&F set reconciliation protocol, extended it to perform file
+We implemented the \df set reconciliation protocol, extended it to perform file
 synchronization, and benchmarked it against \rsync. The implementation is called
 \btrsync, its source code is available from~\cite{Robin}; it was written using
 the Python programming language (using {\sf gmp} to perform the number theoretic
@@ -1148,87 +1039,208 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 
 \appendix
 
-\section{Extended Protocol}
-\label{sec:extended}
+\section{Refined Analysis of the File Laundry}
+\label{app:refined-file-laundry}
 
-\begin{center}
-\begin{tabular}{lcl}\toprule
-\multicolumn{3}{c}{{\sf First phase during which Neil amasses modular
-information on the difference~~}} \\\midrule
-~~{\bf Oscar}                      &                                                      &   {\bf Neil}~\\
-                                   &                                                      &start the protocol with $p_1$~\\
-                                   &~~{{\LARGE $\stackrel{c_1}{\longrightarrow}$}}~~      &   \\
-                                   &                                                      &computes $a,b$ using $p_1$~\\
-                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}\\
-                                   &                                                      &~~~~~~else perform the protocol with $p_2$~~\\
-                                   &~~{{\LARGE $\stackrel{c_2}{\longrightarrow}$}}~~      &   \\
-                                   &                                                      &computes $c \bmod p_1 p_2=\mbox{CRT}_{p_1,p_2}(c_1,c_2)$~~\\
-                                   &                                                      &computes $a,b$ using $p_1 p_2$~\\
-                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}\\
-                                   &                                                      &~~~~~~else perform the protocol with $p_3$~~\\
-                                   &~~{{\LARGE $\stackrel{c_3}{\longrightarrow}$}}~~      &   \\
-                                   &                                                      &computes $c \bmod p_1 p_2 p_3=\mbox{CRT}_{p_1,p_2,p_3}(c_1,c_2,c_3)$~~\\
-                                   &                                                      &computes $a,b$ using $p_1 p_2 p_3$~\\
-                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}\\
-                                   &                                                      &~~~~~~else perform the protocol with $p_4$ ~~\\
-                                   &                  $\vdots$
-& \\\midrule
-\multicolumn{3}{c}{{\sf Final Phase~~}} \\\midrule
-                                   &                                                      & \\
-                                   &                                                      &Let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod h'_i =0\}$~~\\
-                                   &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
-                                   ~~deletes files s.t. $b \bmod h_i =0$&                                                      &\\
-                                   ~~adds $\mathfrak{S}$ to the disk
-                                   &
-                                   &\\\bottomrule
-\end{tabular}
-\end{center}
+As mentioned previously, the parties can remove the files confirmed as different during iteration $k$ and work during iteration $k+1$ only with common and colliding files. Now, the only collisions that can fool round $k$, are the collisions of file-pairs $(F_i,F_j)$ such that $F_i$ and $F_j$ have both already collided during \textit{all the previous iterations}\footnote{Note that we \underline{do not} require that $F_i$ and $F_j$ repeatedly collide \textit{which each other}; \eg, we may witness during the first round $\hbar_{1}(F_1)=\hbar_{1}(F_2)$, $\hbar_{1}(F_3)=\hbar_{1}(F_4)$ and $\hbar_{1}(F_5)=\hbar_{1}(F_6)$ while during the second round $\hbar_{2}(F_1)=\hbar_2(F_2)$, $\hbar_{2}(F_3)=\hbar_{1}(F_6)$ and $\hbar_{2}(F_5)=\hbar_{2}(F_4)$ as shown in Figure \ref{fig:masked}.}. TODO this sentence is unclear: We call such collisions ``masquerade balls'' (\cf Figure \ref{fig:masked}). Define the two random variables:
 
-Note that parties do not need to store the $p_i$'s in full. Indeed, the $p_i$s could be subsequent primes sharing their most significant bits. This reduces storage per prime to a very small additive constant $ \cong \mbox{ln}(p_i) \cong \mbox{ln}(2^{2tu+2}) \cong 1.39(tu+1)$ of about $\log_2(tu)$ bits.
+\begin{align*}
+Z^\ell_i &=
+\left\{
+\begin{array}{lcl}
+1 & ~~~~&  \parbox[t]{0.6\textwidth}{if $F_i$ participated in masquerade balls during all the $\ell$ first protocol iterations.}\\
+\\
+0 & ~~~~&  \mbox{otherwise.}
+\end{array}
+\right. \\
+X^{\ell}_{i,j} &=
+\left\{
+\begin{array}{lcl}
+1 & ~~~~&  \parbox[t]{0.6\textwidth}{if files $F_i$ and $F_j$ collide during iteration $\ell$.}\\
+\\
+0 & ~~~~&  \mbox{otherwise.}
+\end{array}
+\right.
+\end{align*}
 
-\section{Power of Two Protocol}
-\label{powtwo}
+\def\bruijn{file $F_1$,file $F_2$,file $F_3$,file $F_4$,file $F_5$,file $F_6$}
 
-In this variant Oscar computes $c$ in $\mathbb{N}$:
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[scale=4]
+    \foreach \v [count=\n] in \bruijn
+    \node[draw=black!30,fill=black!10,rounded corners] (\n) at (180-\n*60:1) {\v};
+  \path (1) edge [<->,above,double,thick]             node {round 1} (2)
+        (3) edge [<->,above,double,thick,sloped]             node {round 1} (4)
+        (5) edge [<->,above,double,thick,sloped]             node {round 1} (6)
+        (1) edge [<->,above,bend left]  node {round 2} (2)
+        (3) edge [<->,above]             node {round 2} (6)
+        (5) edge [<->,above]             node {round 2} (4)
+        (6) edge [<->,above,dashed,sloped]  node {round 3} (2)
+        (1) edge [<->,above,dashed,sloped]  node {round 3} (3)
+        (5) edge [<->,bend left,above,dashed]  node {round 3} (4);
+\end{tikzpicture}
+\caption{Illustration of three masquerade balls. Each protocol round is materialized by a different type of arrow. Arrows denotes collisions.}\label{fig:masked}
+\end{figure}
 
-$$
-c=\prod_{F_i\in \mathfrak{F}} \mbox{{\tt HashPrime}}(F_i) = \prod_{i=1}^n h_i \in \mathbb{N}
-$$
+Set $Z^0_i = 1$ and write $p_\ell = \Prob{Z^{\ell}_{i} = 1 \text{ and } Z^{\ell}_{j} = 1} $ for all $\ell$ and $i \neq j$.
+For $k \ge 1$, we have:
+\begin{align*}
+\Prob{Z^\lambda_i=1} &= \Prob{\exists j\neq i \text{, } X^\lambda_{i,j} = 1 \text{, } Z^{\lambda-1}_{i} = 1  \text{ and } Z^{\ell-1}_{j} = 1}  \\
+&\le \sum_{j=0, j\neq i}^{\eta-1} \Prob{X^{\lambda}_{i,j} = 1} \Prob{Z^{\lambda-1}_{i} = 1 \text{ and } Z^{\lambda-1}_{j} = 1}  \\
+&\le \frac{\eta-1}{2^u} p_{\lambda-1}
+\end{align*}
+Furthermore $p_0 = 1$ and\comm{Fabrice: maybe put this in appendix and add a few comments...}
+\begin{align*}
+p_\ell &= \Prob{X^{\ell}_{0,1} = 1 \text{, } Z^{\ell}_{0} = 1 \text{ and } Z^{\ell}_{1} = 1}
+  + \Prob{X^{\ell}_{0,1} = 0 \text{, } Z^{\ell}_{0} = 1 \text{ and } Z^{\ell}_{1} = 1} \\
+&\le \Prob{X^{\ell}_{0,1} = 1 \text{, } Z^{\ell-1}_{0} = 1 \text{ and } Z^{\ell-1}_{1} = 1} \\
+  &\quad+ \sum_{i \ge 2, j \ge 2} \Prob{X^\ell_{0,i} = 1 \text{, } X^\ell_{1,j} = 1 \text{, } Z^{\ell-1}_{0} = 1 \text{ and } Z^{\ell-1}_{1} = 1} \\
+&= \Prob{X^{\ell}_0 = X^{\ell}_1} \Prob{Z^{\ell-1}_{0} = 1 \text{ and } Z^{\ell-1}_{1} = 1} \\
+  &\quad+ \sum_{i \ge 2, j \ge 2} \Prob{X^\ell_{0,i} = 1} \Prob{X^\ell_{1,j} = 1} \Prob{Z^{\ell-1}_{0} = 1 \text{ and } Z^{\ell-1}_{1} = 1} \\
+&\le \frac{1}{2^u} p_{\ell-1} + \frac{(\eta-2)^2}{2^{2u}} p_{\ell-1} = p_{\ell-1}\left(\frac{1}{2^u}  + \frac{(\eta-2)^2}{2^{2u}}\right)
+\end{align*}
+hence:
+\[ p_\ell \le \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^\ell, \]
+and
+\[ \Prob{Z^\lambda_i=1} \le \frac{\eta-1}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{\lambda-1} \]
+And finally, the survival probability of at least one false positive after $k$ iterations satisfies:
+\[
+\epsilon'_\lambda \le \frac{\eta(\eta-1)}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{\lambda-1}
+\]
 
-and considers $c=\bar{c}_{n-1}|\ldots|\bar{c}_2|\bar{c}_0$ as the concatenation of $n$ successive $u$-bit strings. Again, we omit the treatment of $\bot$s for the sake of clarity.
+For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.\smallskip
 
-\begin{center}
-\begin{tabular}{lcl}\toprule
-\multicolumn{3}{c}{{\sf First phase during which Neil amasses modular
-information on the difference~~}} \\\midrule
-~~{\bf Oscar}                      &                                                      &   {\bf Neil}~\\
-~~computes $c\in \mathbb{N}$       &                                                      &\\
-                                   &~~{{\LARGE $\stackrel{\bar{c}_0}{\longrightarrow}$}}~~&   \\
-                                   &                                                      &computes $a,b$ modulo $2^u$~\\
-                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}~~\\
-                                   &                                                      &~~~~~~else request next chunk $\bar{c}_1$~~\\
-                                   &~~{{\LARGE $\stackrel{\bar{c}_1}{\longrightarrow}$}}~~&   \\
-                                   &                                                      &construct $c \bmod 2^{2u}=\bar{c}_1|\bar{c}_0$~~\\
-                                   &                                                      &computes $a,b$ modulo $2^{2u}$~\\
-                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}~~\\
-                                   &                                                      &~~~~~~else request next chunk $\bar{c}_2$~~\\
-                                   &~~{{\LARGE $\stackrel{\bar{c}_2}{\longrightarrow}$}}~~      &   \\
-                                   &                                                      &construct $c\bmod 2^{3u}=\bar{c}_2|\bar{c}_1|\bar{c}_0$~~\\
-                                   &                                                      &computes $a,b$ modulo $2^{3u}$~\\
-                                   &                                                      &if $a$ factors properly then go to {\sf Final Phase}~~\\
-                                   &                                                      &~~~~~~else request next chunk $\bar{c}_3$~~\\
-                                   &                  $\vdots~(\mbox{~for~}2t
-\mbox{~rounds~})$    & \\\midrule
-\multicolumn{3}{c}{{\sf Final Phase~~}} \\\midrule
-                                   &                                                      & \\
-                                   &                                                      &Let $\mathfrak{S}=\{F'_i \mbox{~s.t.~} a \bmod 2^{2tu} =0\}$~~\\
-                                   &~~{\LARGE $\stackrel{\mathfrak{S},b}{\longleftarrow}$}&\\
-                                   ~~deletes files s.t. $b \bmod 2^{2t u} =0$&        &\\
-                                   ~~adds $\mathfrak{S}$ to the disk
-                                   &
-                                   &\\\bottomrule
-\end{tabular}
-\end{center}
+
+
+\section{Figures for Product Tree Optimization}
+
+Figures~\ref{fig:prod-tree} and~\ref{fig:div-prod-tree}.
+
+\begin{figure}
+\centering
+\centerline{
+\begin{turn}{90}
+\begin{tikzpicture}[level/.style={sibling distance=60mm/#1}]
+\node (z){$\displaystyle \pi=\pi_1=\prod_{i=0}^{t-1} h_i$}
+  child {node (a) {$\displaystyle \pi_2=\prod_{i=0}^{t/2-1} h_i$}
+    child {node (b) {$\displaystyle \pi_4=\prod_{i=0}^{t/4-1} h_i$}
+      child {node {$\vdots$}
+        child {node (d) {\begin{turn}{270}{$\displaystyle \pi_t=h_0$}\end{turn}}}
+        child {node (e) {\begin{turn}{270}{$\displaystyle \pi_{t+1}=h_1$}\end{turn}}}
+      }
+      child {node {$\vdots$}}
+    }
+    child {node (g) {$\displaystyle \pi_5=\prod_{i=t/4}^{2t/4-1} h_i$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+  }
+  child {node (j) {$\displaystyle \pi_3=\prod_{i=t/2}^{2t/2-1} h_i$}
+    child {node (k) {$\displaystyle \pi_6=\prod_{i=t/2}^{3t/4-1} h_i$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+    child {node (l) {$\displaystyle \pi_7=\prod_{i=3t/4}^{4t/4-1} h_i$}
+      child {node {$\vdots$}}
+      child {node (c){$\vdots$}
+        child {node (o) {\begin{turn}{270}{$\displaystyle \pi_{2t-2}=h_{t-2}$}\end{turn}}}
+        child {node (p) {\begin{turn}{270}{$\displaystyle \pi_{2t-1}=h_{t-1}$}\end{turn}}
+%
+%
+          child [grow=right] {node (qe) {} edge from parent[draw=none]
+            child [grow=right] {node (q) {$2^\tau \times \mu(\frac{ut}{2^\tau}) \le \mu(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (r) {$\vdots$} edge from parent[draw=none]
+            child [grow=up] {node (s) {$4\times\mu(\frac{u t}4) \le \mu(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (t) {$2\times\mu(\frac{u t}2) \le \mu(u t)$} edge from parent[draw=none]
+            child [grow=up] {node (u) {$\mu(u t)$} edge from parent[draw=none]}
+          }}}
+          child [grow=down] {node (v) {$\tau \times \mu(u t) = \Oapp(\mu(u t))$}edge from parent[draw=none]}
+            }
+          }
+        }
+    }
+  }
+};
+\path (q) -- (r) node [midway] {+};
+\path (s) -- (r) node [midway] {+};
+\path (s) -- (t) node [midway] {+};
+\draw[->,>=latex,dashed] (l) to (s);
+\path (t) -- (u) node [midway] {+};
+\draw[->,>=latex,dashed] (z) to (u);
+\draw[->,>=latex,dashed] (j) to (t);
+\draw[->,>=latex,dashed] (p) to (q);
+\path (q) -- (v) node [midway] {$\displaystyle \le$};
+\end{tikzpicture}
+\end{turn}
+}
+\caption{Product Tree}\label{fig:prod-tree}
+\end{figure}
+
+\begin{figure}
+\centering
+\centerline{
+\begin{turn}{90}
+\begin{tikzpicture}[level/.style={sibling distance=60mm/#1}]
+\node (z){$\displaystyle a \bmod \pi_1$}
+  child {node (a) {$\displaystyle a \bmod \pi_2$}
+    child {node (b) {$\displaystyle a \bmod \pi_3$}
+      child {node {$\vdots$}
+        child {node (d) {\begin{turn}{270}{$\displaystyle a \bmod h_{0}$}\end{turn}}}
+        child {node (e) {\begin{turn}{270}{$\displaystyle a \bmod h_{1}$}\end{turn}}}
+      }
+      child {node {$\vdots$}}
+    }
+    child {node (g) {$\displaystyle a \bmod \pi_5$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+  }
+  child {node (j) {$\displaystyle a \bmod \pi_3$}
+    child {node (k) {$\displaystyle a \bmod \pi_6$}
+      child {node {$\vdots$}}
+      child {node {$\vdots$}}
+    }
+    child {node (l) {$\displaystyle a \bmod \pi_7$}
+      child {node {$\vdots$}}
+      child {node (c){$\vdots$}
+        child {node (o) {\begin{turn}{270}{$\displaystyle a \bmod h_{t-2}$}\end{turn}}}
+        child {node (p) {\begin{turn}{270}{$\displaystyle a \bmod h_{t-1}$}\end{turn}}
+%
+%
+          child [grow=right] {node (qe) {} edge from parent[draw=none]
+            child [grow=right] {node (q) {$2^{\tau} \times O(\mu(\frac{ut}{2^{\tau}}))= O(\mu(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (r) {$\vdots$} edge from parent[draw=none]
+            child [grow=up] {node (s) {$4 \times O(\mu(\frac{u t}4)) = O(\mu(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (t) {$2 \times O(\mu(\frac{u t}2)) = O(\mu(u t))$} edge from parent[draw=none]
+            child [grow=up] {node (u) {$1 \times O(\mu(u t))$} edge from parent[draw=none]}
+          }}}
+          child [grow=down] {node (v) {$\sum_{i=1}^\tau 2^{i} \times O(\mu(\frac{ut}{2^i})) = \tau O(\mu(u t)) = \Oapp(\mu(u t))$}edge from parent[draw=none]}
+            }
+          }
+        }
+    }
+  }
+};
+\path (q) -- (r) node [midway] {+};
+\path (s) -- (r) node [midway] {+};
+\path (s) -- (t) node [midway] {+};
+\draw[<-,>=latex,dashed] (s) to (l);
+\path (t) -- (u) node [midway] {+};
+\draw[->,>=latex,dashed] (z) to (u);
+\draw[->,>=latex,dashed] (j) to (t);
+\draw[->,>=latex,dashed] (p) to (q);
+\path (q) -- (v) node [midway] {$\displaystyle =$};
+\end{tikzpicture}
+\end{turn}}
+\caption{Modular Reduction From Product Tree}\label{fig:div-prod-tree}
+\end{figure}
+
+
+
+\section{Implementation Details and Benchmarks}
+
+Tables~\ref{tab:benchdirec}, \ref{tab:rsyncopt} and~\ref{tab:results}.
 
 \begin{table}
 \begin{center}
@@ -1287,7 +1299,7 @@ information on the difference~~}} \\\midrule
     \bottomrule
   \end{tabular*}
 
-  \caption{Experimental results. {\tt rs} and {\tt bt} subscripts respectively denote {\tt rsync} and {\tt btrsync}. The two first columns indicate the datasets. Synchronization is performed {\sl from} Neil {\sl to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between the two programs. The last two columns show timing results. This evaluation was performed on an HP ProBook 5330m laptop using an Intel Core i3-2310M CPU clocked at 2.10 Ghz.}
+  \caption{Experimental results. {\tt rs} and {\tt bt} subscripts respectively denote {\tt rsync} and {\tt btrsync}. The two first columns indicate the datasets. Synchronization is performed \textit{from} Neil \textit{to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between the two programs. The last two columns show timing results. This evaluation was performed on an HP ProBook 5330m laptop using an Intel Core i3-2310M CPU clocked at 2.10 Ghz.}
   \label{tab:results}
 \end{table}
 
