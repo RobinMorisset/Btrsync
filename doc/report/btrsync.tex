@@ -140,7 +140,7 @@ are as follows:
   \item We introduce ``Divide \& Factor'', a new set reconciliation algorithm.
     \df is based on number theory: it represents the items to synchronize as
     prime numbers, accumulates information about the symmetric difference in
-    a series of rounds through the Chinese remainder theorem (CRT), and reconstitutes
+    a series of rounds through the Chinese remainder theorem, and reconstitutes
     the result through the use of rational number reconstruction. The algorithm
     is described in Section~\ref{dandf}.
   \item We show that \df, like existing algorithms, has a transmission
@@ -172,8 +172,8 @@ are as follows:
 \label{dandf}
 
 In this section, we introduce \df, a new set reconciliation protocol based on number theory, which works on sets of $u$-bit primes $\Set$ and $\Set'$.
-After introducing the problem and the notations, we first present a basic version of \df which assumes that the number of differences between the two sets is bounded by some constant.
-We then show how to extend this protocol to deal with any number of differences.
+After introducing the problem and the notations, we first present the \emph{basic} version of \df which assumes that the number of differences between the two sets is bounded by some constant.
+We then show how to extend it to the \emph{complete} \df protocol which can deal with any number of differences.
 
 \subsection{Problem Definition and Notations}
 
@@ -219,7 +219,7 @@ The problem of efficiently recovering $a$ and $b$ from $s$ is known as \textit{R
 The following theorem (adapted from Theorem~1 in \cite{cryptorational}) guarantees that it can be solved efficiently in this setting.
 \begin{theorem}
 \label{theo}
-Let $a,b \in {\mathbb Z}$ be two co-prime integers such that $0 \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a,b$ are uniquely defined given $s$ and $p$, and can be recovered from $A,B,s,p$ in polynomial time.
+Let $a$,$b \in {\mathbb Z}$ be two co-prime integers such that $0 \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a$,$b$ are uniquely defined given $s$ and $p$, and can be recovered from $A$,$B$,$s$, and $p$ in polynomial time.
 \end{theorem}
 
 Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss's algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
@@ -258,31 +258,30 @@ We then construct a protocol which works with any $T$.
 \subsubsection{Detecting Bad Reconciliation.}
 We first remark that, if we execute the previous protocol when $t < T$, either $a$ and $b$ are still correct (in which case the protocol works correctly), or $a$ and $b$ are not correct.
 In the second case, with high probability, the product of the $h_i$'s which divide $a$ is not equal to $a$ (TODO: prove this claim).
-This check has the advantage to be very fast, and it does not require Neil to send any data to Oscar.
+This check has the advantage to be very fast, and it does not require Neil to send any data to Oscar. Whenever this check fails, we say that this is a ``bad reconciliation''.\comm{TODO trouver un meilleur nom pour la suite}
 But, if we are unlucky, it can happen that this check is not sufficient. We will call $\bot$ the event where this check failed.
 
 To handle the $\bot$ case, we will assume that we have a collision-resistant hash function $\Hash$ which takes as input any bit string and output a short binary string of a fixed number of bits $n$ (e.g., $n=160$).
 At the beginning, before any other exchanges take place, Neil sends to Oscar a hash of its set $H = \Hash(\Set') = \Hash((h'_1,\dots,h'_{n'}))$. At the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and checks if the hash of this new set is equal to $H$.
 Whenever Oscar's $\Set'$ is incorrect because the assumption $T < t$, this check will fail unless we found a collision in $\Hash$. Hence, we can bound the probability of error of the protocol by $2^n$. In what follows, we assume that our choice of $n$ is sufficient to ensure that the probability of error is negliglible: this only adds an additive constant to the transmission complexity of the protocol.
 
-\subsubsection{Complete \df Protocol}
+\subsubsection{Complete \df Protocol.}
 \label{sec:complete-df}
 
-To extend the protocol to an arbitrary $T$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails (\ie, yields a bad reconciliation), Neil and Oscar redo the protocol with a new $p_\ell$ and Neil will keep accumulating information about the difference between $\Set$ and $\Set'$. 
-Each of this repetition is called a round.
+To extend the protocol to an arbitrary $T$, we will assume that Oscar and Neil agreed on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails (\ie, yields a bad reconciliation TODO refléter le meilleur nom ici!), Neil and Oscar perform the protocol a new time with a new $p_\ell$. Oscar will thus keep accumulating information about the difference between $\Set$ and $\Set'$ over this sequence of execution of the protocol (that we call \emph{rounds}).
 
-More precisely, let us suppose $2^{2 u t_k} \le p_k < 2^{2 u t_k +1}$.
-Let us write $P_k = p_1 \dots p_k$ and $T_k = t_1 + \dots + t_k$.
-After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as many information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the CRT (TODO ref ?): 
+Formally, let us assume $2^{2 u t_k} \le p_k < 2^{2 u t_k +1}$.
+Let us write $P_k = p_1 \cdots p_k$ and $T_k = t_1 + \cdots + t_k$.
+After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as much information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the Chinese remainder theorem (CRT) (TODO ref ?): 
 \[ S_k = \CRT(S_{k-1},P_{k-1},s_k,p_k) = S_{k-1} (p_k^{-1} \bmod P_{k-1}) p_k + s_k (P_{k-1}^{-1} \bmod p_k) P_{k-1} \bmod P_k. \]
 The full protocol is depicted in Figure~\ref{fig:complete-df}.
-Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\Set$ and $\Set'$.
+Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it becomes sufficiently large to reconcile $\Set$ and $\Set'$.
 Therefore, the number $\kappa$ of rounds used is the minimum number $k$ such that $T_k \ge T$.
 
-In the sequel, we focus on two variants:
+In what follows, we will focus on two following choices of $t_\ell$:
 \begin{itemize}
-\item $t_1 = t_2 = \dots = t$, in which case $\kappa = \lceil T/t \rceil$;
-\item $t_k = 2^k t'$, in which case $ \kappa = \lceil \log_2(T / t') \rceil $.
+\item $t_1 = t_2 = \dots = t$ for some fixed $t$, in which case $\kappa = \lceil T/t \rceil$;
+\item $t_k = 2^k t$ for some fixed $t$, in which case $\kappa = \lceil \log_2(T / t') \rceil$.
 \end{itemize}
 
 \begin{figure}
@@ -292,7 +291,7 @@ In the sequel, we focus on two variants:
 \toprule
 \textbf{Oscar}                    &                                        & \textbf{Neil}\\
 \midrule
-\multicolumn{3}{c}{\textit{Phase 0: Hash of content for detection of bad reconciliation}} \\
+\multicolumn{3}{c}{\textit{Phase 0: Content hash to detect bad reconciliations}} \\
 \midrule
                                   &                        & $H \gets \Hash(\Set')$ \\
                                   & $\Lflow{H}$            & \\
