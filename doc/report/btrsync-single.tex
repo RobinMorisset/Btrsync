@@ -55,7 +55,8 @@
 \newcommand{\cf}{\textit{cf.}\xspace}
 \newcommand{\eg}{\textit{e.g.}\xspace}
 
-\newcommand{\Hash}{\texttt{Hash}\xspace}
+\newcommand{\Hash}{\ensuremath{\mathtt{Hash}}}
+\newcommand{\HashPrime}{\ensuremath{\mathtt{HashPrime}}}
 
 \newcommand{\Rflow}[1]{\stackrel{\displaystyle #1}{\hbox to 5em{\rightarrowfill}}}
 \newcommand{\Lflow}[1]{\stackrel{\displaystyle #1}{\hbox to 5em{\leftarrowfill}}}
@@ -175,8 +176,8 @@ Then we show how to extend this protocol to deal with any number of differences.
 
 \subsection{Problem Definition and Notations}
 
-\underline{O}scar possesses an \underline{o}ld version of a set $\Set$ of $n$ $u$-bit primes $\Set$ that he wished to update.
-\underline{N}eil has the \underline{n}ew, up-to-date version of this set, denoted $\Set'$ and containing $n'$ $u$-bit primes.
+\underline{O}scar possesses an \underline{o}ld version of a multiset $\Set$ of $n$ $u$-bit primes $\Set$ that he wished to update.
+\underline{N}eil has the \underline{n}ew, up-to-date version of this multiset, denoted $\Set'$ and containing $n'$ $u$-bit primes.
 \comm{Fabrice: should we speak about the fact we are limited to primes ???}
 
 Let us write $\Set = \{h_1,\dots,h_n\}$ and $\Set' = \{h'_1,\dots,h'_n\}$, such that: $h_1 < h_2 < \dots < h_n$ and $h'_1 < h'_2 < \dots < h'_{n'}$.
@@ -184,7 +185,7 @@ Let $\SetD = \Set \setminus \Set'$ be the numbers deleted in Neil's version (com
 Let $T$ be the number of discrepancies or differences between $\Set$ and $\Set'$:
 \[ T = \# \SetD + \# \SetD' = \# \Set + \# \Set' - 2 \# \left( \Set \bigcap \Set' \right) = \# \left(\Set \bigcup \Set' \right) - \# \left(\Set \bigcap \Set'\right), \]
 
-Let also suppose we have a collision-resistant hash function $\Hash$ which takes as input a tuple of integers and output a short binary string of, for example, $160$-bits\footnote{TODO: comment on such hash function for Antoine}.
+Let also suppose we have a collision-resistant hash function $\Hash$ which takes as input any bitstring and output a short binary string of, for example, $160$-bits\footnote{TODO: comment on such hash function for Antoine}.
 
 \subsection{Basic Protocol with Bounded $T$}
 \label{sec:basic}
@@ -223,7 +224,8 @@ Let $a,b \in {\mathbb Z}$ two co-prime integers such that $0 \leq a \leq A$ and 
 
 Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
 \comm{Fabrice: certes, mais on utilise directement un Euclide étendu tronqué. Et pourquoi citer Vallée qui est un peu incompréhensible dans notre cas... TODO: check that in our program we ensure $a$ and $b$ co-prime !! otherwise, it may fail !!!!!}
-By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can attempt to identify the discrepancies between $\Set$ and $\Set'$ and settle them.
+By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can attempt to identify the discrepancies between $\Set$ and $\Set'$ and settle them\footnote{Actually, this only works if $\Set$ and $\Set'$ are sets, but if they are multi-set, and if, for example, $h'_i$ is $j'$ times in $\Set'$, we need to check the divisibility of $b$ by $h_i,h_i^2,\dots,h_i^{j'}$. In the sequel, we only present algorithms for $\Set$ and $\Set'$ sets.
+We let the reader adapt them to the multi-set case.}.
 
 The basic protocol is depicted in Figure~\ref{fig:basic-df}.
 
@@ -273,12 +275,12 @@ Let us write $P_k = p_1 \dots p_k$ and $T_k = t_1 + \dots + t_k$.
 After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as many information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the CRT (TODO ref ?): 
 \[ S_k = \CRT(S_{k-1},P_{k-1},s_k,p_k) = S_{k-1} (p_k^{-1} \bmod P_{k-1}) p_k + s_k (P_{k-1}^{-1} \bmod p_k) P_{k-1} \bmod P_k. \]
 Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it reaches a threshold sufficient to reconcile $\Set$ and $\Set'$.
-Therefore, the number $\lambda$ of rounds used is the minimum number $k$ such that $T_k \ge T$.
+Therefore, the number $\kappa$ of rounds used is the minimum number $k$ such that $T_k \ge T$.
 
 In the sequel, we focus on two variants:
 \begin{itemize}
-\item $t_1 = t_2 = \dots = t$, in which case $\lambda = \lceil T/t \rceil$;
-\item $t_k = 2^k t'$, in which case $ \lambda = \lceil \log_2(T / t') \rceil $.
+\item $t_1 = t_2 = \dots = t$, in which case $\kappa = \lceil T/t \rceil$;
+\item $t_k = 2^k t'$, in which case $ \kappa = \lceil \log_2(T / t') \rceil $.
 \end{itemize}
 
 \begin{figure}
@@ -344,25 +346,17 @@ This section proves that \df achieves optimal asymptotic transmission complexity
 
 \subsection{Proof of Transmission Complexity Optimality}
 
-% Excluding the core information $\mathfrak{S}$ and assuming that no $\bot_{\mbox{{\tiny {\sf collision}}},\square}$ events occurred, the transmission complexity of the protocol of Appendix \ref{sec:extended} is:
-% $$
-% \lambda \log (\max_{k=1}^\lambda c_k) + \log b \,\leq\, \lambda \log (\max_{k=1}^\lambda p_k) + \frac12 \log \prod_{k=1}^\lambda p_k \,\leq\, 3\lambda (uT+1)=O(\lambda uT)=O(ut),
-% $$
-% %where $\lambda=\lceil T/t \rceil$ is the number of rounds required to complete the protocol. 
-% As we have no control over $t$, decreasing $u$ is the main natural optimization option. We will get back to this later on in this paper (section \ref{shortu}).
-% \comm{Fabrice: maybe deal with the case when doubling ? and precise that we deal with constant $t$ ???}
-
 Assuming that there is no event $\bot$ (since these events happen with negligible probability), the transmission complexity of \df is:
-\[  \sum_{k=1}^\lambda \log c_k + \log b + \log |\SetD'|
- \,\leq\, \sum_{k=1}^\lambda (ut_k+1) + \frac{1}{2} (uT_\lambda) + u T
- \,\leq\, u (T_\lambda + \lambda) + \frac{1}{2} u T_\lambda + u T
- \,\leq\, \frac{5}{2} u T_\lambda + u \lambda, \]
-where $\lambda$ is the maximum number of rounds needed.
+\[  \sum_{k=1}^\kappa \log c_k + \log b + \log |\SetD'|
+ \,\leq\, \sum_{k=1}^\kappa (ut_k+1) + \frac{1}{2} (uT_\kappa) + u T
+ \,\leq\, u (T_\kappa + \kappa) + \frac{1}{2} u T_\kappa + u T
+ \,\leq\, \frac{5}{2} u T_\kappa + u \kappa, \]
+where $\kappa$ is the maximum number of rounds needed.
 
 Here are the complexity in the two cases we are interested in:
 \begin{itemize}
-\item if $t_1 = \dots = t$, $\lambda = \lceil T/t \rceil$, $T_\lambda = \lambda t < T+t$ and the transmission complexity is at most $\frac{5}{2} u (T+t) + \lceil T/t \rceil = O(uT)$;
-\item if $t_k = 2^k t'$, $\lambda = \lceil \log(T/t') \rceil$, $T_\lambda < 2T$ and the transmission complexity is at most $\frac{5}{2} 2uT + \lceil \log(T/t') \rceil = O(ut)$.
+\item if $t_1 = \dots = t$, $\kappa = \lceil T/t \rceil$, $T_\kappa = \kappa t < T+t$ and the transmission complexity is at most $\frac{5}{2} u (T+t) + \lceil T/t \rceil = O(uT)$;
+\item if $t_k = 2^k t'$, $\kappa = \lceil \log(T/t') \rceil$, $T_\kappa < 2T$ and the transmission complexity is at most $\frac{5}{2} 2uT + \lceil \log(T/t') \rceil = O(ut)$.
 \end{itemize}
 We can remark that the first case is slightly better: it may use twice less data.
 But, as you will see in Section~\ref{sec:doubling}, the second case is computationnaly faster.
@@ -378,36 +372,26 @@ The idea is to generate a prime $p$ about twice shorter than the $p$ recommended
 2^{ut-1}\leq p < 2^{ut}
 \end{equation}
 
-
-TODO: rewrite this section !
-Let $\eta=\max(n,n')$. The new redundancy $c$ is calculated as previously and is hence also approximately twice smaller. Namely:
-
-$$s=\frac{a}{b} \bmod p \mbox{~and~}
-\left\{
-\begin{array}{lcr}
-a & =&  \prod\limits_{G_i \in \mathfrak{F}'\wedge G_i \not\in\mathfrak{F}} \mbox{{\tt HashPrime}}(G_i) \\
-\\
-b & = & \prod\limits_{G_i \not\in\mathfrak{F}' \wedge G_i \in\mathfrak{F}} \mbox{{\tt HashPrime}}(G_i)
-\end{array}
-\right.
-$$
-
-and since there are at most $t$ differences, we must have:
+Using notations in Section~\ref{sec:basic}, since there are at most $t$ differences, we must have:
 \begin{equation}
 \label{eqab}
 a b \leq 2^{ut}
 \end{equation}
 
-By opposition to section \ref{sec:basic} we do not have a fixed bound for $a$ and $b$ anymore; Equation \eqref{eqab} only provides a bound for the \textit{product} $a b$. Therefore, we define a sequence of $t+1$ couples of bounds:
-
-%$$\left(A_i,B_i\right)=\left(2^{(u+1)i},\left\lfloor \frac{p-1}{2^{(u+1)i+1}} %\right\rfloor\right)\mbox{~~where~~}B_i>1\mbox{~~and~~}\forall i>0,~2 A_i B_i<p$$
+By opposition to Section \ref{sec:basic}, we do not have a useful fixed bound for $a$ and $b$ anymore; we only have a bound for the \textit{product} $a b$: 
+\begin{equation}
+\label{eqab}
+ab \leq 2^{ut}.
+\end{equation} 
+Therefore, we define a sequence of $t+1$ couples of bounds:
 \[\left(A_i, B_i\right) = \left(2^{ui}, 2^{u(t-i)}\right) \forall i \in \{0,\dots,t\} \]
 
-Equations (\ref{eqnewp}) and (\ref{eqab}) imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. Then using Theorem \ref{theo}, since $A_i B_i = 2^{ut} < p$, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence the difference between $\mathfrak{F}$ and $\mathfrak{F}'$.\smallskip
+Equations~\eqref{eqnewp} and~\eqref{eqab} imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. 
+Then using Theorem~\ref{theo}, since $A_i B_i = 2^{ut} < p$, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence Oscar can compute $\Set'$.
 
-The problem is that (unlike section \ref{sec:basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough, but this makes the modified protocol heuristic only. 
-\comm{Fabrice: ``heuristic'' $\longrightarrow$ not really, because of the final hash verification, though we cannot compute exactly the complexity...}
-If failures never occur, this variant will roughly halve the quantity of transmitted bits with respect to section \ref{sec:basic}.\smallskip
+The problem is that (unlike Section~\ref{sec:basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough.
+In any case, thanks to the global hash $H = \Hash(\Set')$, if a failure occurs, it can easily be detected.
+Furthermore, if failures never occur, this variant will roughly halve the quantity of transmitted bits with respect to section \ref{sec:basic}.
 
 \section{From Set Reconciliation to File Reconciliation}
 \label{hashing}
@@ -417,19 +401,68 @@ Then we show how to methods to reduce size of hash, and so transmission cost.
 
 \subsection{From Set Reconciliation to File Reconciliation}
 
+Let us suppose Oscar and Neil now want to reconcile files, modeled as bit-string of arbitrary lengths, instead of $u$-bit prime numbers.
+Let $\Files = \{F_1,\dots,F_n\}$ be the old set of files, owned by Oscar, and let $\Files' = \{F'_1,\dots,F'_n\}$ be the new version of files, owned by Neil.
+Let $\eta$ be the total number of files $\eta = | \Files \cup \Files'| \le n+n'$.
+
+A naive way to use a set reconciliation for sets of prime numbers (such as \df) to reconcile $\Files$ and $\Files'$ is simply to hash each file, or the content of each file, and to reconcile the sets $\Set$ and $Set'$ of hashes of the files of Oscar and Neil.
+Then, when the protocol succeed, Neil can send to Oscar the actual content of the files, corresponding to hashes in $SetD'$, \ie, the files Oscar is missing.
+
+More formally, we have:
+\begin{align*}
+h_1 &= \HashPrime(F_1) & \dots & h_n &= \HashPrime(F_n) & \Set = \{h_1,\dots,h_n\} \\
+h'_1 &= \HashPrime(F'_1) & \dots & h'_{n'} &= \HashPrime(F'_{n'}) & \Set = \{h'_1,\dots,h'_{n'}\}, \\
+\end{align*}
+where $\HashPrime$ is a collision-resistant hash function $\HashPrime$ to prime numbers, in order for any $h_i$ or $h'_i$ to identify uniquely its corresponding file $F_i$ or $F'_i$.
+In Section~\ref{hashing}, we show how to construct such hash function from classical collision-resistant hash functions (to bit-strings of fixed length).
+If we suppose that the output of $\HashPrime$ is uniform\footnote{This is the case if we use our first proposed Algorithm~\ref{alg:primes} with a classical hash function which can be modeled as a random function.
+We suppose this is true for well-known hash functions such as SHA-256. (TODO ?)}, since there are about $\frac{2^m}{m}$ (TODO ref) primes number of size $m$, we just need to be the size $u$ of the primes output by $\HashPrime$ to be such that $u - \log u = 2 \log \eta$, because of the birthday paradox (TODO ref).
+This means that $u \approx 2\log \eta$.
 \subsection{The File Laundry: Reducing $u$}
 \label{shortu}
-What happens if we brutally shorten the hash size $u$ in the \df protocol?\smallskip
-As expected by the birthday paradox, we should start seeing collisions. Let us analyze the statistics governing the appearance of collisions.
-In this section, after showing how to deal with these collisions and adapting \df subsequently, we analyse the advantages of this size reduction and show how to select $u$.
+What happens if we brutally shorten the hash size $u$ in the \df protocol for files?
+
+As expected by the birthday paradox, we should start seeing collisions. 
+%Let us analyze the statistics governing the appearance of collisions.
+In this section, after showing how to deal with these collisions and adapting \df subsequently, we analyse the statistics governing the appearance of collisions and try to propose some ways to correctly choose $u$.
 
 \subsubsection{New Protocol}
 
+We remark that a collision can only yield a \textit{false positive}, and never a \textit{false negative}. In other words, while a collision may obliviate a difference\footnote{\eg, make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create a nonexistent difference \textit{ex nihilo}.
+
+Thus, it suffices to replace the hash of files $h_i = \HashPrime(F_i)$ (or $h'_i = \HashPrime(F'_i)$) by $\hbar_{i,\ell}=\HashPrime(\ell|F_i)$ (or $\hbar_{i,\ell} = \HashPrime(\ell|F'_i)$ to quickly filter-out file differences by repeating our \df protocol for $\ell=1,2,\ldots$. 
+At each iteration the parties will detect files not in common (\ie, files $F_i$ or $F'_i$ whose hash $\hbar_{i,\ell}$ or $\hbar'_{i,\ell}$ is not colliding), fix these (\ie, remove these from $\Files$ and $\Files'$) and ``launder'' again the remaining files $\Files$ and $\Files'$.
+
+We still need a condition to stop ``laundering'' files, \ie, a collision to be sure there were no problematic collision.
+Before showing this condition, let us first analyse precisely which collisions can appear.
+
+Let us consider the execution $\ell$ of \df.
+There are three kinds of collisions:
+\begin{enumerate}
+\item collisions common files of Oscar and Neil, \ie, collisions in $\Files \cap \Files'$;
+\item collisions between a common file of Oscar and Neil, and a file not in common, \ie, collisions between $\Files \cap \Files'$ and $\Files \Delta \Files' = (\Files \setminus \Files') \cup (\Files' \setminus \Files)$
+\item collisions between files not in common, \ie, files in $\Files \Delta \Files'$.
+\end{enumerate}
+First kind of collisions is obviously not a problem at all.
+Second kind of collisions can be easily detected by Oscar or Neil, at the end of the execution $\ell$ of the \df protocol. 
+This will prevent them from knowing easily to which file $F$ corresponds a hash not in common $h$.
+If such collision arrives, the corresponding file will not be reconciled in this execution of \df and another execution of \df is required.
+Third kind of collisions obliviate a real difference between $\Files$ and $\Files'$. If no mechanism is added, these collisions can never be
+
+Therefore, we propose the following method to check termination.
+Before anything else is send, Neil needs to send a global hash $H'$ on a collision-resistant hash of files: $H' = \Hash((\Hash(F'_1),\dots,\Hash(F'_{n'})))$.
+Contrary to $H$ in $\df$, this hash is on a collision-resistant hash of files and not on (potentially colliding) diversified hash $ \HashPrime(\ell|F)$.
+Then, if the execution $\ell$ of the \df protocol is successful, Neil sends the list of $\Hash(F'_i)$ for the new files $F'_i$, \ie files $F'_i$ in $\Files' \setminus \Files$ whose hash $\hbar'_{i,\ell}$ is not colliding.
+Then Oscar can check whether a collision of the third kind appears by using $H'$.
+
+
 \subsubsection{Naive Analysis}
 
-Let $\eta$ be the total number of files $\eta = | \Files \cup \Files'| \le n+n'$.
+We slightly change notations and write:
+\[ \Files \cup \Files' = \{ F_1, \dots, F_\eta \}. \]
 
-Consider $\mbox{{\tt HashPrime}}$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^u-1\}$. Let $X_i$ be the random variable:
+In this naive analysis, we just compute the number of probability that a file keeps colliding for $\lambda$ rounds, and we do as if we do not remove files 
+Consider $\HashPrime$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^u-1\}$. Let $X_i$ be the random variable:
 \[
 X_i =
 \left\{
@@ -443,19 +476,15 @@ X_i =
 
 Clearly, we have $\Prob{X_i = 1} \le \frac{\eta -1}{2^u}$.
 The average number of colliding files is hence:
-\[ \EE{\sum_{i=0}^{\eta-1} X_i} \le \sum_{i=0}^{\eta-1} \frac{\eta -1}{2^u} = \frac{\eta (\eta - 1)}{2^u} \]
+\[ \EE{\sum_{i=0}^{\eta-1} X_i} \le \sum_{i=0}^{\eta-1} \frac{\eta -1}{2^u} = \frac{\eta (\eta - 1)}{2^u}. \]
 
-For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of colliding files is less than $233$.\smallskip
+For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of colliding files is less than $233$.
 
-However, it is important to note that a collision can only yield a \textit{false positive}, and never a \textit{false negative}. In other words, while a collision may obliviate a difference\footnote{\eg, make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create a nonexistent difference \textit{ex nihilo}.\smallskip
-\comm{Fabrice: difference or discrepancy ?}
-
-Thus, it suffices to replace $\mbox{{\tt HashPrime}}(F)$ by a diversified $\hbar_\ell(F)=\mbox{{\tt HashPrime}}(\ell|F)$ to quickly filter-out file differences by repeating the protocol for $\ell=1,2,\ldots$ At each iteration the parties will detect new files and new deletions, fix these and ``launder'' again the remaining multisets.\smallskip
+However, it is important to note that 
 \comm{Fabrice: already said in Section 2.3... and maybe it is better to say that, in this first analysis, we suppose we do not filter out files, because this only improves the algo...}
 
-Assume that the diversified $\hbar_\ell(F)$'s are random and independent. To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $\lambda$, assume that $\eta$ remains invariant between iterations and define the following random variables:\smallskip
-
-$$
+Assume that the diversified $\hbar_\ell(F)$'s are random and independent. To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $\lambda$, assume that $\eta$ remains invariant between iterations and define the following random variables:
+\[
 \begin{array}{rcl}
 X^{\ell}_i & = &
 \left\{
@@ -474,7 +503,7 @@ Y_i = \prod_{\ell=1}^\lambda X^{\ell}_i & = &
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
 \right.
-\end{array}$$
+\end{array}\]
 
 
 By independence, we have:
@@ -495,20 +524,22 @@ And the probability that at least one false positive will survive $k$ rounds is:
 For the previously considered instance\footnote{$\eta=10^6$,$u=32$.} we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3}\%$.
 
 \subsubsection{A more refined (but somewhat technical) analysis.}
+TODO: ACTUALLY NOT CORRECT BECAUSE WE FORGOT COLLISIONS BETWEEN FILES NOT IN COMMON AND FILES IN COMMON !!!!!!!!!!!!!!!!!!!!!!
+
 In Appendix~\ref{app:refined-file-laundry}, we show a more refined analysis, which proves that  the survival probability of at least one false positive after $k$ iterations satisfies:
 \[
 \epsilon'_\lambda \le \frac{\eta(\eta-1)}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{\lambda-1}
 \]
 
-For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.\smallskip
+For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.
 
 
 \subsubsection{How to select $u$?}
 %
 For the sake of simplicity, we consider $t=t_1=t_2=\dots$.
-For a fixed $\lambda$, $\epsilon'_\lambda$ decreases as $u$ grows. For a fixed $u$, $\epsilon'_\lambda$ also decreases as $\lambda$ grows. Transmission, however, grows with both $u$ (bigger digests) and $k$ (more iterations). We write for the sake of clarity: $\epsilon'_\lambda = \epsilon'_{\lambda,u,\eta}$.\smallskip
+For a fixed $\lambda$, $\epsilon'_\lambda$ decreases as $u$ grows. For a fixed $u$, $\epsilon'_\lambda$ also decreases as $\lambda$ grows. Transmission, however, grows with both $u$ (bigger digests) and $k$ (more iterations). We write for the sake of clarity: $\epsilon'_\lambda = \epsilon'_{\lambda,u,\eta}$.
 
-Fix $\eta$. Note that the number of bits transmitted per iteration ($\simeq 3ut$), is proportional to $u$. This yields an expected transmission complexity bound $T_{u,\eta}$ such that:\smallskip
+Fix $\eta$. Note that the number of bits transmitted per iteration ($\simeq 3ut$), is proportional to $u$. This yields an expected transmission complexity bound $T_{u,\eta}$ such that:
 
 \[T_{u,\eta} \propto u \sum_{\lambda=1}^{\infty} \lambda \cdot \epsilon'_{\lambda,u,\eta}=
 \frac{u \eta\left(\eta-1\right)}{2^u} \sum_{\lambda=1}^{\infty} \lambda \left( \frac{1}{2^u} + \frac{\left(\eta-2\right)^2}{2^{2u}} \right)^{\lambda-1}=
@@ -535,20 +566,20 @@ A different approach is to optimize $t$ and $u$ experimentally, \eg, using the o
 
 \subsection{How to Stop a Probabilistic Washing Machine?} 
 \comm{Remplacer $\ell$ par $\lambda$}
-We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a half-sized $p$. By opposition to Section~\ref{sec:basic}, confirming correct protocol termination is now non-trivial.\smallskip
+We now combine both optimizations and assume that $\ell$ laundry rounds are necessary for completing some given reconciliation task using a half-sized $p$. By opposition to Section~\ref{sec:basic}, confirming correct protocol termination is now non-trivial.
 \comm{Fabrice: oups, pas sûr de tout comprendre ici, il faudrait que l'on en rediscute... En particulier, le CRT n'a pas d'erreur a priori, sauf erreur de ma part...}
 
 \comm{La définition de $\zeta(u)$ est assez gratuite vu que ça n'intervient pas dans la suite.}
-We say that a \textit{round failure} occurs whenever a round results in an $(a',b')\neq (a,b)$ satisfying Equation~\eqref{eqab}. Let the round failure probability be some function $\zeta(u)$ (that we did not estimate). If $u$ is kept small (for efficiency reasons), the probability $\left(1-\zeta(u)\right)^{\ell}$ that the protocol will properly terminate may dangerously drift away from one.\smallskip
+We say that a \textit{round failure} occurs whenever a round results in an $(a',b')\neq (a,b)$ satisfying Equation~\eqref{eqab}. Let the round failure probability be some function $\zeta(u)$ (that we did not estimate). If $u$ is kept small (for efficiency reasons), the probability $\left(1-\zeta(u)\right)^{\ell}$ that the protocol will properly terminate may dangerously drift away from one.
 
-If $v$ of $\ell+v$ rounds fail, Oscar needs to solve a problem called \textit{Chinese Remaindering With Errors}~\cite{phong}:\smallskip
+If $v$ of $\ell+v$ rounds fail, Oscar needs to solve a problem called \textit{Chinese Remaindering With Errors}~\cite{phong}:
 
 \begin{problem}{\it (Chinese Remaindering With Errors Problem: {\sc crwep}).} Given as input integers $v$, $B$ and $\ell+v$ points $(s_1,p_1),\ldots,(s_{\ell+v},p_{\ell+v})\in \mathbb{N}^2$ where the $p_i$'s are coprime, output all numbers $0 \leq s < B$ such that $s \equiv s_i \bmod p_i$ for at least $\ell$ values of $i$.
 \end{problem}
 
-We refer the reader to~\cite{phong} for more on this problem, which is beyond our scope. Boneh~\cite{boneh} provides a polynomial-time algorithm for solving the {\sc crwep} under certain conditions satisfied in our setting.\smallskip
+We refer the reader to~\cite{phong} for more on this problem, which is beyond our scope. Boneh~\cite{boneh} provides a polynomial-time algorithm for solving the {\sc crwep} under certain conditions satisfied in our setting.
 
-But how can we confirm the solution? As mentioned in section \ref{reco}, Neil will send to Oscar $H=\mbox{{\tt Hash}}(\mathfrak{F}')$ as the interaction starts. As long as Oscar's {\sc crwep} resolution will not yield a state matching $H$, the parties will continue the interaction.
+But how can we confirm the solution? As mentioned in section \ref{reco}, Neil will send to Oscar $H=\Hash(\mathfrak{F}')$ as the interaction starts. As long as Oscar's {\sc crwep} resolution will not yield a state matching $H$, the parties will continue the interaction.
 
 \section{Computational Complexity}
 \label{comp}
@@ -564,14 +595,14 @@ A summary of all costs can be found in Table~\ref{tab:workload}.
 Let $\mu(l)$ be the time required to multiply two $l$-bit numbers\footnote{We assume that $\forall l,l', \mu(l+l') \ge \mu(l) + \mu(l')$.}.
 For naive (\ie, convolutive) algorithms $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$. {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
 The modular division of two $l$-bit numbers and the reduction of a $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
-Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.\smallskip
+Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.
 
 As proven in Section~\ref{sec:hashprime}, the naive complexity of $\tt HashPrime$ is $u^2 \mu(u)$, but it can be slightly improved at the expense of making the hashing less uniform.
 Hence, we have the costs depicted in the third column of Table~\ref{tab:workload}, if we use the same $t$ for each round ($t=t_1=t_2=\dots$).
 
 \subsection{Hashing Into Primes}
 \label{sec:hashprime}
-Hashing into primes is frequently needed in cryptography. A recommended implementation of $\mbox{{\tt HashPrime}}(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough (\eg $160$) one might sacrifice uniformity to avoid repeated file hashings by defining $\mbox{{\tt HashPrime}}(F)=\mbox{{\tt NextPrime}}(\mbox{{\tt Hash}}(F))$. 
+Hashing into primes is frequently needed in cryptography. A recommended implementation of $\HashPrime(F)$ is given in Algorithm \ref{alg:primes}. If $u$ is large enough (\eg $160$) one might sacrifice uniformity to avoid repeated file hashings by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
 Yet another acceleration (that further destroys uniformity) consists in replacing $\mbox{{\tt NextPrime}}$ by Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
 \comm{analyse ci-contre}
 
@@ -582,26 +613,26 @@ On a alors une accélération d'environ 10 si on prend $d=60$.
 TODO: no more uniform $\longrightarrow$ slightly decrease entropy of hashing
 
 \begin{algorithm}[t]
-  \caption{Fast Nonuniform Hashing Into Primes}
-  \label{alg:scanprime}
+  \caption{Possible Implementation of $\HashPrime(F)$}
+  \label{alg:primes}
   \begin{algorithmic}[1]
-  \State $h =\alpha \left\lfloor\frac{\mbox{{\tt Hash}}(F)}{\alpha}\right\rfloor+1$
-\While{$h$ is composite}
-\State $h = h-\alpha$
-\EndWhile
+  \State $i=0$
+\Repeat
+\State $h = 2\cdot\Hash(F|i)+1$
+\State $i = i+1$
+\Until{$h$ is prime}
 \State \Return{$h$}
   \end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}[t]
-  \caption{Possible Implementation of $\mbox{{\tt HashPrime}}(F)$}
-  \label{alg:primes}
+  \caption{Fast Nonuniform Hashing Into Primes}
+  \label{alg:scanprime}
   \begin{algorithmic}[1]
-  \State $i=0$
-\Repeat
-\State $h = 2\cdot\mbox{{\tt Hash}}(F|i)+1$
-\State $i = i+1$
-\Until{$h$ is prime}
+  \State $h =\alpha \left\lfloor\frac{\Hash(F)}{\alpha}\right\rfloor+1$
+\While{$h$ is composite}
+\State $h = h-\alpha$
+\EndWhile
 \State \Return{$h$}
   \end{algorithmic}
 \end{algorithm}
@@ -683,7 +714,7 @@ The idea is the following: group $h_i$'s by subsets of $t$ elements and compute 
 \[ H_j = \prod_{i=j t}^{j t + t - 1} h_i\in\mathbb{N} \]
 
 Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm~\ref{alg:prod-tree} (for $j=0$) illustrated in Figure~\ref{fig:prod-tree}.
-Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu(u t))$. We can then compute $c$ by multiplying the $H_j$ modulo $p$, which costs $\Oapp(\frac{n}{t} \mu(u t))$.\smallskip
+Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu(u t))$. We can then compute $c$ by multiplying the $H_j$ modulo $p$, which costs $\Oapp(\frac{n}{t} \mu(u t))$.
 
 \begin{algorithm}
 \newcommand{\vstart}{\ensuremath{\mathrm{start}}}
@@ -711,7 +742,7 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 \end{algorithm}
 
 \comm{What is the caveat?}
-The same technique applies to factorization\footnote{We explain the process with $a$, this is applicable \textit{ne variatur} to $b$ as well.}, but with a slight \textit{caveat}.\smallskip
+The same technique applies to factorization\footnote{We explain the process with $a$, this is applicable \textit{ne variatur} to $b$ as well.}, but with a slight \textit{caveat}.
 
 After computing the tree product, we can compute the residues of $a$ modulo $H_0$.
 Then we can compute the residues of $a \bmod{H_0}$ modulo the two children $\pi_2$ and $\pi_3$ of $H_0 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end (\ie, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{0,\dots,t-1\}$). This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
@@ -754,7 +785,7 @@ Summary of costs is depicted in Table~\ref{tab:workload}.
 %\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
 %\newcommand{\mcqc}[1]{\multicolumn{4}{c}{#1}}
  \begin{threeparttable}
-  \begin{tabularx}{\textwidth}{lXC{2cm}C{2cm}p{4cm}}
+  \begin{tabularx}{\textwidth}{lXC{2cm}C{2cm}p{4.2cm}}
 \toprule
 {\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{2}{c}{{\bf Complexity in $\Oapp$ of}} & {\bf \hfill Optimization used \hfill \null} \\
 \cmidrule(lr){3-4}
@@ -800,7 +831,7 @@ Oscar & factor $b_i$
 \bottomrule
   \end{tabularx}
   \begin{tablenotes}
-    \item[a] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling}. In addition, choosing $p_k = 2^{ut_k}$ provides substantial constant factor accelerations which cannot be seen in this table due to the fact only asymptotic complexity is showed.
+    \item[a] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling} (we suppose that the basic algo use $t_1=t_2=\dots=t$. In addition, choosing $p_k = 2^{ut_k}$ provides substantial constant factor accelerations which cannot be seen in this table due to the fact only asymptotic complexity is showed.
     \item[b] only for $p_i$ prime or equivalent TODO;
     \item[c] only for $p_i = 2^{ut_i}$.
     \item[d] using advanced algorihms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
@@ -809,22 +840,6 @@ Oscar & factor $b_i$
   \caption{Global Protocol Complexity}
   \label{tab:workload}
 \end{table}
-
-% \begin{table}
-%   \begin{tabularx}{\textwidth}{lXp{1.2cm}p{2.3cm}p{1.2cm}p{2.3cm}}\toprule
-% {\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{4}{c}{{\bf Complexity expressed in $\Oapp$ of}} \\\midrule
-% Both  & generate primes                                                  & $nu^4$  & Rabin-Miller & $n u^3$  & Rabin-Miller             \\
-% Both  & compute redundancies $c$ and $c'$                                & $n \cdot \mu(u t)$  & na\"{i}ve product & $n u t$  & using {\sc fft}             \\
-% Neil & compute $s = c' / c \bmod p$                                     & $\mu(u t)$    & na\"{i}ve inversion& $u t$    & using {\sc fft}               \\
-% Neil & find $a,b$ such that $s = a / b \bmod p$                         & $(u t)^2$   & na\"{i}ve ext. {\sc gcd} & $u t$ &  using~\cite{pan2004rational,wang2003acceleration} \\
-% Both  & factor $a$ (resp. $b$) by modular reductions                     & $n \cdot \mu(u t)$  & na\"{i}ve reduction & $n u t$  & using {\sc fft}             \\
-%       & {\bf Overwhelming complexity:}                                   &
-%     \multicolumn{2}{c}{$\max(nu^4,n \cdot \mu(ut),(u t)^2)$}    &
-%     \multicolumn{2}{c}{$n u \max(t,u^3)$}              \\\bottomrule
-%   \end{tabularx}
-%   \caption{Global Protocol Complexity. In practice $\max((u t)^2,n \cdot \mu(ut))=n(u t)^2$ because $(u t)^2 \ll n \cdot \mu(ut)=n(u t)^2$. This boils down to $\max(n(u t)^2, nu^4)=n(u\max(t,u))^2$.}
-%   \label{tab:workload}
-% \end{table}
 
 \section{From File Reconciliation to File Synchronization}
 \label{files}
@@ -971,7 +986,7 @@ channel between the two hosts.
 Our implementation does not take into account all the possible optimizations
 described in Section~\ref{comp}: it implements doubling
 (Section~\ref{sec:doubling}) and uses powers of small primes for the $p_k$
-(Variant 2 of Section~\ref{sec:choicep}), but does not implement product trees
+(Variant~2 of Section~\ref{sec:choicep}), but does not implement product trees
 (Section~\ref{sec:algo-opt-prod-trees}) or use the prime hashing scheme
 described in Section~\ref{sec:hashprime}.
 
@@ -988,12 +1003,12 @@ benchmark are described in Table~\ref{tab:benchdirec}, and the options used
 when benchmarking \rsync are given in Table~\ref{tab:rsyncopt}. Experiments
 were performed without any network transfer, by synchronizing two folders on
 the same host. Hence, time measurements mostly represent the {\sc cpu} cost of
-the synchronization.\smallskip
+the synchronization.
 
-Results are given in Table \ref{tab:results}. In general, \btrsync spent more time than \rsync on computation (especially when the number of files is large, which is typically seen in the experiments involving {\tt synthetic}). Transmission results, however, turn out to be favorable to \btrsync.\smallskip
+Results are given in Table \ref{tab:results}. In general, \btrsync spent more time than \rsync on computation (especially when the number of files is large, which is typically seen in the experiments involving {\tt synthetic}). Transmission results, however, turn out to be favorable to \btrsync.
 
 In the trivial experiments where either Oscar or Neil have no data at all, \rsync outperforms \btrsync. This is especially visible when Neil has no data: \rsync immediately notices that there is nothing to transfer, but \btrsync engages in information transfers to determine the symmetric
-difference.\smallskip
+difference.
 
 On non-trivial tasks, however, \btrsync outperforms \rsync. This is the case of the {\tt synthetic} datasets, where \btrsync does not have to transfer
 information about all unmodified files, and even more so in the case where there are no modifications at all. For Firefox source code datasets, \btrsync saves a very small amount of bandwidth, presumably because of unmodified files. For the \btrsync source code dataset, we notice that \btrsync, unlike \rsync, was able to detect the move and avoid retransferring the moved folder.
@@ -1022,7 +1037,7 @@ Other future work: Pour éviter le cas empty $\rightarrow$ source trop gros, on 
 
 \section{Acknowledgment}
 
-The authors acknowledge Guillain Potron for his early involvement in this research work.\smallskip
+The authors acknowledge Guillain Potron for his early involvement in this research work.
 
 \section{ToDo}
 
@@ -1109,6 +1124,8 @@ Wang, X., Pan, V.: Acceleration of {E}uclidean algorithm and rational number
 \section{Refined Analysis of the File Laundry}
 \label{app:refined-file-laundry}
 
+TODO: NOT CORRECT BECAUSE WE FORGOT COLLISIONS BETWEEN FILES NOT IN COMMON AND FILES IN COMMONS.
+
 As mentioned previously, the parties can remove the files confirmed as different during iteration $k$ and work during iteration $k+1$ only with common and colliding files. Now, the only collisions that can fool round $k$, are the collisions of file-pairs $(F_i,F_j)$ such that $F_i$ and $F_j$ have both already collided during \textit{all the previous iterations}\footnote{Note that we \underline{do not} require that $F_i$ and $F_j$ repeatedly collide \textit{which each other}; \eg, we may witness during the first round $\hbar_{1}(F_1)=\hbar_{1}(F_2)$, $\hbar_{1}(F_3)=\hbar_{1}(F_4)$ and $\hbar_{1}(F_5)=\hbar_{1}(F_6)$ while during the second round $\hbar_{2}(F_1)=\hbar_2(F_2)$, $\hbar_{2}(F_3)=\hbar_{1}(F_6)$ and $\hbar_{2}(F_5)=\hbar_{2}(F_4)$ as shown in Figure \ref{fig:masked}.}. TODO this sentence is unclear: We call such collisions ``masquerade balls'' (\cf Figure \ref{fig:masked}). Define the two random variables:
 
 \begin{align*}
@@ -1176,7 +1193,7 @@ And finally, the survival probability of at least one false positive after $k$ i
 \epsilon'_\lambda \le \frac{\eta(\eta-1)}{2^u} \left( \frac{1}{2^u} + \frac{(\eta-2)^2}{2^{2u}} \right)^{\lambda-1}
 \]
 
-For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.\smallskip
+For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.
 
 
 
