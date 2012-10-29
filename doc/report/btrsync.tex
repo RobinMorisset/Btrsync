@@ -171,19 +171,19 @@ are as follows:
 \section{``Divide \& Factor'' Set Reconciliation}
 \label{dandf}
 
-This section shows our new set reconciliation protocol \df for set two of $u$-bit primes $\Set$ and $\Set'$, which is based on number theory.
-After introducing the problem and the notations, we first present a basic version of \df for a bounded number of differences between the two sets.
-Then we show how to extend this protocol to deal with any number of differences.
+In this section, we introduce \df, a new set reconciliation protocol based on number theory, which works on sets of $u$-bit primes $\Set$ and $\Set'$.
+After introducing the problem and the notations, we first present a basic version of \df which assumes that the number of differences between the two sets is bounded by some constant.
+We then show how to extend this protocol to deal with any number of differences.
 
 \subsection{Problem Definition and Notations}
 
-\underline{O}scar possesses an \underline{o}ld version of a multiset $\Set$ of $n$ $u$-bit primes $\Set$ that he wished to update.
+\underline{O}scar possesses an \underline{o}ld version of a multiset $\Set$ of $n$ $u$-bit primes $\Set$ that he wishes to update.
 \underline{N}eil has the \underline{n}ew, up-to-date version of this multiset, denoted $\Set'$ and containing $n'$ $u$-bit primes.
 \comm{Fabrice: should we speak about the fact we are limited to primes ???}
 
-Let us write $\Set = \{h_1,\dots,h_n\}$ and $\Set' = \{h'_1,\dots,h'_n\}$, such that: $h_1 < h_2 < \dots < h_n$ and $h'_1 < h'_2 < \dots < h'_{n'}$.
-Let $\SetD = \Set \setminus \Set'$ be the numbers deleted in Neil's version (compared to Oscar's version), and $\SetD' = \Set' \setminus \Set$ be the numbers added in Neil's version.
-Let $T$ be the number of discrepancies or differences between $\Set$ and $\Set'$:
+Let us write $\Set = \{h_1,\dots,h_n\}$ and $\Set' = \{h'_1,\dots,h'_{n'}\}$, such that: $h_1 < h_2 < \dots < h_n$ and $h'_1 < h'_2 < \dots < h'_{n'}$.
+Let $\SetD = \Set \setminus \Set'$ be the values deleted in Neil's version (compared to Oscar's version), and $\SetD' = \Set' \setminus \Set$ be the values added in Neil's version.
+Let $T$ be the number of differences between $\Set$ and $\Set'$:
 \[ T = \# \SetD + \# \SetD' = \# \Set + \# \Set' - 2 \# \left( \Set \bigcap \Set' \right) = \# \left(\Set \bigcup \Set' \right) - \# \left(\Set \bigcap \Set'\right), \]
 
 Let also suppose we have a collision-resistant hash function $\Hash$ which takes as input any bit string and output a short binary string of, for example, $160$-bits\footnote{TODO: comment on such hash function for Antoine}.
