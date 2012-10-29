@@ -263,7 +263,7 @@ But, if we are unlucky, it can happen that this check is not sufficient. We will
 
 To handle the $\bot$ case, we will assume that we have a collision-resistant hash function $\Hash$ which takes as input any bit string and output a short binary string of a fixed number of bits $n$ (e.g., $n=160$).
 At the beginning, before any other exchanges take place, Neil sends to Oscar a hash of its set $H = \Hash(\Set') = \Hash((h'_1,\dots,h'_{n'}))$. At the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and checks if the hash of this new set is equal to $H$.
-Whenever Oscar's $\Set'$ is incorrect because the assumption $T < t$, this check will fail unless we found a collision in $\Hash$. Hence, we can bound the probability of error of the protocol by $2^n$. In what follows, we assume that our choice of $n$ is sufficient to ensure that the probability of error is negliglible: this only adds an additive constant to the transmission complexity of the protocol.
+Whenever Oscar's $\Set'$ is incorrect because the assumption $T < t$, this check will fail unless we found a collision in $\Hash$. Hence, we can bound the probability of error of the protocol by $2^n$. In what follows, we assume that our choice of $n$ is sufficient to ensure that the probability of error is negligible: this only adds an additive constant to the transmission complexity of the protocol.
 
 \subsubsection{Complete \df Protocol.}
 \label{sec:complete-df}
@@ -347,6 +347,7 @@ This section proves that \df achieves optimal asymptotic transmission complexity
 
 \subsection{Proof of Transmission Complexity Optimality}
 
+\comm{Il faut quantifier la probabilité de $\bot$ si on dit qu'elle est négligeable !}
 Assuming that there is no event $\bot$ (since these events happen with negligible probability), the transmission complexity of \df is:
 \[  \sum_{k=1}^\kappa \log c_k + \log b + \log |\SetD'|
  \,\leq\, \sum_{k=1}^\kappa (ut_k+1) + \frac{1}{2} (uT_\kappa) + u T
