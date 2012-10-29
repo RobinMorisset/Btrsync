@@ -179,6 +179,7 @@ We then show how to extend this protocol to deal with any number of differences.
 
 \underline{O}scar possesses an \underline{o}ld version of a multiset $\Set$ of $n$ $u$-bit primes $\Set$ that he wishes to update.
 \underline{N}eil has the \underline{n}ew, up-to-date version of this multiset, denoted $\Set'$ and containing $n'$ $u$-bit primes.
+In what follows, we will extend the symbols of set operations (union, intersection, difference and cardinal) on multisets in the expected way (e.g., the cardinal of a multiset is the sum of the multiplicities of its elements, the intersection of two multisets is the multisets whose elements have as multiplicities the min of their multiplicities in the two sets, etc.).
 \comm{Fabrice: should we speak about the fact we are limited to primes ???}
 
 Let us write $\Set = \{h_1,\dots,h_n\}$ and $\Set' = \{h'_1,\dots,h'_{n'}\}$, such that: $h_1 < h_2 < \dots < h_n$ and $h'_1 < h'_2 < \dots < h'_{n'}$.
@@ -186,46 +187,44 @@ Let $\SetD = \Set \setminus \Set'$ be the values deleted in Neil's version (comp
 Let $T$ be the number of differences between $\Set$ and $\Set'$:
 \[ T = \# \SetD + \# \SetD' = \# \Set + \# \Set' - 2 \# \left( \Set \bigcap \Set' \right) = \# \left(\Set \bigcup \Set' \right) - \# \left(\Set \bigcap \Set'\right), \]
 
-Let also suppose we have a collision-resistant hash function $\Hash$ which takes as input any bit string and output a short binary string of, for example, $160$-bits\footnote{TODO: comment on such hash function for Antoine}.
-
 \subsection{Basic Protocol with Bounded $T$}
 \label{sec:basic}
 
-In this section, we present a basic version of \df when the number of differences $T$ is at most $t$, with $t$ a known constant.
+In this section, we present a basic version of \df which assumes that the number of differences $T$ is at most $t$, for some fixed constant $t$ known of Neil and Oscar.
 
-The protocol works as follows.
 We first generate a prime $p$ such that
 \begin{equation}
 \label{equp}
 2^{2ut} \leq p < 2^{2ut+1}.
 \end{equation}
 
-Given $\Set$, Oscar generates and sends to Neil the redundancy:
+Oscar computes the following \emph{redundancy} quantity out of $\Set$ and sends it to Neil:
 \[
 c = \prod_{i=1}^n h_i \bmod p.
 \]
+
 Neil computes:
 \[
-c' = \prod_{i=1}^n \bmod p {~~~\mbox{and}~~~} s=\frac{c'}{c} \bmod p.
+c' = \prod_{i=1}^n \bmod~p {~~~\mbox{and}~~~} s=\frac{c'}{c} \bmod p.
 \]
 
-Since $T \leq t$, $\Set$ and $\Set'$ differ by at most $t$ elements and so $s$ can be written
+Since $T \leq t$, $\Set$ and $\Set'$ differ by at most $t$ elements. Hence, $s$ can be written
 \[
- s = \frac{a}{b} \bmod p \text{ where } \left\{ \begin{array}{lcr}
-  a &=& \prod_{h'_i \in \Set' \setminus \Set} h'_i \le 2^{ut} - 1 \\
-  b &=& \prod_{h_i \in Set \setminus \Set'} h_i \le 2^{ut} - 1
+ s = \frac{a}{b} \bmod p \text{ where } \left\{ \begin{array}{lcrr}
+     a &=& \prod_{h'_i \in \Set' \setminus \Set}& h'_i \le 2^{ut} - 1 \\
+     b &=& \prod_{h_i \in \Set \setminus \Set'}& h_i \le 2^{ut} - 1
 \end{array} \right. \text  .
 \]
-The problem of recovering $a$ and $b$ from $s$ efficiently is known as \textit{Rational Number Reconstruction}~\cite{pan2004rational,wang2003acceleration}.
-And the following theorem, which is a slightly modified version of Theorem~1 in \cite{cryptorational}, guarantees that it can be solved efficiently in this setting.
+The problem of efficiently recovering $a$ and $b$ from $s$ is known as \textit{Rational Number Reconstruction}~\cite{pan2004rational,wang2003acceleration}.
+The following theorem (adapted from Theorem~1 in \cite{cryptorational}) guarantees that it can be solved efficiently in this setting.
 \begin{theorem}
 \label{theo}
-Let $a,b \in {\mathbb Z}$ two co-prime integers such that $0 \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a,b$ are uniquely defined given $s$ and $p$, and can be recovered from $A,B,s,p$ in polynomial time.
+Let $a,b \in {\mathbb Z}$ be two co-prime integers such that $0 \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a,b$ are uniquely defined given $s$ and $p$, and can be recovered from $A,B,s,p$ in polynomial time.
 \end{theorem}
 
-Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
+Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss's algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
 \comm{Fabrice: certes, mais on utilise directement un Euclide étendu tronqué. Et pourquoi citer Vallée qui est un peu incompréhensible dans notre cas... TODO: check that in our program we ensure $a$ and $b$ co-prime !! otherwise, it may fail !!!!!}
-By testing the divisibility of $a$ and $b$ by the $h_i$ and the $h'_i$, Neil and Oscar can attempt to identify the discrepancies between $\Set$ and $\Set'$ and settle them\footnote{Actually, this only works if $\Set$ and $\Set'$ are sets, but if they are multi-set, and if, for example, $h'_i$ is $j'$ times in $\Set'$, we need to check the divisibility of $b$ by $h_i,h_i^2,\dots,h_i^{j'}$. In the sequel, we only present algorithms for $\Set$ and $\Set'$ sets.
+Once $a$ and $b$ have been recovered, Oscar and Neil, can test, respectively, if they are divisible by the $h_i$ and the $h'_i$. Thus, they can identify the differences between $\Set$ and $\Set'$ and settle them\footnote{Actually, this only works if $\Set$ and $\Set'$ are sets. If they are multi-sets, and if, for example, the multiplicity of $h'_i$ in $\Set'$ is $j$, we need to check the divisibility of $b$ by $h_i,h_i^2,\dots,h_i^{j'}$. For clarity, in what follows, we will present the algorithms for $\Set$ and $\Set'$ sets.
 We let the reader adapt them to the multi-set case.}.
 
 The basic protocol is depicted in Figure~\ref{fig:basic-df}.
@@ -243,28 +242,28 @@ $c \gets \prod_{i=1}^n h_i \bmod p$        &                & $c' \gets \prod_{i
                                   &                        & reconstruct  $a,b$ from $s$\\
                                   &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
                                   & $\Lflow{\SetD',b}$     & \\
-$\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i \}$ & & \\
+$\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i = 0 \}$ & & \\
 \bottomrule
 \end{tabular}
-\caption{Basic \df Protocol (when $T \le t$).}\label{fig:basic-df}
+\caption{Basic \df Protocol (assuming $T \le t$).}\label{fig:basic-df}
 \end{figure}
 
 \subsection{Handling an Unbounded Number of Differences}
 
 In practice, we often do not know any reasonable bound $t$ on the number of differences $T$.
 That is why, in this section, we extend our protocol to work with any $T$.
-We do this in two steps: we first show that we can slightly change our basic protocol to detect when its output is incorrect, when $t < T$. 
-Then we construct a protocol which works with any $T$.
+We do this in two steps: we first show that we can slightly change our basic protocol to detect when its output is incorrect (when $T > t$).
+We then construct a protocol which works with any $T$.
 
-\subsubsection{Detecting Bad Reconciliation}
-We first remark, that if we execute the previous protocol when $t < T$, either $a$ and $b$ are still correct (in which case, the protocol works correctly), or $a$ and $b$ are not correct.
+\subsubsection{Detecting Bad Reconciliation.}
+We first remark that, if we execute the previous protocol when $t < T$, either $a$ and $b$ are still correct (in which case the protocol works correctly), or $a$ and $b$ are not correct.
 In the second case, with high probability, the product of the $h_i$'s which divide $a$ is not equal to $a$ (TODO: prove this claim).
-This check has the advantage to be very fast and not needing Neil to send any data to Oscar.
-But, if we are unlucky, it can happen that this check is not sufficient.
-Let us call $\bot$ the event that this check failed.
+This check has the advantage to be very fast, and it does not require Neil to send any data to Oscar.
+But, if we are unlucky, it can happen that this check is not sufficient. We will call $\bot$ the event where this check failed.
 
-That is why, we need to add another (more costly) check which can detect any bad reconciliation.
-This second check is very simple: at the beginning, before the first flow, Neil sends to Oscar a hash of its sets: $H = \Hash(\Set') = \Hash((h'_1,\dots,h'_{n'}))$, and at the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and check the hash of this new set if $H$.
+To handle the $\bot$ case, we will assume that we have a collision-resistant hash function $\Hash$ which takes as input any bit string and output a short binary string of a fixed number of bits $n$ (e.g., $n=160$).
+At the beginning, before any other exchanges take place, Neil sends to Oscar a hash of its set $H = \Hash(\Set') = \Hash((h'_1,\dots,h'_{n'}))$. At the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and checks if the hash of this new set is equal to $H$.
+Whenever Oscar's $\Set'$ is incorrect because the assumption $T < t$, this check will fail unless we found a collision in $\Hash$. Hence, we can bound the probability of error of the protocol by $2^n$. In what follows, we assume that our choice of $n$ is sufficient to ensure that the probability of error is negliglible: this only adds an additive constant to the transmission complexity of the protocol.
 
 \subsubsection{Complete \df Protocol}
 To extend the protocol to an arbitrary $T$, Oscar and Neil agree on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails (\ie, yields a bad reconciliation), Neil and Oscar redo the protocol with a new $p_\ell$ and Neil will keep accumulating information about the difference between $\Set$ and $\Set'$ as shown in Appendix \ref{sec:extended}. 
