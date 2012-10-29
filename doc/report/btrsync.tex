@@ -348,15 +348,14 @@ This section proves that \df achieves optimal asymptotic transmission complexity
 \subsection{Proof of Transmission Complexity Optimality}
 
 \comm{Il faut quantifier la probabilité de $\bot$ si on dit qu'elle est négligeable !}
-Assuming that there is no event $\bot$ (since these events happen with negligible probability), the transmission complexity of \df is:
+Assuming that there is no event $\bot$ (since these events happen with negligible probability), the transmission complexity of \df is as follows:
 \[  \sum_{k=1}^\kappa \log c_k + \log b + \log |\SetD'|
  \,\leq\, \sum_{k=1}^\kappa (ut_k+1) + \frac{1}{2} (uT_\kappa) + u T
  \,\leq\, u (T_\kappa + \kappa) + \frac{1}{2} u T_\kappa + u T
  \,\leq\, \frac{5}{2} u T_\kappa + u \kappa, \]
 where $\kappa$ is the maximum number of rounds needed.
 
-Here are the complexity for the two choices of $t_\ell$ that we are interested
-in:
+For the two choices of $t_\ell$ that we are interested in, the transmission complexity is as follows:
 \begin{itemize}
 \item if $t_1 = \dots = t$, $\kappa = \lceil T/t \rceil$, $T_\kappa = \kappa t < T+t$ and the transmission complexity is at most $\frac{5}{2} u (T+t) + \lceil T/t \rceil = O(uT)$;
 \item if $t_k = 2^k t'$, $\kappa = \lceil \log(T/t') \rceil$, $T_\kappa < 2T$ and the transmission complexity is at most $\frac{5}{2} 2uT + \lceil \log(T/t') \rceil = O(ut)$.
