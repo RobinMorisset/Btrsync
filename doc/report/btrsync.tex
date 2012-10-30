@@ -360,17 +360,18 @@ For the two choices of $t_\ell$ that we are interested in, the transmission comp
 \item if $t_1 = \dots = t$, $\kappa = \lceil T/t \rceil$, $T_\kappa = \kappa t < T+t$ and the transmission complexity is at most $\frac{5}{2} u (T+t) + \lceil T/t \rceil = O(uT)$;
 \item if $t_k = 2^k t'$, $\kappa = \lceil \log(T/t') \rceil$, $T_\kappa < 2T$ and the transmission complexity is at most $\frac{5}{2} 2uT + \lceil \log(T/t') \rceil = O(uT)$.
 \end{itemize}
-We can remark that the first choice is slightly better in terms of transmission complexity: it may require two times less data to be exchanged.
-However, as we will see in Section~\ref{sec:doubling}, the computational complexity is lower if we pick the second choice.
+Though the asymptotic transmission complexity is the same for both choices, we can remark that the first one is slightly better in terms of constant factors: it may require two times less data to be exchanged.
+However, as we will see in Section~\ref{sec:doubling}, the second choice has lower computational complexity.
 
-In both cases, we notice that the asymptotic transmission complexity is the size of the symmetric difference of the two multisets (i.e., the number of differences times the size of an individual item). This is also the information-theoretic lower bound on the quantity of data needed to perform reconciliation. Hence, our protocol is asymptotically optimal for transmission complexity.
+In both cases, however, we notice that the asymptotic transmission complexity is the size of the symmetric difference of the two multisets (i.e., the number of differences times the size of an individual item). This is also the information-theoretic lower bound on the quantity of data needed to perform reconciliation. Hence, our protocol is asymptotically optimal for transmission complexity.
 
 \subsection{Probabilistic Decoding: Reducing $p$}
 
+This section describes a proposed constant-factor improvement to the transmission complexity of \df which works by reducing the size of the prime number $p$. This allows \df to transfer more information at the expense of a higher failure rate when performing rational number reconstruction.
 In this section, we focus on the basic \df protocol, for the sake of simplicity.
 However, what we describe here can easily be adapted to the complete \df protocol.
 
-The idea is to generate a prime $p$ about twice shorter than the $p$ recommended in section \ref{sec:basic}, namely:
+The difference between the proposed improvement and the original protocol is that the prime number $p$ that we generate should be about twice smaller than the $p$ recommended in Section~\ref{sec:basic}, namely:
 \begin{equation}
 \label{eqnewp}
 2^{ut-1}\leq p < 2^{ut}
@@ -382,7 +383,7 @@ Using notations in Section~\ref{sec:basic}, since there are at most $t$ differen
 a b \leq 2^{ut}
 \end{equation}
 
-By opposition to Section \ref{sec:basic}, we do not have a useful fixed bound for $a$ and $b$ anymore; we only have a bound for the \textit{product} $a b$: 
+Unlike in Section~\ref{sec:basic}, we do not have a useful fixed bound for $a$ and $b$ anymore; we only have a bound for the \textit{product} $a b$: 
 \begin{equation}
 \label{eqab}
 ab \leq 2^{ut}.
@@ -391,11 +392,11 @@ Therefore, we define a sequence of $t+1$ couples of bounds:
 \[\left(A_i, B_i\right) = \left(2^{ui}, 2^{u(t-i)}\right) \forall i \in \{0,\dots,t\} \]
 
 Equations~\eqref{eqnewp} and~\eqref{eqab} imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. 
-Then using Theorem~\ref{theo}, since $A_i B_i = 2^{ut} < p$, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence Oscar can compute $\Set'$.
+Then, using Theorem~\ref{theo}, since $A_i B_i = 2^{ut} < p$, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence Oscar can compute $\Set'$.
 
-The problem is that (unlike in Section~\ref{sec:basic}) we have no guarantee that such an $(a,b)$ is unique. Namely, we could (in theory) stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough.
-In any case, thanks to the global hash $H = \Hash(\Set')$, if a failure occurs, it can easily be detected.
-Furthermore, if failures never occur, this variant will roughly halve the quantity of transmitted bits with respect to section \ref{sec:basic}.
+This variant of the protocol will roughly halve the quantity of transmitted bits with respect to Section \ref{sec:basic}.
+The drawback is that, unlike in Section~\ref{sec:basic}, we have no guarantee that such an $(a,b)$ is unique. Namely, we could in theory stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough, so that the expected number of bits to transfer with this variant is lower.
+In any case, thanks to the global hash $H = \Hash(\Set')$, if a failure occurs, it will be detected.
 
 \section{From Set Reconciliation to File Reconciliation}
 \label{hashing}
