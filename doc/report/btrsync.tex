@@ -150,7 +150,7 @@ are as follows:
     functions to perform \emph{file reconciliation}, i.e., reconcile sets of files which do not have a fixed size. We
     analyze how the hash functions should be chosen to achieve a good tradeoff
     between the quantity of data to transfer and the risks of confusion. Some
-    points of this analysis (TODO: lesquels?!) apply no matter the choice of the underlying set
+    points of this analysis (TODO: lesquels?! --- Fabrice: tous  en fait, au problème du hashing vers les nbs premiers près, on utilise \df en blackbox !) apply no matter the choice of the underlying set
     reconciliation algorithm.
   \item We study the computational complexity of \df and
     present possible trade-offs between constant-factor transmission complexity
@@ -780,7 +780,7 @@ This increases the transmission complexity slightly, but drastically reduces the
 %\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
 %\newcommand{\mcqc}[1]{\multicolumn{4}{c}{#1}}
  \begin{threeparttable}
-  \begin{tabularx}{\textwidth}{lXC{2cm}C{2cm}p{4.2cm}}
+  \begin{tabularx}{\textwidth}{lXC{2cm}C{2cm}p{4.0cm}}
 \toprule
 {\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{2}{c}{{\bf Complexity in $\Oapp$ of}} & {\bf \hfill Optimization used \hfill \null} \\
 \cmidrule(lr){3-4}
@@ -804,7 +804,7 @@ Neil  & compute $S_i$ from $S_{i-1}$ and $s_i$ (CRT)\tnote{c}
       & $\mu(u T_i)$ 
       & n/a
       & use $p_k = 2^{ut_k}$ (\ref{sec:choicep}) \\
-Neil  & find $a_i,b_i$ such that $S_i = a_i/b_i \bmod p_i$
+Neil  & find $a_i,b_i$ such that $S_i = a_i/b_i \bmod p_i$\tnote{e}
       & $\mu(u T_i)$
       & $\mu(u T_i)$
       & \\
@@ -822,15 +822,15 @@ Oscar & factor $b_i$
       & \textbf{overwhelming complexity}
       & TODO 
       & TODO 
-      & previous opt. + doubling (\ref{sec:doubling}) \\
+      & prev. opt. + doubling (\ref{sec:doubling}) \\
 \bottomrule
   \end{tabularx}
   \begin{tablenotes}
     \item[a] using the basic algo of Section~\ref{sec:basic}, and taking $t_1=t_2=\dots=t$.
     \item[b] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling}. In addition, choosing $p_k = 2^{ut_k}$ provides substantial constant factor accelerations which cannot be seen on the asymptotic complexities given in this table.
-    \item[c] only for $p_i$ prime or equivalent TODO;
-    \item[d] only for $p_i = 2^{ut_i}$. TODO: dans ce cas, pourquoi ça apparaît dans la colonne basic ?
-    \item[e] using advanced algorithms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$. TODO: cette footnote n'est pas référencée ?
+    \item[c] only for $p_i$ prime (or variant~1 or~2 in Section~\ref{sec:choicep});
+    \item[d] only for $p_i = 2^{ut_i}$. TODO: Antoine: dans ce cas, pourquoi ça apparaît dans la colonne basic ? Fabrice: ???????
+    \item[e] using advanced algorithms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
   \end{tablenotes}
  \end{threeparttable}
   \caption{Global Protocol Complexity}
