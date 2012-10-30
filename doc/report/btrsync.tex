@@ -903,23 +903,21 @@ How can we perform the moves? A simple way would be to move each file to a uniqu
 
 The detailed algorithm is implemented as two mutually recursive functions and presented as Algorithm \ref{alg:moves}.
 
-TODO: $\mathfrak{D}$: collision of notation with $\SetD$.
-
 % TODO check this algo
 \begin{algorithm}
   \caption{Perform Moves}
   \label{alg:moves}
   \begin{algorithmic}[1]
-    \Require{$\mathfrak{D}$ is a dictionary where $\mathfrak{D}[f]$ denotes the intended destinations of $f$}
+    \Require{$\mathfrak{M}$ is a dictionary where $\mathfrak{M}[f]$ denotes the intended destinations of $f$}
     \Statex
-    \Let{$M$}{[]}
-    \Let{$T$}{[]}
-    \For{$f$ in $\mathfrak{D}$'s keys}
-      \Let{$M[f]$}{not\_done}
+    \Let{$C$}{[]} \Comment{Stores the \emph{color} of a file}
+    \Let{$T$}{[]} \Comment{Stores the temporary location assigned for a file}
+    \For{$f$ in $\mathfrak{M}$'s keys}
+      \Let{$C[f]$}{not\_done}
     \EndFor
     \Function{unblock\_copy}{$f, t$}
       \If{$t$ is blocked by some $b$}
-        \If{$b$ is not in $\mathfrak{D}$'s keys}
+        \If{$b$ is not in $\mathfrak{M}$'s keys}
           \State delete($b$) \Comment{We don't need $b$}
         \Else
           \State \Call{resolve}{$b$} \Comment{Take care of $b$ and make it go away}
@@ -931,22 +929,22 @@ TODO: $\mathfrak{D}$: collision of notation with $\SetD$.
       \State copy($f$, $d$)
     \EndFunction
     \Function{resolve}{$f$}
-      \If{$M[f] =$ done}
+      \If{$C[f] =$ done}
         \State \Return \Comment{Already managed by another in-edge}
       \EndIf
-      \If{$M[f] =$ doing}
+      \If{$C[f] =$ doing}
         \Let{$T[f]$}{mktemp()}
         \State move($f$, $T[f]$)
-        \Let{$M[f]$}{done}
+        \Let{$C[f]$}{done}
         \State \Return \Comment{We found a loop, moved $f$ out of the way}
       \EndIf
-      \Let{$M[f]$}{doing}
-      \For{$d \in \mathfrak{D}[f]$}
+      \Let{$C[f]$}{doing}
+      \For{$d \in \mathfrak{M}[f]$}
         \If{$d \neq f$}
           \State \Call{unblock\_copy}{$f$, $d$} \Comment{Perform all the moves}
         \EndIf
       \EndFor
-      \If{$f \notin \mathfrak{D}[f]$ and $T[f]$ was not set}
+      \If{$f \notin \mathfrak{M}[f]$ and $T[f]$ was not set}
         \State delete($f$)
       \EndIf
       \If{$T[f]$ was set}
@@ -954,7 +952,7 @@ TODO: $\mathfrak{D}$: collision of notation with $\SetD$.
       \EndIf
     \EndFunction
 
-    \For{$f$ in $\mathfrak{D}$'s keys}
+    \For{$f$ in $\mathfrak{M}$'s keys}
       \State \Call{resolve}{$f$}
     \EndFor
   \end{algorithmic}
