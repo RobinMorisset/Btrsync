@@ -366,6 +366,7 @@ However, as we will see in Section~\ref{sec:doubling}, the second choice has low
 In both cases, however, we notice that the asymptotic transmission complexity is the size of the symmetric difference of the two multisets (i.e., the number of differences times the size of an individual item). This is also the information-theoretic lower bound on the quantity of data needed to perform reconciliation. Hence, our protocol is asymptotically optimal for transmission complexity.
 
 \subsection{Probabilistic Decoding: Reducing $p$}
+\label{sec:probabilistic}
 
 This section describes a proposed constant-factor improvement to the transmission complexity of \df which works by reducing the size of the prime number $p$. This allows \df to transfer more information at the expense of a higher failure rate when performing rational number reconstruction.
 In this section, we focus on the basic \df protocol, for the sake of simplicity.
@@ -989,7 +990,9 @@ described in Section~\ref{comp}: it implements doubling
 (Section~\ref{sec:doubling}) and uses powers of small primes for the $p_k$
 (Variant~2 of Section~\ref{sec:choicep}), but does not implement product trees
 (Section~\ref{sec:algo-opt-prod-trees}) or use the prime hashing scheme
-described in Section~\ref{sec:hashprime}.
+described in Section~\ref{sec:hashprime}. Besides, we did not implement the
+proposed improvement in transmission complexity
+(Section~\ref{sec:probabilistic}).
 
 As for file synchronization (Section~\ref{files}), The only metadata managed by
 \btrsync is the file path (name and location). Other kinds of metadata
