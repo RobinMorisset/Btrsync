@@ -10,7 +10,7 @@ sub prefix {
 
 while (<>) {
   my @l = split;
-  for (my $i = 4; $i < 14; $i+=2) {
+  for (my $i = 5; $i < 15; $i+=2) {
     $l[$i] = prefix($l[$i]);
   }
   my $x = join(" ", @l);

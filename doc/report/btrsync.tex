@@ -232,7 +232,7 @@ The basic protocol is depicted in Figure~\ref{fig:basic-df}.
 
 \begin{figure}
 \centering
-\setlength{\tabcolsep}{6pt}
+%\setlength{\tabcolsep}{6pt}
 \begin{tabular}{lcl}
 \toprule
 \textbf{Oscar}                    &                        & \textbf{Neil}\\
@@ -245,7 +245,7 @@ $c \gets \prod_{i=1}^n h_i \bmod p$        &                & $c' \gets \prod_{i
                                   & $\Lflow{\SetD',b}$     & \\
 $\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i = 0 \}$ & & \\
 \bottomrule
-\end{tabular}
+\end{tabular}\vspace{-0.25cm} % why the hell do we need that?!
 \caption{Basic \df Protocol (assuming $T \le t$).}\label{fig:basic-df}
 \end{figure}
 
@@ -287,7 +287,7 @@ In what follows, we will focus on two following choices of $t_\ell$:
 
 \begin{figure}
 \centering
-\setlength{\tabcolsep}{6pt}
+%\setlength{\tabcolsep}{6pt}
 \begin{tabular}{p{7cm}cp{7cm}}
 \toprule
 \textbf{Oscar}                    &                                        & \textbf{Neil}\\
@@ -300,7 +300,7 @@ In what follows, we will focus on two following choices of $t_\ell$:
 \multicolumn{3}{c}{\textit{Phase 1: Neil amasses modular
 information on the difference}} \\
 \midrule
-\multicolumn{3}{l}{\textit{Round 1}} \\
+\multicolumn{3}{c}{\textit{Round 1}} \\
 $c_1 \gets \prod_{i=1}^n h_i \bmod p_1$        &                & $c'_1 \gets \prod_{i=1}^{n'} h'_i \bmod p_1$ \\
                                   & $\Rflow{c_1}$            & \\
                                   &                        & $s_1 \gets c'_1/c_1 \bmod p_1$ \\
@@ -309,7 +309,7 @@ $c_1 \gets \prod_{i=1}^n h_i \bmod p_1$        &                & $c'_1 \gets \p
                                   &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
                                   &                        & if $\prod_{h \in \SetD'} h \bmod P_1 = a$ then go to \text{final phase} \\
 \midrule
-\multicolumn{3}{l}{\textit{Round 2}} \\
+\multicolumn{3}{c}{\textit{Round 2}} \\
 $c_2 \gets \prod_{i=1}^n h_i \bmod p_2$    &                & $c'_2 \gets \prod_{i=1}^{n'} h'_i \bmod p_2$ \\
                                   & $\Rflow{c_2}$            & \\
                                   &                        & $s_2 \gets c'_2/c_2 \bmod p_2$ \\
@@ -318,7 +318,7 @@ $c_2 \gets \prod_{i=1}^n h_i \bmod p_2$    &                & $c'_2 \gets \prod_
                                   &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
                                   &                        & if $\prod_{h \in \SetD'} h \bmod P_2 = a$ then go to \text{final phase} \\
 \midrule
-\multicolumn{3}{l}{\textit{Round 3}} \\
+\multicolumn{3}{c}{\textit{Round 3}} \\
 $c_3 \gets \prod_{i=1}^n h_i \bmod p_3$    &                & $c'_3 \gets \prod_{i=1}^{n'} h'_i \bmod p_3$ \\
                                   & $\Rflow{c_3}$            & \\
                                   &                        & $s_3 \gets c'_3/c_3 \bmod p_3$ \\
@@ -334,9 +334,9 @@ $c_3 \gets \prod_{i=1}^n h_i \bmod p_3$    &                & $c'_3 \gets \prod_
                                   & $\Lflow{\SetD',b}$     & \\
 $\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i \}$ & & \\
 compute $S'$ from $S$, $\SetD$ and $\SetD'$ & & \\
-if $\Hash(S') \neq H$ go back in phase 1 (event $\bot$) & & \\
+if $\Hash(S') \neq H$ go back to phase 1 (event $\bot$) & & \\
 \bottomrule
-\end{tabular}
+\end{tabular}\vspace{-0.25cm} % why the hell do we need that?!
 \caption{Complete \df Protocol (for any $T$).}\label{fig:complete-df}
 \end{figure}
 
@@ -833,6 +833,7 @@ Oscar & factor $b_i$
     \item[e] using advanced algorithms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
   \end{tablenotes}
  \end{threeparttable}
+  \hrule\smallskip
   \caption{Global Protocol Complexity}
   \label{tab:workload}
 \end{table}
@@ -1306,24 +1307,25 @@ For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.
     bytes. For \btrsync we added a piece of code counting the amount of data
     transmitted during \btrsync's own negotiations.\\
     \bottomrule
-  \end{tabular}
+  \end{tabular}\smallskip
   \caption{Options used when benchmarking \rsync}
   \label{tab:rsyncopt}
 \end{table}
 
 \begin{table}
-  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}ll r r r r r r r r }
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabularx}{\textwidth}{ll X r r r r r r X r r }
     \toprule
-    \multicolumn{2}{c}{\bf Entities and Datasets} & \multicolumn{6}{c}{\bf Transmission (Bytes)} & \multicolumn{2}{c}{\bf Time (s)} \\
-    \midrule {\bf \hfill Neil's $\mathfrak{F}'$ \hfill \null} & {\bf \hfill Oscar's $\mathfrak{F}$ \hfill \null}
-    & $\mbox{{\tt TX}}_{\mbox{{\tiny {\tt rs}}}}$ & $\mbox{{\tt RX}}_{\mbox{{\tiny {\tt rs}}}}$  & $\mbox{{\tt TX}}_{\mbox{{\tiny {\tt bt}}}}$  & $\mbox{{\tt RX}}_{\mbox{{\tiny {\tt bt}}}}$  & $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ &
-    $\frac{\delta_{\mbox{{\tiny {\tt bt}}}}}{\delta_{\mbox{{\tiny {\tt rs}}}}}$ & $\mbox{{\tt time}}_{\mbox{{\tiny {\tt rs}}}}$ & $\mbox{{\tt time}}_{\mbox{{\tiny {\tt bt}}}}$ \\\midrule
-    &&&&&&&&&\\[-1em]
+    \multicolumn{2}{l}{\bf Entities and Datasets (see Table~\ref{tab:benchdirec})} &  &  \multicolumn{6}{c}{\bf Transmission (Bytes)} &  & \multicolumn{2}{r}{\bf Time (s)} \\
+    \midrule {\bf Neil's $\mathfrak{F}'$}  & {\bf Oscar's $\mathfrak{F}$}
+    & & $\mbox{{\tt TX}}_{\mbox{{\tiny {\tt rs}}}}$ & $\mbox{{\tt RX}}_{\mbox{{\tiny {\tt rs}}}}$  & $\mbox{{\tt TX}}_{\mbox{{\tiny {\tt bt}}}}$  & $\mbox{{\tt RX}}_{\mbox{{\tiny {\tt bt}}}}$  & $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ &
+    $\frac{\delta_{\mbox{{\tiny {\tt bt}}}}}{\delta_{\mbox{{\tiny {\tt rs}}}}}$ & & $\mbox{{\tt t}}_{\mbox{{\tiny {\tt rs}}}}$ & $\mbox{{\tt t}}_{\mbox{{\tiny {\tt bt}}}}$ \\\midrule
+    %&&&&&&&&&&&\\[-1em]
     \input{results.tex}
     \bottomrule
-  \end{tabular*}
+  \end{tabularx}\smallskip
 
-  \caption{Experimental results. {\tt rs} and {\tt bt} subscripts respectively denote {\tt rsync} and {\tt btrsync}. The two first columns indicate the datasets. Synchronization is performed \textit{from} Neil \textit{to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between the two programs. The last two columns show timing results. This evaluation was performed on an HP ProBook 5330m laptop using an Intel Core i3-2310M CPU clocked at 2.10 Ghz.}
+  \caption{Experimental results. Synchronization is performed \textit{from} Neil \textit{to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes, {\tt rs} and {\tt bt} denote {\tt rsync} and {\tt btrsync}, and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between \rsync and \btrsync. The last two columns show timing results on an Intel Core i3-2310M CPU clocked at 2.10 Ghz.}
   \label{tab:results}
 \end{table}
 
