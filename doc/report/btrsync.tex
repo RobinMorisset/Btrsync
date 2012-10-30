@@ -520,7 +520,7 @@ Therefore the average number of colliding files is:
 \]
 And the probability that at least one false positive will survive $k$ rounds is:
 \[
-\epsilon_k \le \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
+\epsilon_\lambda \le \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
 \]
 
 For the previously considered instance\footnote{$\eta=10^6$,$u=32$.} we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3}\%$.
@@ -745,9 +745,7 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 \caption{Product Tree Algorithm}\label{alg:prod-tree}
 \end{algorithm}
 
-\comm{What is the caveat?}
-The same technique applies to factorization\footnote{We explain the process with $a$, this is applicable \textit{ne variatur} to $b$ as well.}, but with a slight \textit{caveat}.
-
+The same technique applies to factorization\footnote{We explain the process with $a$, this is applicable \textit{ne variatur} to $b$ as well.}.
 After computing the tree product, we can compute the residues of $a$ modulo $H_1$.
 Then we can compute the residues of $a \bmod{H_1}$ modulo the two children $\pi_2$ and $\pi_3$ of $H_1 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end (\ie, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{1,\dots,t\}$). This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
 We can use the same method for the tree product associated to any $H_j$, and the residues of $a$ modulo each of the $h_i$ ($i \in \{(j-1)t+1,\dots,jt\}$) for any $j$, \ie, $a$ modulo each of the $h_i$ for any $i$. Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexity of $\Oapp(\frac{n}{t} \mu(u t))$.
@@ -1050,6 +1048,7 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 \item S'assurer qu'on explique explicitement comment/pourquoi on passe de set
   reconciliation (sync bidirectionnelle) à neil et oscar (sync
   unidirectionnelle).
+\item Fabrice: Comparaison théorique et bien insister sur ce que l'on apporte réellement.
 \end{itemize}
 
 \nocite{rsync}
