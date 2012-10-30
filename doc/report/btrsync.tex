@@ -246,7 +246,7 @@ $c \gets \prod_{i=1}^n h_i \bmod p$        &                & $c' \gets \prod_{i
 $\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i = 0 \}$ & & \\
 \bottomrule
 \end{tabular}\vspace{-0.25cm} % why the hell do we need that?!
-\caption{Basic \df Protocol (assuming $T \le t$).}\label{fig:basic-df}
+\caption{Basic \df protocol (assuming $T \le t$).}\label{fig:basic-df}
 \end{figure}
 
 \subsection{Handling an Unbounded Number of Differences}
@@ -337,7 +337,7 @@ compute $S'$ from $S$, $\SetD$ and $\SetD'$ & & \\
 if $\Hash(S') \neq H$ go back to phase 1 (event $\bot$) & & \\
 \bottomrule
 \end{tabular}\vspace{-0.25cm} % why the hell do we need that?!
-\caption{Complete \df Protocol (for any $T$).}\label{fig:complete-df}
+\caption{Complete \df protocol (for any $T$).}\label{fig:complete-df}
 \end{figure}
 
 
@@ -596,7 +596,7 @@ A way to implement such hash function $\HashPrime$ is to use Algorithm~\ref{alg:
 If the output of $\Hash'$ is considered to be uniformly random, the output of $\HashPrime$ is also a uniformly random $u$-bit prime number.
 
 \begin{algorithm}[t]
-  \caption{Possible Implementation of $\HashPrime(F)$}
+  \caption{Possible implementation of $\HashPrime(F)$}
   \label{alg:primes}
   \begin{algorithmic}[1]
   \State $j=0$
@@ -628,7 +628,7 @@ One main drawback of this algorithm is that, even if the output of $\Hash'$ is a
 This slightly increases the number of collisions of $\HashPrime$ and $u$ has to be increased subsequently. (TODO ?)
 
 \begin{algorithm}[t]
-  \caption{Fast Nonuniform Hashing Into Primes}
+  \caption{Fast nonuniform hashing into primes}
   \label{alg:scanprime}
   \begin{algorithmic}[1]
   \State $h =\alpha \left\lfloor\frac{\Hash'(F)}{\alpha}\right\rfloor+1$
@@ -740,7 +740,7 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 \EndFunction
 \State $\pi_1 \gets $\Call{prodTree}{$1,0,t$}
 \end{algorithmic}
-\caption{Product Tree Algorithm}\label{alg:prod-tree}
+\caption{Product tree algorithm}\label{alg:prod-tree}
 \end{algorithm}
 
 The same technique applies to factorization. We explain the process with $a$, though the same process applies \textit{ne variatur} to $b$.
@@ -767,7 +767,7 @@ We can use the same method for the tree product associated to any $H_j$, and the
 \State \Call{modTree}{$2$}
 \State \Call{modTree}{$3$}
 \end{algorithmic}
-\caption{Division Using a Product Tree}\label{alg:div-prod-tree}
+\caption{Division using a product tree}\label{alg:div-prod-tree}
 \end{algorithm}
 
 \subsection{Doubling}
@@ -834,7 +834,7 @@ Oscar & factor $b_i$
   \end{tablenotes}
  \end{threeparttable}
   \hrule\smallskip
-  \caption{Global Protocol Complexity}
+  \caption{Protocol complexity synopsis}
   \label{tab:workload}
 \end{table}
 
@@ -905,7 +905,7 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
 
 % TODO check this algo
 \begin{algorithm}
-  \caption{Perform Moves}
+  \caption{Perform moves}
   \label{alg:moves}
   \begin{algorithmic}[1]
     \Require{$\mathfrak{M}$ is a dictionary where $\mathfrak{M}[f]$ denotes the intended destinations of $f$}
@@ -1197,7 +1197,7 @@ For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.
 \end{tikzpicture}
 \end{turn}
 }
-\caption{Product Tree}\label{fig:prod-tree}
+\caption{Product tree}\label{fig:prod-tree}
 \end{figure}
 
 \begin{figure}
@@ -1256,7 +1256,7 @@ For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.
 \path (q) -- (v) node [midway] {$\displaystyle =$};
 \end{tikzpicture}
 \end{turn}}
-\caption{Modular Reduction From Product Tree}\label{fig:div-prod-tree}
+\caption{Modular reduction from product tree}\label{fig:div-prod-tree}
 \end{figure}
 
 
@@ -1282,7 +1282,7 @@ For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.
 ~~{\tt firefox-13.0.1}         ~~& ~~The source archive of Mozilla Firefox 13.0.1\\
 ~~{\tt empty}                  ~~& ~~An empty folder.\\\bottomrule
 \end{tabular}\smallskip
-  \caption{Test Directories.}
+  \caption{Test directories}
   \label{tab:benchdirec}
 \end{center}
 \end{table}
