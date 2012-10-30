@@ -589,6 +589,8 @@ Hence, if we we use the same $t$ for each round ($t=t_1=t_2=\dots$), the complex
 Hashing into primes is frequently needed in cryptography, independently from \df. In this section, we present a naive way to do so, and present an optimiation which sacrifices uniformity to achieve better performance.
 
 \subsubsection{Naive Algorithm.}
+\label{sec:basic}
+
 %A recommended implementation of $\HashPrime(F)$ is given in Algorithm \ref{alg:primes}
 A way to implement such hash function $\HashPrime$ is to use Algorithm~\ref{alg:primes}, where $\Hash'$ is a hash function with a $u$-bit output.
 If the output of $\Hash'$ is considered to be uniformly random, the output of $\HashPrime$ is also a uniformly random $u$-bit prime number.
@@ -614,16 +616,15 @@ Hence, the total cost of $\HashPrime$ is $\Oapp(u^2 \mu(u))$.
 \comm{Dans un article soumis à PKC j'ai une meilleure borne pour cela, ... je crois que David voulait le citer à un moment... Antoine: je pense que c'est tout à fait opportun de donner le meilleur résultat et de citer le papier en mettant qu'il est ``under review''}
 
 \subsubsection{Optimized Algorithm.}
-If $u$ is large enough (\eg $160$) one might sacrifice uniformity% to avoid repeated file hashing by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
+If $u$ is large enough (\eg $160$) one might sacrifice uniformity % to avoid repeated file hashing by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
 to improve time efficiency by replacing $\mbox{{\tt NextPrime}}$ by Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
 
-Let us very roughly show why this second algorithm should perform about $\frac{\varphi(\alpha)}{\alpha}$ times fewer primality test, where $\varphi$ is the Euler's totient function.
+Let us sketch a proof of the fact that this second algorithm performs about $\frac{\varphi(\alpha)}{\alpha}$ times fewer primality tests, where $\varphi$ is the Euler's totient function.
 Let us assume this algorithm behaves as if it chooses random $u$-bit numbers congruent to $1$ modulo $\alpha$ until finding a prime number.
 There are about $\frac{2^u}{u \varphi(\alpha)}$ $u$-bit prime numbers congruent to $1$ modulo $\alpha$ (TODO ref \url{http://fr.wikipedia.org/wiki/Th%C3%A9or%C3%A8me_de_la_progression_arithm%C3%A9tique#Version_quantitative}), and there are $\frac{2^u}{\alpha}$ $u$-bit numbers congruent to $1$ modulo $\alpha$.
-Therefore, the algorithms needs to do about $\frac{2^u}{u \varphi(\alpha)} / \frac{2^u}{\alpha} = \frac{\alpha}{\varphi(\alpha)} u$ primality tests before finding a prime number, whereas the naive algorithm has to do about $u$ tests.
-Hence this algorithm is about $\frac{\alpha}{\varphi(\alpha)}$ times faster.
+Therefore, the algorithm needs to do about $\frac{2^u}{u \varphi(\alpha)} / \frac{2^u}{\alpha} = \frac{\alpha}{\varphi(\alpha)} u$ primality tests before finding a prime number, which improves over the $u$ tests required by the naive algorithm on average.
 
-One main drawback of this algorithm is that, even if $\Hash'$ can be modeled as a random function, the output of $\HashPrime$ is no more a uniform random $u$-bit prime number.
+One main drawback of this algorithm is that, even if the output of $\Hash'$ is assumed to be uniformly random, the output of $\HashPrime$ is not a uniformly random $u$-bit prime number.
 This slightly increases the number of collisions of $\HashPrime$ and $u$ has to be increased subsequently. (TODO ?)
 
 \begin{algorithm}[t]
@@ -641,10 +642,10 @@ This slightly increases the number of collisions of $\HashPrime$ and $u$ has to 
 \subsection{Adapting $p_k$}
 \label{sec:choicep}
 
-Taking the $p_k$'s as $ut_k$-bit primes is not very practical, because generating a big prime number is slow, and storing a list of such primes require to be able to bound the number of rounds, and to fix all the parameters ($u$ and $t_1,t_2,\dots$).
-That is why, in this section we show that we can adapt $p_k$ to be able to generate them easily and also, to speed up the computations with a constant factor.
+Taking the $p_k$'s to be $ut_k$-bit primes is not very practical, because generating a big prime number is slow, and storing a list of such primes require to be able to bound the number of rounds, and to fix all the parameters ($u$ and $t_1,t_2,\dots$).\comm{``bound the number of rounds''? Oscar et Neil ne peuvent pas se mettre d'accord sur une seed et en tirer une séquence infinie de premiers à utiliser?}
+In this section, we study alternate choices for the $p_k$ which are easier to generate and speed up the computation by constant factors.
 
-Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime\footnote{with $\mbox{{\tt Prime}}[1]=2$}. Besides conditions on size, the \textit{only} property required from $p$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants:
+Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime, with $\mbox{{\tt Prime}}[1]=2$. Besides conditions on size, the \textit{only} property required from $p$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants:
 \subsubsection{Variant 1:} Smooth $p_k$:
 \[ p_k=\prod_{j=r_k}^{r_{k+1}-1} \mbox{{\tt Prime}}[j], \]
 where the bounds $r_k$ are chosen to ensure that each $p_k$ has the proper size.
@@ -652,11 +653,11 @@ Generating such a prime is much faster than generating a big prime $p_k$.
 
 \subsubsection{Variant 2:} $p_k=\mbox{{\tt Prime}}[k]^{r_k}$ where the exponents $r_k$ are chosen to ensure that each $p_k$ has the proper size.
 This variant is even faster than the previous one, but require to choose $h_k$ bigger than all
-$\mbox{{\tt Prime}}[k]^{r_k}$. 
+$\mbox{{\tt Prime}}[k]^{r_k}$.\comm{Je ne comprends pas: on ne \emph{choisit} pas les $h_k$, si ?}
 
 \subsubsection{Variant 3:} $p_k = P_k = 2^{ut_k}$. 
 In this case, $C_k = \prod_{i=1}^n h_i \bmod p_k$, $c_1 = C_1$ and $c_k = (C_k - C_{k-1}) / p_{k-1}$, {\it i.e.}, $c_k$ is the slice of bits $ut_{k-1}\dots ut_k-1$ of $C_k$ (with $T = 0$), which we write $c_k = C_k[ut_{k-1}\dots ut_k]$.
-Using Algorithm~\ref{alg:even-p-c} for the computation of $c_k$, this variant offers substantial constant-factor accelerations compared to previous variants, because it removes the need of all modulo operations and of CRT re-combination when multiple $p_k$ are needed, since $C_k$ is just the binary concatenation of $c_k$ and $C_{k-1}$ !
+Using Algorithm~\ref{alg:even-p-c} for the computation of $c_k$, this variant offers substantial constant-factor accelerations compared to previous variants, because it removes the need of all modulo operations and of CRT re-combination when multiple $p_k$ are needed: $C_k$ is just the binary concatenation of $c_k$ and $C_{k-1}$.
 
 Let us explain the main ideas of Algorithm~\ref{alg:even-p-c}.
 Let $X_i = \prod_{j=1}^n h_j$ ($X_0 = 1$), $X_{i,k} = X_i[ut_{k-1}\dots ut_{k}]$ and let $D_{i,k}$ be the $u$ upper-bits of the product of $Y_{i,k} = X_i[0\dots ut_{k}]$ and $h_i$, {\it i.e.}, $D_{i,k} = (Y_{i,k} \times h_i)[ut_k\dots u(t_k+1)]$ ($D_{i,0} = 0$ and $D_{0,k} = 0$).
@@ -673,7 +674,7 @@ Therefore, if we only consider bits $[ut_k \dots u(t_{k+1}+1)]$, for $k\ge1$,$i\
 \end{align*}
 Since $c_k = X_{n,k}$, the algorithm is correct.
 
-We remark we only need to store $D_{k,i}$ and $D_{k+1,i}$ during round $k$ (for all $i$).
+We notice we only need to store $D_{k,i}$ and $D_{k+1,i}$ during round $k$ (for all $i$).
 So the space complexity is $O(nu)$.
 
 
@@ -682,8 +683,8 @@ So the space complexity is $O(nu)$.
 \newcommand{\vmid}{\ensuremath{\mathrm{mid}}}
 \newcommand{\vend}{\ensuremath{\mathrm{end}}}
 \begin{algorithmic}[1]
-\Require{$k$, the set $h_i$, $(D_{k,i})$ as explained in the article}
-\Ensure{$c_{k+1} = \prod_{i=1}^{n} h_i \bmod p_{k+1}$, $(D_{k+1})$ as explained in the article}
+\Require{$k$, the set $h_i$, $(D_{k,i})$ as explained in the text}
+\Ensure{$c_{k+1} = \prod_{i=1}^{n} h_i \bmod p_{k+1}$, $(D_{k+1})$ as explained in the text}
 
 \If{$k=0$}
   \State $X \gets 1$
@@ -705,11 +706,10 @@ So the space complexity is $O(nu)$.
 \subsection{Algorithmic Optimizations using Product Trees}
 \label{sec:algo-opt-prod-trees}
 
-The non-overwhelming (but nonetheless important) complexities of the computations of $(c,c')$ and of the factorizations can be even reduced to $\Oapp(\frac{n}{t_k} \mu(u t_k))$ and $\Oapp(\frac{n}{T_k} \mu(u T_k))$ using product trees. 
-Therefore, the cost drops to $\Oapp(n u)$ with {\sc fft}~\cite{schonhage1971schnelle}. 
-To simplify the presentation, we suppose there is only one round, and $p=p_1$, $t=t_1=T_1$, and we assume that $t=2^\tau$ is a power of two dividing $n$.
-We also only focus on the case $p$ prime, for the sake of simplicity.
-But the algorithm can be easily adapted to the other variants.
+The complexities of the computations of $(c,c')$ and of the factorizations can be reduced to $\Oapp(\frac{n}{t_k} \mu(u t_k))$ and $\Oapp(\frac{n}{T_k} \mu(u T_k))$ using product trees. 
+Therefore, the cost of these steps drops to $\Oapp(n u)$ with {\sc fft}~\cite{schonhage1971schnelle}. 
+To simplify the presentation, we suppose there is only one round, write $p=p_1$, $t=t_1=T_1$, and assume that $t=2^\tau$ is a power of two dividing $n$.
+For simplicity, we also assume that $p$ is prime, though the algorithm can be easily adapted to the other variants described in Section~\ref{sec:choicep}.
 
 The idea is the following: group $h_i$'s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$:
 \[ H_j = \prod_{i=(j-1) t + 1}^{j t} h_i\in\mathbb{N}, \]
@@ -726,15 +726,15 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 \Require{the set $h_i$}
 \Ensure{$\pi = \pi_1 = \prod_{i=1}^{t} h_i$, and $\pi_i$ for $i \in \{1,\dots,2t-1\}$ as in Figure~\ref{fig:prod-tree}}
 \State $\pi \gets $ array of size $t$
-\Function{prodTree}{$i$,$\vstart$,$\vend$}
+\Function{prodTree}{$i$, $\vstart$, $\vend$}
   \If{$\vstart = \vend$}
     \State \Return $1$
   \ElsIf{$\vstart+1 = \vend$}
     \State \Return $h_{\mbox{\tiny \vstart+1}}$
   \Else
     \State $\vmid \gets \lfloor \frac{\vstart+\vend}{2} \rfloor$
-    \State $\pi_{2i} \gets $\Call{prodTree}{$2i$,$\vstart$,$\vmid$}
-    \State $\pi_{2i+1} \gets $\Call{prodTree}{$2i+1$,$\vmid$,$\vend$}
+    \State $\pi_{2i} \gets $\Call{prodTree}{$2i$, $\vstart$, $\vmid$}
+    \State $\pi_{2i+1} \gets $\Call{prodTree}{$2i+1$, $\vmid$, $\vend$}
     \State \Return $\pi_{2i} \times \pi_{2i+1}$
   \EndIf
 \EndFunction
@@ -743,7 +743,7 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 \caption{Product Tree Algorithm}\label{alg:prod-tree}
 \end{algorithm}
 
-The same technique applies to factorization\footnote{We explain the process with $a$, this is applicable \textit{ne variatur} to $b$ as well.}.
+The same technique applies to factorization. We explain the process with $a$, though the same process applies \textit{ne variatur} to $b$.
 After computing the tree product, we can compute the residues of $a$ modulo $H_1$.
 Then we can compute the residues of $a \bmod{H_1}$ modulo the two children $\pi_2$ and $\pi_3$ of $H_1 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end (\ie, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{1,\dots,t\}$). This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
 We can use the same method for the tree product associated to any $H_j$, and the residues of $a$ modulo each of the $h_i$ ($i \in \{(j-1)t+1,\dots,jt\}$) for any $j$, \ie, $a$ modulo each of the $h_i$ for any $i$. Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexity of $\Oapp(\frac{n}{t} \mu(u t))$.
@@ -773,8 +773,8 @@ We can use the same method for the tree product associated to any $H_j$, and the
 \subsection{Doubling}
 \label{sec:doubling}
 
-As seen in Section~\ref{sec:complete-df}, instead of naively using $t_1 = t_2 = \dots = t$, we can use $t_k = 2^k t'$, and double $t_k$ at each iteration.
-This increases the transmission complexity slightly, but drastically reduces the computational complexity (see Table~\ref{tab:workload}).
+As seen in Section~\ref{sec:complete-df}, instead of using $t_1 = t_2 = \dots = t$, we can use $t_k = 2^k t'$, and double $t_k$ at each iteration.
+This increases the transmission complexity slightly, but drastically reduces the computational complexity.
 
 \begin{table}[ht]
 %\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
@@ -784,7 +784,7 @@ This increases the transmission complexity slightly, but drastically reduces the
 \toprule
 {\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{2}{c}{{\bf Complexity in $\Oapp$ of}} & {\bf \hfill Optimization used \hfill \null} \\
 \cmidrule(lr){3-4}
-& & {\bf Basic algo.} & {\bf Opt. algo.\tnote{a}} \\
+& & {\bf Basic algo.\tnote{a}} & {\bf Opt. algo.\tnote{b}} \\
 \midrule
 Both  & computation of $h_i$ and $h'_i$ 
       & $n u^2 \mu(u)$ 
@@ -796,11 +796,11 @@ Both  & compute redundancies $c_i$ and $c'_i$
       & $n \cdot \mu(ut_i)$ 
       & $\frac{n}{t_i} \cdot \mu(ut_i)$
       & product trees (\ref{sec:algo-opt-prod-trees}) \\
-Neil  & compute $s_i = c'_i/c_i$\tnote{b} or $S_i = C'_i / C_i$\tnote{c}
+Neil  & compute $s_i = c'_i/c_i$\tnote{c} or $S_i = C'_i / C_i$\tnote{d}
       & $\mu(uT_i)$
       & $\mu(uT_i)$
       &   \\
-Neil  & compute $S_i$ from $S_{i-1}$ and $s_i$ (CRT)\tnote{b}
+Neil  & compute $S_i$ from $S_{i-1}$ and $s_i$ (CRT)\tnote{c}
       & $\mu(u T_i)$ 
       & n/a
       & use $p_k = 2^{ut_k}$ (\ref{sec:choicep}) \\
@@ -826,16 +826,20 @@ Oscar & factor $b_i$
 \bottomrule
   \end{tabularx}
   \begin{tablenotes}
-    \item[a] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling} (we suppose that the basic algo use $t_1=t_2=\dots=t$. In addition, choosing $p_k = 2^{ut_k}$ provides substantial constant factor accelerations which cannot be seen in this table due to the fact only asymptotic complexity is showed.
-    \item[b] only for $p_i$ prime or equivalent TODO;
-    \item[c] only for $p_i = 2^{ut_i}$.
-    \item[d] using advanced algorithms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
+    \item[a] using the basic algo of Section~\ref{sec:basic}, and taking $t_1=t_2=\dots=t$.
+    \item[b] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling}. In addition, choosing $p_k = 2^{ut_k}$ provides substantial constant factor accelerations which cannot be seen on the asymptotic complexities given in this table.
+    \item[c] only for $p_i$ prime or equivalent TODO;
+    \item[d] only for $p_i = 2^{ut_i}$. TODO: dans ce cas, pourquoi ça apparaît dans la colonne basic ?
+    \item[e] using advanced algorithms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$. TODO: cette footnote n'est pas référencée ?
   \end{tablenotes}
  \end{threeparttable}
   \caption{Global Protocol Complexity}
   \label{tab:workload}
 \end{table}
 
+\subsection{Summary of the Optimizations}
+
+The asymptotic computational complexity that can be achieved with the optimizations described in this section is described in the fourth column of Table~\ref{tab:workload}.
 \section{From File Reconciliation to File Synchronization}
 \label{files}
 
