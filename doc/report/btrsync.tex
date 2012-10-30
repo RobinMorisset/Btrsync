@@ -579,17 +579,19 @@ For naive (\ie, convolutive) algorithms, $\mu(l) = O(l^2)$, but using {\sc fft} 
 The modular division of two $l$-bit numbers and the reduction of a $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
 Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.
 
-As proven in Section~\ref{sec:hashprime}, the complexity of a naive algorithm to perform $\tt HashPrime$ is $u^2 \mu(u)$.
+The complexity of a naive algorithm to perform $\tt HashPrime$ is
+$u^2 \mu(u)$ (see Section~\ref{sec:hashprime} for details).
 Hence, if we we use the same $t$ for each round ($t=t_1=t_2=\dots$), the complexity of \df is as described in the third column of Table~\ref{tab:workload}.
 
 \subsection{Hashing Into Primes}
 \label{sec:hashprime}
 
+Hashing into primes is frequently needed in cryptography, independently from \df. In this section, we present a naive way to do so, and present an optimiation which sacrifices uniformity to achieve better performance.
+
 \subsubsection{Naive Algorithm.}
-Hashing into primes is frequently needed in cryptography. 
 %A recommended implementation of $\HashPrime(F)$ is given in Algorithm \ref{alg:primes}
-A way to implement such hash function $\HashPrime$ is to use Algorithm~\ref{alg:primes}, where $\Hash'$ is a a hash function with a $u$-bit output.
-If $\Hash'$ can be considered as a random function, the output of $\HashPrime$ is also a uniformly random $u$-bit prime number.
+A way to implement such hash function $\HashPrime$ is to use Algorithm~\ref{alg:primes}, where $\Hash'$ is a hash function with a $u$-bit output.
+If the output of $\Hash'$ is considered to be uniformly random, the output of $\HashPrime$ is also a uniformly random $u$-bit prime number.
 
 \begin{algorithm}[t]
   \caption{Possible Implementation of $\HashPrime(F)$}
@@ -606,10 +608,10 @@ If $\Hash'$ can be considered as a random function, the output of $\HashPrime$ i
 
 Let us analyse the time complexity of this algorithm.
 We know there are roughly $\frac{2^u}{u}$ $u$-bit primes (TODO ref).
-Therefore, in average, we need to perform $u$ primality tests before finding $h$.
-If we use a Miller-Rabin test as primality test, each test costs $\Oapp(u \mu(u))$ (TODO ref).
-Therefore the total cost of $\HashPrime$ is $\Oapp(u^2 \mu(u))$.
-\comm{Dans un article soumis à PKC j'ai une meilleure borne pour cela, ... je crois que David voulait le citer à un moment...}
+Therefore, in average, we need to perform $u$ primality tests before we find a suitable $h$.
+The cost of a Miller-Rabin primality test is $\Oapp(u \mu(u))$ (TODO ref).
+Hence, the total cost of $\HashPrime$ is $\Oapp(u^2 \mu(u))$.
+\comm{Dans un article soumis à PKC j'ai une meilleure borne pour cela, ... je crois que David voulait le citer à un moment... Antoine: je pense que c'est tout à fait opportun de donner le meilleur résultat et de citer le papier en mettant qu'il est ``under review''}
 
 \subsubsection{Optimized Algorithm.}
 If $u$ is large enough (\eg $160$) one might sacrifice uniformity% to avoid repeated file hashing by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
