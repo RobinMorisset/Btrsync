@@ -147,17 +147,17 @@ are as follows:
     complexity which is linear in the size of the symmetric difference, and discuss a possible constant factor optimization
     (Section~\ref{trans}).
   \item We explain in Section~\ref{hashing} how \df can be extended with hash
-    functions to reconcile sets of files which do not have a fixed size, and
+    functions to perform \emph{file reconciliation}, i.e., reconcile sets of files which do not have a fixed size. We
     analyze how the hash functions should be chosen to achieve a good tradeoff
     between the quantity of data to transfer and the risks of confusion. Some
-    points of this analysis apply no matter the choice of the underlying set
+    points of this analysis (TODO: lesquels?!) apply no matter the choice of the underlying set
     reconciliation algorithm.
   \item We study the computational complexity of \df and
     present possible trade-offs between constant-factor transmission complexity
     and computational complexity through alternative design choices
     (Section~\ref{comp}).
   \item We spell out in Section~\ref{files} how the previous construction can be
-    extended to perform file synchronization, taking into account the location
+    extended to perform \emph{file synchronization}, taking into account the location
     and metadata of files and managing situations such as file moves in an
     intelligent manner. We describe an algorithm to apply a set of move
     operations on a set of files in-place which avoids excessive use of
@@ -402,73 +402,72 @@ In any case, thanks to the global hash $H = \Hash(\Set')$, if a failure occurs, 
 \section{From Set Reconciliation to File Reconciliation}
 \label{hashing}
 
-In this section, we first show how hashing can enable to use \df or any set reconciliation protocol to do file reconciliation.
-Then we show how to methods to reduce size of hash, and so transmission cost.
+In this section, we show how hashing makes it possible to use \df (or any set reconciliation protocol) to perform \emph{file reconciliation}.
+We then show methods specific to \df that can reduce the size of hashes, and thus improve the transmission complexity by constant factors.
 
-\subsection{From Set Reconciliation to File Reconciliation}
+\subsection{File Reconciliation Protocol}
 
-Let us suppose Oscar and Neil now want to reconcile files, modeled as bit-string of arbitrary lengths, instead of $u$-bit prime numbers.
+Let us suppose Oscar and Neil know how to synchronize $u$-bit prime numbers and now want to reconcile files, modeled as bit strings of arbitrary length.
 Let $\Files = \{F_1,\dots,F_n\}$ be the old set of files, owned by Oscar, and let $\Files' = \{F'_1,\dots,F'_n\}$ be the new version of files, owned by Neil.
-Let $\eta$ be the total number of files $\eta = | \Files \cup \Files'| \le n+n'$.
+Let $\eta$ be the total number of files: $\eta = | \Files \cup \Files'| \le n+n'$.
 
-A naive way to use a set reconciliation for sets of prime numbers (such as \df) to reconcile $\Files$ and $\Files'$ is simply to hash each file, or the content of each file, and to reconcile the sets $\Set$ and $Set'$ of hashes of the files of Oscar and Neil.
-Then, when the protocol succeed, Neil can send to Oscar the actual content of the files, corresponding to hashes in $SetD'$, \ie, the files Oscar is missing.
+A naive way to use \df to reconcile $\Files$ and $\Files'$ is simply to hash the content of each file to a prime number and to reconcile the sets $\Set$ and $\Set'$ of hashes of the files of Oscar and Neil.
+Then, when the protocol succeeds, Neil can send to Oscar the actual content of the files, corresponding to hashes in $\SetD'$, \ie, the files Oscar is missing.
 
-More formally, we have:
+More formally, we define:
 \begin{align*}
 h_1 &= \HashPrime(F_1) & &\dots & h_n &= \HashPrime(F_n) & \Set &= \{h_1,\dots,h_n\} \\
 h'_1 &= \HashPrime(F'_1) & &\dots & h'_{n'} &= \HashPrime(F'_{n'}) & \Set' &= \{h'_1,\dots,h'_{n'}\},
 \end{align*}
-where $\HashPrime$ is a collision-resistant hash function $\HashPrime$ to prime numbers, in order for any $h_i$ or $h'_i$ to identify uniquely its corresponding file $F_i$ or $F'_i$.
-In Section~\ref{hashing}, we show how to construct such hash function from classical collision-resistant hash functions (to bit-strings of fixed length).
-If we suppose that the output of $\HashPrime$ is uniform\footnote{This is the case if we use our first proposed Algorithm~\ref{alg:primes} with a classical hash function which can be modeled as a random function.
-We suppose this is true for well-known hash functions such as SHA-256. (TODO ?)}, since there are about $\frac{2^m}{m}$ (TODO ref) primes number of size $m$, we just need to be the size $u$ of the primes output by $\HashPrime$ to be such that $u - \log u = 2 \log \eta$, because of the birthday paradox (TODO ref).
+where $\HashPrime$ is a collision-resistant hash function to prime numbers, so that the $h_i$ and $h'_i$ identify their corresponding file in $F_i$ or $F'_i$ without ambiguity.
+In Section~\ref{sec:hashprime}, we show how to construct such a hash function from a classical collision-resistant hash function to fixed-length bit strings.
+% je commente cette footnote, parce que c'est dans sec:hashprime qu'il faut expliquer ça
+% \footnote{This is the case if we use our first proposed Algorithm~\ref{alg:primes} with a classical hash function which can be modeled as a random function.
+%We suppose this is true for well-known hash functions such as SHA-256. (TODO ?)}
+If we choose a construction of $\HashPrime$ which ensures that its output is uniform, since there are about $\frac{2^m}{m}$ (TODO ref) prime numbers of size $m$, the size $u$ of the primes output by $\HashPrime$ should be chosen to be such that $u - \log u = 2 \log \eta$, because of the birthday paradox (TODO ref).
 This means that $u \approx 2\log \eta$.
+
 \subsection{The File Laundry: Reducing $u$}
 \label{shortu}
-What happens if we brutally shorten the hash size $u$ in the \df protocol for files?
+In this section, we propose another constant-factor improvement of the transmission complexity. Instead of choosing a large $u$ to ensure that the probability of collisions is negligible, we will choose a smaller $u$, adapt \df to deal with the collisions that can arise, and propose a statistical analysis of collisions to find out how $u$ should be chosen.
 
-As expected by the birthday paradox, we should start seeing collisions. 
-%Let us analyze the statistics governing the appearance of collisions.
-In this section, after showing how to deal with these collisions and adapting \df subsequently, we analyse the statistics governing the appearance of collisions and try to propose some ways to correctly choose $u$.
+\subsubsection{Changes to the \df protocol.}
 
-\subsubsection{New Protocol}
+We remark that a collision can only yield a \textit{false positive}, and never a \textit{false negative}. In other words, while a collision may make Oscar and Neil miss a real difference,
+% I think this footnote disrupts the flow but does not really make things much clearer: \footnote{\eg, make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.}
+it will never create a nonexistent difference \textit{ex nihilo}.
 
-We remark that a collision can only yield a \textit{false positive}, and never a \textit{false negative}. In other words, while a collision may obliviate a difference\footnote{\eg, make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.} a collision will never create a nonexistent difference \textit{ex nihilo}.
+Thus, it suffices to replace the hash of files $h_i = \HashPrime(F_i)$ (or $h'_i = \HashPrime(F'_i)$) by $\hbar_{i,\ell}=\HashPrime(\ell|F_i)$ (or $\hbar_{i,\ell} = \HashPrime(\ell|F'_i)$ to quickly filter-out file differences by repeating the \df protocol for $\ell=1,2,\ldots$. 
+At each iteration, the parties will detect files which are not in common (\ie, files $F_i$ or $F'_i$ whose hash $\hbar_{i,\ell}$ or $\hbar'_{i,\ell}$ does not collide), reconciliate these differences (\ie, remove the relevant files from $\Files$ and $\Files'$) and ``launder'' again the remaining files $\Files$ and $\Files'$.
 
-Thus, it suffices to replace the hash of files $h_i = \HashPrime(F_i)$ (or $h'_i = \HashPrime(F'_i)$) by $\hbar_{i,\ell}=\HashPrime(\ell|F_i)$ (or $\hbar_{i,\ell} = \HashPrime(\ell|F'_i)$ to quickly filter-out file differences by repeating our \df protocol for $\ell=1,2,\ldots$. 
-At each iteration the parties will detect files not in common (\ie, files $F_i$ or $F'_i$ whose hash $\hbar_{i,\ell}$ or $\hbar'_{i,\ell}$ is not colliding), fix these (\ie, remove these from $\Files$ and $\Files'$) and ``launder'' again the remaining files $\Files$ and $\Files'$.
+We still need a condition to stop ``laundering'' files, \ie, a condition to ensure that there are no more collisions which hide remaining differences.
+Before showing this condition, let us first analyse precisely the three kinds of collisions which can appear over an execution $\ell$ of \df:
 
-We still need a condition to stop ``laundering'' files, \ie, a collision to be sure there were no problematic collision.
-Before showing this condition, let us first analyse precisely which collisions can appear.
-
-Let us consider the execution $\ell$ of \df.
-There are three kinds of collisions:
 \begin{enumerate}
-\item collisions common files of Oscar and Neil, \ie, collisions in $\Files \cap \Files'$;
-\item collisions between a common file of Oscar and Neil, and a file not in common, \ie, collisions between $\Files \cap \Files'$ and $\Files \Delta \Files' = (\Files \setminus \Files') \cup (\Files' \setminus \Files)$;
-\item collisions between files not in common, \ie, files in $\Files \Delta \Files'$.
-\end{enumerate}
-First kind of collisions is obviously not a problem at all.
-Second kind of collisions can be easily detected by Oscar or Neil, at the end of the execution $\ell$ of the \df protocol. 
-This will prevent them from knowing easily to which file $F$ corresponds a hash not in common $h$.
+\item Collisions between common files of Oscar and Neil, \ie, collisions in $\Files \cap \Files'$. These collisions are never a problem, because they cannot obliviate any differences.
+\item Collisions between a common file of Oscar and Neil, and a file not in common, \ie, collisions between $\Files \cap \Files'$ and $\Files \Delta \Files' = (\Files \setminus \Files') \cup (\Files' \setminus \Files)$;
+These collisions can be easily detected by Oscar or Neil, at the end of the execution $\ell$ of the \df protocol. 
+TODO(antoine) je ne comprends absolument pas ces deux phrases. This will prevent them from knowing easily to which file $F$ corresponds a hash not in common $h$.
 If such collision arrives, the corresponding file will not be reconciled in this execution of \df and another execution of \df is required.
-Third kind of collisions obliviate a real difference between $\Files$ and $\Files'$. If no mechanism is added, these collisions can never be
+\item Collisions between files not in common, \ie, files in $\Files \Delta \Files'$.
+  TODO(antoine) à reformuler: These collisions obliviate a real difference between $\Files$ and $\Files'$. If no mechanism is added, these collisions can never be detected.
+\end{enumerate}
 
-Therefore, we propose the following method to check termination.
-Before anything else is send, Neil needs to send a global hash $H'$ on a collision-resistant hash of files: $H' = \Hash((\Hash(F'_1),\dots,\Hash(F'_{n'})))$.
+TODO(antoine): à clarifier.
+We propose the following method to check termination.
+Before anything else is sent, Neil needs to send a global hash $H'$ on a collision-resistant hash of files: $H' = \Hash((\Hash(F'_1),\dots,\Hash(F'_{n'})))$.
 Contrary to $H$ in $\df$, this hash is on a collision-resistant hash of files and not on (potentially colliding) diversified hash $ \HashPrime(\ell|F)$.
 Then, if the execution $\ell$ of the \df protocol is successful, Neil sends the list of $\Hash(F'_i)$ for the new files $F'_i$, \ie files $F'_i$ in $\Files' \setminus \Files$ whose hash $\hbar'_{i,\ell}$ is not colliding.
 Then Oscar can check whether a collision of the third kind appears by using $H'$.
 
 
-\subsubsection{Naive Analysis}
+\subsubsection{Naive Analysis.}
 
 We slightly change notations and write:
 \[ \Files \cup \Files' = \{ F_1, \dots, F_\eta \}. \]
 
-We remark that, as soon as a file $F_i$ or $F'_i$ not in common (\ie, in $\Files \Delta \Files'$) does not collide with another file in one execution of \df, this difference between $\Files$ and $\Files'$ will be detected by our new protocol.
-Therefore, in this naive analysis, we just compute the probability that a file keeps colliding for $\lambda$ executions, to obtain an upper bound on the probability that at least one difference between $\Files$ and $\Files'$ will not be detected after $\lambda$ executions (\ie, at least one false positive will survive $\lambda$ executions).
+We notice that, as soon as a file $F_i$ or $F'_i$ in $\Files \Delta \Files'$ does not collide with another file in one execution of \df, then this difference between $\Files$ and $\Files'$ will be detected by our new protocol.
+Therefore, in this naive analysis, we just compute the probability that a file keeps colliding for $\lambda$ executions, to obtain an upper bound on the probability that at least one difference between $\Files$ and $\Files'$ will not be detected after $\lambda$ executions (\ie, at least one false positive survives $\lambda$ executions).
 
 Consider $\HashPrime$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^u-1\}$. Let $X_i$ be the random variable:
 \[
@@ -476,7 +475,6 @@ X_i =
 \left\{
 \begin{array}{lcl}
 1 & ~~~~&  \mbox{if file $F_i$ collides with another file.}\\
-\\
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
 \right.
@@ -488,14 +486,13 @@ The average number of colliding files is hence:
 For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of colliding files is less than $233$.
 
 Assume that the diversified $\hbar_\ell(F)$'s are random and independent. 
-To understand why the probability that a stubborn file persists colliding decreases exponentially with the number of iterations $\lambda$, assume that $\eta$ remains invariant between iterations and define the following random variables:
+To understand why the probability that a stubborn file continues to collide decreases exponentially with the number of iterations $\lambda$, assume that $\eta$ remains invariant between iterations and define the following random variables:
 \[
 \begin{array}{rcl}
 X^{\ell}_i & = &
 \left\{
 \begin{array}{lcl}
-1 & ~~~~&  \parbox[t]{.6\textwidth}{if file $F_i$ collides with another file during iteration $\ell$.}\\
-\\
+1 & ~~~~&  \parbox[t]{.6\textwidth}{if file $F_i$ collides during iteration $\ell$.}\\
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
 \right.\\
@@ -503,8 +500,7 @@ X^{\ell}_i & = &
 Y_i = \prod_{\ell=1}^\lambda X^{\ell}_i & = &
 \left\{
 \begin{array}{lcl}
-1 & ~~~~&  \parbox[t]{.6\textwidth}{if file $F_i$ collides with another file during all the $\lambda$ first protocol iterations.}\\
-\\
+1 & ~~~~&  \parbox[t]{.6\textwidth}{if file $F_i$ collides during all the $\lambda$ first iterations.}\\
 0 & ~~~~&  \mbox{otherwise.}
 \end{array}
 \right.
@@ -519,13 +515,13 @@ Therefore the average number of colliding files is:
 \[
  \EE{\sum_{i=1}^{\eta} Y_i} \le \sum_{i=1}^{\eta} \left( \frac{\eta -1}{2^u} \right)^\lambda =  \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
 \]
-And the probability that at least one false positive will survive $k$ rounds is:
+And the probability that at least one false positive survives $k$ rounds is:
 \[
 \epsilon_\lambda \le \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
 \]
 
-For the previously considered instance\footnote{$\eta=10^6$,$u=32$.} we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3}\%$.
-In particular, this means that with probability more than $1-\epsilon_2 \approx 95\%$, at most two executions of \df will be necessary.
+For the previously considered instance of $\eta=10^6$ and $u=32$, we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3}\%$.
+In particular, this means that with probability more than $1-\epsilon_2 \approx 95\%$, two executions of \df will suffice.
 
 \subsubsection{A more refined (but somewhat technical) analysis.}
 TODO: ACTUALLY NOT CORRECT BECAUSE WE FORGOT COLLISIONS BETWEEN FILES NOT IN COMMON AND FILES IN COMMON !!!!!!!!!!!!!!!!!!!!!!
@@ -570,27 +566,25 @@ A different approach is to optimize $t$ and $u$ experimentally, \eg, using the o
 
 \section{Computational Complexity}
 \label{comp}
-In this section, we are interested in computing the computational complexity of our protocol. 
+In this section, we determine the computational complexity of \df. We first describe the complexity using a straightforward implementation, and present how the complexity can be improved using four independent optimizations. A summary of all costs can be found in Table~\ref{tab:workload}.
 To simplify the analysis, we assume that there are no collisions, and that $n=n'$.
 
 %We first present some variants of the protocol we described above, and then we analyse the complexity of all these variants.
-In this section, after briefly mentioning the cost of a naive implementation, we propose four optimizations to speed up our algorithms.
-A summary of all costs can be found in Table~\ref{tab:workload}.
 
 \subsection{Basic Complexity}
 
-Let $\mu(l)$ be the time required to multiply two $l$-bit numbers\footnote{We assume that $\forall l,l', \mu(l+l') \ge \mu(l) + \mu(l')$.}.
-For naive (\ie, convolutive) algorithms $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$. {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
+Let $\mu(l)$ be the time required to multiply two $l$-bit numbers, with the assumption that $\forall l,l', \mu(l+l') \ge \mu(l) + \mu(l')$.
+For naive (\ie, convolutive) algorithms, $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$; {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
 The modular division of two $l$-bit numbers and the reduction of a $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
 Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.
 
-As proven in Section~\ref{sec:hashprime}, the naive complexity of $\tt HashPrime$ is $u^2 \mu(u)$, but it can be slightly improved at the expense of making the hashing less uniform.
-Hence, we have the costs depicted in the third column of Table~\ref{tab:workload}, if we use the same $t$ for each round ($t=t_1=t_2=\dots$).
+As proven in Section~\ref{sec:hashprime}, the complexity of a naive algorithm to perform $\tt HashPrime$ is $u^2 \mu(u)$.
+Hence, if we we use the same $t$ for each round ($t=t_1=t_2=\dots$), the complexity of \df is as described in the third column of Table~\ref{tab:workload}.
 
 \subsection{Hashing Into Primes}
 \label{sec:hashprime}
 
-\subsubsection{Naive Algorithm}
+\subsubsection{Naive Algorithm.}
 Hashing into primes is frequently needed in cryptography. 
 %A recommended implementation of $\HashPrime(F)$ is given in Algorithm \ref{alg:primes}
 A way to implement such hash function $\HashPrime$ is to use Algorithm~\ref{alg:primes}, where $\Hash'$ is a a hash function with a $u$-bit output.
@@ -616,7 +610,7 @@ If we use a Miller-Rabin test as primality test, each test costs $\Oapp(u \mu(u)
 Therefore the total cost of $\HashPrime$ is $\Oapp(u^2 \mu(u))$.
 \comm{Dans un article soumis à PKC j'ai une meilleure borne pour cela, ... je crois que David voulait le citer à un moment...}
 
-\subsubsection{Optimized Algorithm}
+\subsubsection{Optimized Algorithm.}
 If $u$ is large enough (\eg $160$) one might sacrifice uniformity% to avoid repeated file hashing by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
 to improve time efficiency by replacing $\mbox{{\tt NextPrime}}$ by Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
 
@@ -777,11 +771,7 @@ We can use the same method for the tree product associated to any $H_j$, and the
 \label{sec:doubling}
 
 As seen in Section~\ref{sec:complete-df}, instead of naively using $t_1 = t_2 = \dots = t$, we can use $t_k = 2^k t'$, and double $t_k$ at each iteration.
-This increases slightly the transmission complexity, but reduces drastically the computational complexity as you can see in Table~\ref{tab:workload}.
-
-\subsection{Summary}
-
-Summary of costs is depicted in Table~\ref{tab:workload}.
+This increases the transmission complexity slightly, but drastically reduces the computational complexity (see Table~\ref{tab:workload}).
 
 \begin{table}[ht]
 %\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
