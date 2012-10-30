@@ -358,9 +358,8 @@ where $\kappa$ is the maximum number of rounds needed.
 For the two choices of $t_\ell$ that we are interested in, the transmission complexity is as follows:
 \begin{itemize}
 \item if $t_1 = \dots = t$, $\kappa = \lceil T/t \rceil$, $T_\kappa = \kappa t < T+t$ and the transmission complexity is at most $\frac{5}{2} u (T+t) + \lceil T/t \rceil = O(uT)$;
-\item if $t_k = 2^k t'$, $\kappa = \lceil \log(T/t') \rceil$, $T_\kappa < 2T$ and the transmission complexity is at most $\frac{5}{2} 2uT + \lceil \log(T/t') \rceil = O(ut)$.
+\item if $t_k = 2^k t'$, $\kappa = \lceil \log(T/t') \rceil$, $T_\kappa < 2T$ and the transmission complexity is at most $\frac{5}{2} 2uT + \lceil \log(T/t') \rceil = O(uT)$.
 \end{itemize}
-\comm{comment ça $O(ut)$ ?}
 We can remark that the first choice is slightly better in terms of transmission complexity: it may require two times less data to be exchanged.
 However, as we will see in Section~\ref{sec:doubling}, the computational complexity is lower if we pick the second choice.
 
