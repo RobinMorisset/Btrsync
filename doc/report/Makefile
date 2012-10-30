@@ -6,7 +6,7 @@ PDF=btrsync.pdf btrsync-single.pdf
 
 all: $(PDF)
 
-btrsync-single.tex: btrsync.tex btrsync.bbl
+btrsync-single.tex: btrsync.tex results.tex btrsync.bbl single.sh
 	./single.sh
 
 btrsync.bbl: btrsync.pdf
@@ -23,8 +23,11 @@ btrsync.bbl: btrsync.pdf
 btrsync-single.pdf: btrsync-single.tex FORCE_MAKE
 	perl latexmk.pl -pdf -pdflatex="pdflatex -interaction=nonstopmode" -bibtex- $<
 
-btrsync.pdf: btrsync.tex FORCE_MAKE
+btrsync.pdf: btrsync.tex results.tex FORCE_MAKE
 	perl latexmk.pl -pdf -pdflatex="pdflatex -interaction=nonstopmode" -bibtex $<
+
+results.tex: results mkresults.sh si.pl
+	./mkresults.sh
 
 clean:
 	perl latexmk.pl -c
