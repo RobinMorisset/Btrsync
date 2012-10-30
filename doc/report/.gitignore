@@ -28,3 +28,6 @@ _*
 *.fls
 *.fdb_latexmk
 *.backup
+
+*.pdf
+*-single.tex
