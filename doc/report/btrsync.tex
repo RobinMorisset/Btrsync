@@ -14,6 +14,9 @@
 
 \makeitbig
 
+\sloppy
+
+\usepackage[T1]{fontenc}
 \usepackage{algorithmicx}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
@@ -29,16 +32,6 @@
 %\algrenewcommand\alglinenumber[1]{
 %    {\sf\footnotesize\addfontfeatures{Colour=888888,Numbers=Monospaced}#1}}
 
-
-\newcommand{\sig}{{\sf $($Gene\-rate, Sign, Verify$)$} }
-\newcommand{\ignore}[1]{}
-%\newcommand{\btr}{{\tt btrsync}}
-%\newcommand{\rsy}{{\tt rsync}}
-\newcommand{\abs}[1]{\left|#1\right|}
-\newcommand{\Cov}[0]{\mbox{Cov}}
-\newcommand{\Var}[0]{\mbox{Var}}
-\newcommand{\xor}[0]{\oplus}
-\newcommand{\rmu}[0]{\mbox{RM}}
 \newcommand{\Prob}[1]{{\Pr\left[\,{#1}\,\right]}}
 \newcommand{\EE}[1]{{\mathbb{E}\left[{#1}\right]}}
 \newcommand{\Oapp}{\ensuremath{\tilde{O}}}
@@ -69,12 +62,13 @@
 \itshape\hrule\smallskip#1\par\smallskip\hrule}}
 \setlength{\marginparwidth}{2cm}
 
-\usepackage[bookmarks=false]{hyperref}
+\usepackage[bookmarks=false,hidelinks]{hyperref}
 \usepackage{geometry}
 
 \begin{document}
 
-\title{From Rational Number Reconstruction to Set Reconciliation}
+\title{From Rational Number Reconstruction to Set Reconciliation and File
+Synchronization}
 
 \author{Antoine Amarilli \and Fabrice Ben Hamouda \and Florian Bourse \and\\
 Robin Morisset \and David Naccache \and Pablo Rauzy}
@@ -82,14 +76,13 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 \institute{
 \'{E}cole normale sup\'{e}rieure, D\'{e}partement d'informatique \\
    45, rue d'Ulm, {\sc f}-75230, Paris Cedex 05, France.\\
-   \email{surname.name@ens.fr} (except for \email{fabrice.ben.hamouda@ens.fr})
+   \email{firstname.lastname@ens.fr} (except for \email{fabrice.ben.hamouda@ens.fr})
 }
 
 \maketitle
-\comm{Penser à voir si on change le titre.}
 
 \begin{abstract}
-  This work revisits \textit{set reconciliation}, a problem consisting in synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new reconciliation protocol called ``Divide \& Factor'' (\df), based on number theory, which achieves optimal asymptotic transmission complexity like prior proposals. We then study the problem of synchronizing sets of variable-size files, and describe how constant-factor improvements can be achieved through the use of hashing with a carefully chosen hash size (balancing the quantity of data transferred and the risk of collisions). We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync transmits much less data at the expense of a small computational overhead.
+  This work revisits \textit{set reconciliation}, a problem consisting in synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new reconciliation protocol called ``Divide \& Factor'' (\df), based on number theory, which achieves optimal asymptotic transmission complexity like prior proposals. We then study the problem of synchronizing sets of variable-size files using hash functions, and analyse how the hash size should be chosen. We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync transmits much less data at the expense of a small computational overhead.
 \end{abstract}
 
 \subsection*{Notations}
@@ -105,9 +98,8 @@ Cette section est temporaire et ne sert que pour assurer des notations cohérent
   maximal accepté au cours d'un round, lorsqu'on ne présente qu'un round.
 \end{itemize}
 
-TODO: Corriger les $n$,$n'$,$\eta$,$\eta'$.
-
-TODO: faire commencer le $i$ à 1  PARTOUT
+%fait: Corriger les $n$,$n'$,$\eta$,$\eta'$.
+%fait: faire commencer le $i$ à 1  PARTOUT
 
 \section{Introduction}
 
@@ -129,7 +121,7 @@ determine the symmetric difference of the two sets while minimizing the amount
 of data transferred. The lower bound of the quantity of data to transfer is
 clearly the size of the symmetric difference (i.e., the number of elements in the
 difference times the size of these elements), and some known algorithms achieve
-this bound~\cite{PSRec}. We refer the reader to~\cite{PSRec,Mins1,Whats} (to
+this bound~\cite{PSRec}. We refer the reader to~\cite{Whats,PSRec,Mins1} (to
 quote a few references) for more on this problem's history and its existing
 solutions.
 
@@ -137,39 +129,38 @@ In this paper, we look at the problems of set reconciliation and file
 synchronization from a theoretical and practical perspective. Our contribution
 are as follows:
 \begin{itemize}
-  \item We introduce ``Divide \& Factor'', a new set reconciliation algorithm.
-    \df is based on number theory: it represents the items to synchronize as
-    prime numbers, accumulates information about the symmetric difference in
-    a series of rounds through the Chinese remainder theorem, and reconstitutes
-    the result through the use of rational number reconstruction. The algorithm
-    is described in Section~\ref{dandf}.
-  \item We show that \df, like existing algorithms, has a transmission
-    complexity which is linear in the size of the symmetric difference, and discuss a possible constant factor optimization
-    (Section~\ref{trans}).
-  \item We explain in Section~\ref{hashing} how \df can be extended with hash
-    functions to perform \emph{file reconciliation}, i.e., reconcile sets of files which do not have a fixed size. We
-    analyze how the hash functions should be chosen to achieve a good tradeoff
-    between the quantity of data to transfer and the risks of confusion. Some
-    points of this analysis (TODO: lesquels?! --- Fabrice: tous  en fait, au problème du hashing vers les nbs premiers près, on utilise \df en blackbox !) apply no matter the choice of the underlying set
-    reconciliation algorithm.
-  \item We study the computational complexity of \df and
-    present possible trade-offs between constant-factor transmission complexity
-    and computational complexity through alternative design choices
-    (Section~\ref{comp}).
-  \item We spell out in Section~\ref{files} how the previous construction can be
-    extended to perform \emph{file synchronization}, taking into account the location
-    and metadata of files and managing situations such as file moves in an
-    intelligent manner. We describe an algorithm to apply a set of move
-    operations on a set of files in-place which avoids excessive use of
+  \item In Section~\ref{sec:dandf}, we introduce ``Divide \& Factor'', a new set
+    reconciliation algorithm. \df is based on number theory: it represents the
+    items to synchronize as prime numbers, accumulates information about the
+    symmetric difference in a series of rounds through the Chinese remainder
+    theorem, and reconstitutes the result through the use of rational number
+    reconstruction.
+  \item In Section~\ref{sec:trans}, we show that \df, like existing algorithms,
+    has a transmission complexity which is linear in the size of the symmetric
+    difference, and discuss a possible constant factor optimization.
+  \item In Section~\ref{sec:hashing}, we explain how \df can be extended with
+    hash functions to perform \emph{file reconciliation}, i.e., reconcile sets
+    of files which do not have a fixed size. We analyze how the hash functions
+    should be chosen to achieve a good tradeoff between the quantity of data to
+    transfer and the risks of confusion. Some points of this analysis apply no
+    matter the choice of the underlying set reconciliation algorithm.
+  \item In Section~\ref{sec:comp}, we study the computational complexity of \df
+    and present possible trade-offs between constant-factor transmission
+    complexity and computational complexity through alternative design choices.
+  \item In Section~\ref{sec:files}, we spell out how the previous construction
+    can be extended to perform \emph{file synchronization}, taking into account
+    the location and metadata of files and managing situations such as file
+    moves in an intelligent manner. We describe an algorithm to apply a set of
+    move operations on a set of files in-place which avoids excessive use of
     temporary file locations.
-  \item We present \btrsync, our implementation of file synchronization through
-    \df, in Section~\ref{program}, and benchmark it against \rsync. The results
-    show that \btrsync has a higher computational complexity but transmits less
-    data in most scenarios.
+  \item In Section~\ref{sec:program}, we present \btrsync, our implementation
+    of file synchronization through \df, and benchmark it against \rsync. The
+    results show that \btrsync has a higher computational complexity but
+    transmits less data in most scenarios.
 \end{itemize}
 
 \section{``Divide \& Factor'' Set Reconciliation}
-\label{dandf}
+\label{sec:dandf}
 
 In this section, we introduce \df, a new set reconciliation protocol based on number theory, which works on sets of $u$-bit primes $\Set$ and $\Set'$.
 After introducing the problem and the notations, we first present the \emph{basic} version of \df which assumes that the number of differences between the two sets is bounded by some constant.
@@ -179,23 +170,27 @@ We then show how to extend it to the \emph{complete} \df protocol which can deal
 
 \underline{O}scar possesses an \underline{o}ld version of a multiset $\Set$ of $n$ $u$-bit primes $\Set$ that he wishes to update.
 \underline{N}eil has the \underline{n}ew, up-to-date version of this multiset, denoted $\Set'$ and containing $n'$ $u$-bit primes.
-In what follows, we will extend the symbols of set operations (union, intersection, difference and cardinal) on multisets in the expected way (e.g., the cardinal of a multiset is the sum of the multiplicities of its elements, the intersection of two multisets is the multisets whose elements have as multiplicities the min of their multiplicities in the two sets, etc.).
+Because our study is motivated by file synchronization, our set reconciliation protocol is unidirectional: we do not care if Neil is aware of Oscar's values at the end. However, our protocol can be extended to a bidirectional protocol without changing the asymptotic transmission complexity.
+
+In what follows, we will extend to multisets the symbols of set operations (union, intersection, difference and cardinal), in the expected way (\eg, the cardinal of a multiset is the sum of the multiplicities of its elements, the intersection of two multisets is the multisets whose elements have as multiplicities the min of their multiplicities in the two sets, etc.).
 %\comm{Fabrice: should we speak about the fact we are limited to primes ???} --
 %Antoine: yes, I think we should, and indeed we do so :)
 
-Let us write $\Set = \{h_1,\dots,h_n\}$ and $\Set' = \{h'_1,\dots,h'_{n'}\}$, such that: $h_1 < h_2 < \dots < h_n$ and $h'_1 < h'_2 < \dots < h'_{n'}$.
-Let $\SetD = \Set \setminus \Set'$ be the values deleted in Neil's version (compared to Oscar's version), and $\SetD' = \Set' \setminus \Set$ be the values added in Neil's version.
+Let us write $\Set = \{h_1,\dots,h_n\}$ and $\Set' = \{h'_1,\dots,h'_{n'}\}$, such that: $h_1 \leq h_2 \leq \dots \leq h_n$ and $h'_1 \leq h'_2 \leq \dots \leq h'_{n'}$.
+Let $\SetD = \Set \setminus \Set'$ be the values deleted in Neil's version (compared to Oscar's version), and $\SetD' = \Set' \setminus \Set$ be the values added in Neil's version, with the adequate multiplicities.
 Let $T$ be the number of differences between $\Set$ and $\Set'$:
-\[ T = \# \SetD + \# \SetD' = \# \Set + \# \Set' - 2 \# \left( \Set \bigcap \Set' \right) = \# \left(\Set \bigcup \Set' \right) - \# \left(\Set \bigcap \Set'\right), \]
+\[ T = \# \SetD + \# \SetD' = \# \left( \Files \Delta \Files' \right) \]
+where we write:
+\[ \Files \Delta \Files' = (\Files \setminus \Files') \cup (\Files' \setminus \Files). \]
 
 \subsection{Basic Protocol with Bounded $T$}
 \label{sec:basic}
 
-In this section, we present a basic version of \df which assumes that the number of differences $T$ is at most $t$, for some fixed constant $t$ known of Neil and Oscar.
+In this section, we present the basic version of \df which assumes that the number of differences $T$ is at most $t$, for some fixed constant $t$ known of Neil and Oscar.
 
 We first generate a prime $p$ such that
 \begin{equation}
-\label{equp}
+\label{eq:equp}
 2^{2ut} \leq p < 2^{2ut+1}.
 \end{equation}
 
@@ -219,14 +214,14 @@ Since $T \leq t$, $\Set$ and $\Set'$ differ by at most $t$ elements. Hence, $s$ 
 The problem of efficiently recovering $a$ and $b$ from $s$ is known as \textit{Rational Number Reconstruction}~\cite{pan2004rational,wang2003acceleration}.
 The following theorem (adapted from Theorem~1 in \cite{cryptorational}) guarantees that it can be solved efficiently in this setting.
 \begin{theorem}
-\label{theo}
-Let $a$,$b \in {\mathbb Z}$ be two co-prime integers such that $0 \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a$,$b$ are uniquely defined given $s$ and $p$, and can be recovered from $A$,$B$,$s$, and $p$ in polynomial time.
+\label{th:theo}
+Let $a$,$b \in {\mathbb Z}$ be two co-prime integers such that $0 \leq a \leq A$ and $0<b \leq B$. Let $p>2AB$ be a prime and $s=a b^{-1} \bmod p$. Then $a$,$b$ are uniquely defined given $s$ and $p$, and can be recovered from $A$, $B$, $s$, and $p$ in polynomial time.
 \end{theorem}
 
-Taking $A=B=2^{ut}-1$, Equation \eqref{equp} implies that $AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss's algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
+Taking $A=B=2^{ut}-1$, Equation \eqref{eq:equp} implies that $AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss's algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
 \comm{Fabrice: certes, mais on utilise directement un Euclide étendu tronqué. Et pourquoi citer Vallée qui est un peu incompréhensible dans notre cas... TODO: check that in our program we ensure $a$ and $b$ co-prime !! otherwise, it may fail !!!!!}
-Once $a$ and $b$ have been recovered, Oscar and Neil, can test, respectively, if they are divisible by the $h_i$ and the $h'_i$. Thus, they can identify the differences between $\Set$ and $\Set'$ and settle them\footnote{Actually, this only works if $\Set$ and $\Set'$ are sets. If they are multi-sets, and if, for example, the multiplicity of $h'_i$ in $\Set'$ is $j$, we need to check the divisibility of $b$ by $h_i,h_i^2,\dots,h_i^{j'}$. For clarity, in what follows, we will present the algorithms for $\Set$ and $\Set'$ sets.
-We let the reader adapt them to the multi-set case.}.
+Once $a$ and $b$ have been recovered, Oscar and Neil, can test, respectively, by which $h_i$ and $h'_i$ they are divisible. Thus, they can identify the differences between $\Set$ and $\Set'$ and settle them\footnote{Actually, this only works if $\Set$ and $\Set'$ are sets. If they are multisets, and if, for example, the multiplicity of $h'_i$ in $\Set'$ is $j'$, we need to check the divisibility of $b$ by $h_i,h_i^2,\dots,h_i^{j'}$. For clarity, in what follows, we will present the algorithms for the case where $\Set$ and $\Set'$ are sets.
+We let the reader adapt them to the general case.}.
 
 The basic protocol is depicted in Figure~\ref{fig:basic-df}.
 
@@ -246,7 +241,8 @@ $c \gets \prod_{i=1}^n h_i \bmod p$        &                & $c' \gets \prod_{i
 $\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i = 0 \}$ & & \\
 \bottomrule
 \end{tabular}\vspace{-0.25cm} % why the hell do we need that?!
-\caption{Basic \df protocol (assuming $T \le t$).}\label{fig:basic-df}
+\caption{Basic \df protocol (assuming $T \le t$).}
+\label{fig:basic-df}
 \end{figure}
 
 \subsection{Handling an Unbounded Number of Differences}
@@ -259,19 +255,19 @@ We then construct a protocol which works with any $T$.
 \subsubsection{Detecting Bad Reconciliation.}
 We first remark that, if we execute the previous protocol when $t < T$, either $a$ and $b$ are still correct (in which case the protocol works correctly), or $a$ and $b$ are not correct.
 In the second case, with high probability, the product of the $h_i$'s which divide $a$ is not equal to $a$ (TODO: prove this claim).
-This check has the advantage to be very fast, and it does not require Neil to send any data to Oscar. Whenever this check fails, we say that this is a ``bad reconciliation''.\comm{TODO trouver un meilleur nom pour la suite}
-But, if we are unlucky, it can happen that this check is not sufficient. We will call $\bot$ the event where this check failed.
+This check has the advantage to be very fast, and it does not require Neil to send any data to Oscar. We will call $\bot_1$ the event where this check identifies a problem. 
+However, if we are unlucky, it can happen that this check is not sufficient. We will call $\bot_2$ the event where this check passes but the set reconciliation failed.
 
-To handle the $\bot$ case, we will assume that we have a collision-resistant hash function $\Hash$ which takes as input any bit string and output a short binary string of a fixed number of bits $n$ (e.g., $n=160$).
+To handle the $\bot_2$ case, we will assume that we have a collision-resistant hash function $\Hash$ which takes as input any bit string and output a short binary string of a fixed number of bits (\eg, $160$).
 At the beginning, before any other exchanges take place, Neil sends to Oscar a hash of its set $H = \Hash(\Set') = \Hash((h'_1,\dots,h'_{n'}))$. At the end, after computing $\SetD$, Oscar computes $\Set'$ from $\Set$, $\SetD'$ and $\SetD$ and checks if the hash of this new set is equal to $H$.
-Whenever Oscar's $\Set'$ is incorrect because the assumption $T < t$, this check will fail unless we found a collision in $\Hash$. Hence, we can bound the probability of error of the protocol by $2^n$. In what follows, we assume that our choice of $n$ is sufficient to ensure that the probability of error is negligible: this only adds an additive constant to the transmission complexity of the protocol.
+Whenever Oscar's $\Set'$ is incorrect because the assumption $T < t$, this check will fail unless we found a collision in $\Hash$ (which we assumed to be collision-resistant).
 
 \subsubsection{Complete \df Protocol.}
 \label{sec:complete-df}
 
-To extend the protocol to an arbitrary $T$, we will assume that Oscar and Neil agreed on an infinite set of primes $p_1,p_2,\ldots$ As long as the protocol fails (\ie, yields a bad reconciliation TODO refléter le meilleur nom ici!), Neil and Oscar perform the protocol a new time with a new $p_\ell$. Oscar will thus keep accumulating information about the difference between $\Set$ and $\Set'$ over this sequence of execution of the protocol (that we call \emph{rounds}).
+To extend the protocol to an arbitrary $T$, we will assume that Oscar and Neil agreed on an infinite set of primes $p_1,p_2,\ldots$ As long as $\bot_1$ or $\bot_2$ occur, Neil and Oscar perform the protocol a new time with a new $p_\ell$. Oscar will thus keep accumulating information about the difference between $\Set$ and $\Set'$ over this sequence of runs of the protocol (that we call \emph{rounds}).
 
-Formally, let us assume $2^{2 u t_k} \le p_k < 2^{2 u t_k +1}$.
+Formally, let us assume that $2^{2 u t_k} \le p_k < 2^{2 u t_k +1}$.
 Let us write $P_k = p_1 \cdots p_k$ and $T_k = t_1 + \cdots + t_k$.
 After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as much information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the Chinese remainder theorem (CRT) (TODO ref ?): 
 \[ S_k = \CRT(S_{k-1},P_{k-1},s_k,p_k) = S_{k-1} (p_k^{-1} \bmod P_{k-1}) p_k + s_k (P_{k-1}^{-1} \bmod p_k) P_{k-1} \bmod P_k. \]
@@ -292,12 +288,12 @@ In what follows, we will focus on two following choices of $t_\ell$:
 \toprule
 \textbf{Oscar}                    &                                        & \textbf{Neil}\\
 \midrule
-\multicolumn{3}{c}{\textit{Phase 0: Content hash to detect bad reconciliations}} \\
+\multicolumn{3}{c}{\textit{Initial phase: Neil sends a content hash to detect $\bot_2$}} \\
 \midrule
                                   &                        & $H \gets \Hash(\Set')$ \\
                                   & $\Lflow{H}$            & \\
 \midrule
-\multicolumn{3}{c}{\textit{Phase 1: Neil amasses modular
+\multicolumn{3}{c}{\textit{Main phase: Neil amasses modular
 information on the difference}} \\
 \midrule
 \multicolumn{3}{c}{\textit{Round 1}} \\
@@ -307,7 +303,9 @@ $c_1 \gets \prod_{i=1}^n h_i \bmod p_1$        &                & $c'_1 \gets \p
                                   &                        & $S_1 \gets s_1$ \\
                                   &                        & reconstruct  $a,b$ from $S_1$ (modulo $P_1$)\\
                                   &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
-                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_1 = a$ then go to \text{final phase} \\
+                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_1 = a$ \\
+                                  &                        & \hspace{0.2cm} then go to \text{final phase} \\
+                                  &                        & \hspace{0.2cm} else continue (event $\bot_1$ occured) \\
 \midrule
 \multicolumn{3}{c}{\textit{Round 2}} \\
 $c_2 \gets \prod_{i=1}^n h_i \bmod p_2$    &                & $c'_2 \gets \prod_{i=1}^{n'} h'_i \bmod p_2$ \\
@@ -316,7 +314,9 @@ $c_2 \gets \prod_{i=1}^n h_i \bmod p_2$    &                & $c'_2 \gets \prod_
                                   &                        & $S_2 \gets \CRT(S_1,P_1,s_2,p_2)$ \\
                                   &                        & reconstruct $a,b$ from $S_2$ (modulo $P_2$)\\
                                   &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
-                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_2 = a$ then go to \text{final phase} \\
+                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_2 = a$ \\
+                                  &                        & \hspace{0.2cm} then go to \text{final phase} \\
+                                  &                        & \hspace{0.2cm} else continue (event $\bot_1$ occured) \\
 \midrule
 \multicolumn{3}{c}{\textit{Round 3}} \\
 $c_3 \gets \prod_{i=1}^n h_i \bmod p_3$    &                & $c'_3 \gets \prod_{i=1}^{n'} h'_i \bmod p_3$ \\
@@ -325,31 +325,36 @@ $c_3 \gets \prod_{i=1}^n h_i \bmod p_3$    &                & $c'_3 \gets \prod_
                                   &                        & $S_3 \gets \CRT(S_2,P_2,s_3,p_3)$ \\
                                   &                        & reconstruct $a,b$ from $S_3$ (modulo $P_3$)\\
                                   &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
-                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_3 = a$ then go to \text{final phase} \\
+                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_3 = a$ \\
+                                  &                        & \hspace{0.2cm} then go to \text{final phase} \\
+                                  &                        & \hspace{0.2cm} else continue (event $\bot_1$ occured) \\
 \midrule
  & \vdots & \\
 \midrule
-\multicolumn{3}{c}{\textit{Final phase}} \\
+\multicolumn{3}{c}{\textit{Final phase}: Oscar obtains the new values and performs a final check } \\
 \midrule
                                   & $\Lflow{\SetD',b}$     & \\
 $\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i \}$ & & \\
 compute $S'$ from $S$, $\SetD$ and $\SetD'$ & & \\
-if $\Hash(S') \neq H$ go back to phase 1 (event $\bot$) & & \\
+if $\Hash(S') \neq H$ & & \\
+\hspace{0.2cm} then go back to Main phase (event $\bot_2$ occured) & & \\
+\hspace{0.2cm} else the protocol is complete. & & \\
 \bottomrule
 \end{tabular}\vspace{-0.25cm} % why the hell do we need that?!
-\caption{Complete \df protocol (for any $T$).}\label{fig:complete-df}
+\caption{Complete \df protocol (for any $T$).}
+\label{fig:complete-df}
 \end{figure}
 
 
 \section{Transmission Complexity}
-\label{trans}
+\label{sec:trans}
 
-This section proves that \df achieves optimal asymptotic transmission complexity and explores two strategies for reducing the size of $p$ and hence improving transmission by \textit{constant factors}.
+This section proves that \df achieves optimal asymptotic transmission complexity and explores two strategies to reduce the size of $p$ and hence improve transmission by \emph{constant factors}.
 
 \subsection{Proof of Transmission Complexity Optimality}
 
-\comm{Il faut quantifier la probabilité de $\bot$ si on dit qu'elle est négligeable !}
-Assuming that there is no event $\bot$ (since these events happen with negligible probability), the transmission complexity of \df is as follows:
+\comm{Il faut quantifier la probabilité de $\bot_2$ si on dit qu'elle est négligeable !}
+Assuming that there is no event $\bot_2$ (since these events happen with negligible probability), the transmission complexity of \df is as follows:
 \[  \sum_{k=1}^\kappa \log c_k + \log b + \log |\SetD'|
  \,\leq\, \sum_{k=1}^\kappa (ut_k+1) + \frac{1}{2} (uT_\kappa) + u T
  \,\leq\, u (T_\kappa + \kappa) + \frac{1}{2} u T_\kappa + u T
@@ -369,67 +374,52 @@ In both cases, however, we notice that the asymptotic transmission complexity is
 \subsection{Probabilistic Decoding: Reducing $p$}
 \label{sec:probabilistic}
 
-This section describes a proposed constant-factor improvement to the transmission complexity of \df which works by reducing the size of the prime number $p$. This allows \df to transfer more information at the expense of a higher failure rate when performing rational number reconstruction.
-In this section, we focus on the basic \df protocol, for the sake of simplicity.
-However, what we describe here can easily be adapted to the complete \df protocol.
-
-The difference between the proposed improvement and the original protocol is that the prime number $p$ that we generate should be about twice smaller than the $p$ recommended in Section~\ref{sec:basic}, namely:
+This section describes a proposed improvement to \df which reduces the transmission complexity by a constant factor at the expense of a higher failure rate when performing rational number reconstruction. For simplicity, we will focus on one round of \df and denote by $p$ the current $P_\ell$. We will generate a $p$ about twice smaller than the $p$ recommended in Section~\ref{sec:basic}, namely:
 \begin{equation}
-\label{eqnewp}
-2^{ut-1}\leq p < 2^{ut}
-\end{equation}
-
-Using notations in Section~\ref{sec:basic}, since there are at most $t$ differences, we must have:
-\begin{equation}
-\label{eqab}
-a b \leq 2^{ut}
+\label{eq:eqnewp}
+2^{ut-1}\leq p < 2^{ut}.
 \end{equation}
 
 Unlike in Section~\ref{sec:basic}, we do not have a useful fixed bound for $a$ and $b$ anymore; we only have a bound for the \textit{product} $a b$: 
 \begin{equation}
-\label{eqab}
+\label{eq:eqab}
 ab \leq 2^{ut}.
 \end{equation} 
-Therefore, we define a sequence of $t+1$ couples of bounds:
-\[\left(A_i, B_i\right) = \left(2^{ui}, 2^{u(t-i)}\right) \forall i \in \{0,\dots,t\} \]
+Therefore, we define a sequence of $t+1$ couples of possible bounds:
+\[\left(A_j, B_j\right)_{0 \leq j \leq t} = \left(2^{uj}, 2^{u(t-j)}\right). \]
 
-Equations~\eqref{eqnewp} and~\eqref{eqab} imply that there must exist at least one index $i$ such that $0 \leq a \leq A_i$ and $0 <b \leq B_i$. 
-Then, using Theorem~\ref{theo}, since $A_i B_i = 2^{ut} < p$, given $(A_i,B_i,p,s)$ one can recover $(a,b)$, and hence Oscar can compute $\Set'$.
+Equations~\eqref{eq:eqnewp} and~\eqref{eq:eqab} imply that there must exist at least one index $j$ such that $0 \leq a \leq A_j$ and $0 <b \leq B_j$. 
+We can therefore apply Theorem~\ref{th:theo} with $A = A_j$ and $B = B_j$: since $A_j B_j = 2^{ut} < p$, given $(A_j,B_j,p,s)$, one can recover $(a,b)$, and hence Oscar can compute $\Set'$.
 
-This variant of the protocol will roughly halve the quantity of transmitted bits with respect to Section \ref{sec:basic}.
-The drawback is that, unlike in Section~\ref{sec:basic}, we have no guarantee that such an $(a,b)$ is unique. Namely, we could in theory stumble over an $(a',b')\neq (a,b)$ satisfying (\ref{eqab}) for some index $i' \neq i$. We conjecture that such failures happen with negligible probability (that we do not try to estimate here) when $u$ is large enough, so that the expected number of bits to transfer with this variant is lower.
+This variant of the protocol will roughly halve the quantity of transmitted bits with respect to Section~\ref{sec:basic}.
+The drawback is that, unlike in Section~\ref{sec:basic}, we have no guarantee that such an $(a,b)$ is unique. Namely, we could in theory stumble over an $(a',b')\neq (a,b)$ satisfying Equation~\eqref{eq:eqab} for some index $j' \neq j$. We conjecture that, when $u$ is large enough, such failures happen with negligible probability (that we do not try to estimate here), so that the expected number of bits to transfer with this variant is lower.
 In any case, thanks to the global hash $H = \Hash(\Set')$, if a failure occurs, it will be detected.
 
 \section{From Set Reconciliation to File Reconciliation}
-\label{hashing}
+\label{sec:hashing}
 
-In this section, we show how hashing makes it possible to use \df (or any set reconciliation protocol) to perform \emph{file reconciliation}.
-We then show methods specific to \df that can reduce the size of hashes, and thus improve the transmission complexity by constant factors.
+In this section, we show how hashing makes it possible to use \df to perform \emph{file reconciliation}.
+ie then show methods that can reduce the size of hashes, and thus improve the transmission complexity by constant factors. We will present those methods for \df, though they can be generalized to any set reconciliation protocol.
 
 \subsection{File Reconciliation Protocol}
 
 Let us suppose Oscar and Neil know how to synchronize $u$-bit prime numbers and now want to reconcile files, modeled as bit strings of arbitrary length.
-Let $\Files = \{F_1,\dots,F_n\}$ be the old set of files, owned by Oscar, and let $\Files' = \{F'_1,\dots,F'_n\}$ be the new version of files, owned by Neil.
-Let $\eta$ be the total number of files: $\eta = | \Files \cup \Files'| \le n+n'$.
+Let $\Files = \{F_1,\dots,F_n\}$ be the old set of files, owned by Oscar, and let $\Files' = \{F'_1,\dots,F'_n\}$ be the new set of files, owned by Neil.
+Let $\eta = | \Files \cup \Files'| \le n+n'$ be the total number of files.
 
 A naive way to use \df to reconcile $\Files$ and $\Files'$ is simply to hash the content of each file to a prime number and to reconcile the sets $\Set$ and $\Set'$ of hashes of the files of Oscar and Neil.
-Then, when the protocol succeeds, Neil can send to Oscar the actual content of the files, corresponding to hashes in $\SetD'$, \ie, the files Oscar is missing.
+Then, when the protocol succeeds, Neil can send to Oscar the actual content of the files which match the hashes in $\SetD'$, \ie, the files Oscar is missing.
 
 More formally, we define:
 \begin{align*}
 h_1 &= \HashPrime(F_1) & &\dots & h_n &= \HashPrime(F_n) & \Set &= \{h_1,\dots,h_n\} \\
 h'_1 &= \HashPrime(F'_1) & &\dots & h'_{n'} &= \HashPrime(F'_{n'}) & \Set' &= \{h'_1,\dots,h'_{n'}\},
 \end{align*}
-where $\HashPrime$ is a collision-resistant hash function to prime numbers, so that the $h_i$ and $h'_i$ identify their corresponding file in $F_i$ or $F'_i$ without ambiguity.
+where $\HashPrime$ is a collision-resistant hash function to prime numbers, so that the mapping from $\Files \cup \Files'$ to $\Set \cup \Set'$ is injective.
 In Section~\ref{sec:hashprime}, we show how to construct such a hash function from a classical collision-resistant hash function to fixed-length bit strings.
-% je commente cette footnote, parce que c'est dans sec:hashprime qu'il faut expliquer ça
-% \footnote{This is the case if we use our first proposed Algorithm~\ref{alg:primes} with a classical hash function which can be modeled as a random function.
-%We suppose this is true for well-known hash functions such as SHA-256. (TODO ?)}
-If we choose a construction of $\HashPrime$ which ensures that its output is uniform, since there are about $\frac{2^m}{m}$ (TODO ref) prime numbers of size $m$, the size $u$ of the primes output by $\HashPrime$ should be chosen to be such that $u - \log u = 2 \log \eta$, because of the birthday paradox (TODO ref).
-This means that $u \approx 2\log \eta$.
 
 \subsection{The File Laundry: Reducing $u$}
-\label{shortu}
+\label{sec:shortu}
 In this section, we propose another constant-factor improvement of the transmission complexity. Instead of choosing a large $u$ to ensure that the probability of collisions is negligible, we will choose a smaller $u$, adapt \df to deal with the collisions that can arise, and propose a statistical analysis of collisions to find out how $u$ should be chosen.
 
 \subsubsection{Changes to the \df protocol.}
@@ -438,39 +428,37 @@ We remark that a collision can only yield a \textit{false positive}, and never a
 % I think this footnote disrupts the flow but does not really make things much clearer: \footnote{\eg, make the parties blind to the difference between {\tt index.htm} and {\tt iexplore.exe}.}
 it will never create a nonexistent difference \textit{ex nihilo}.
 
-Thus, it suffices to replace the hash of files $h_i = \HashPrime(F_i)$ (or $h'_i = \HashPrime(F'_i)$) by $\hbar_{i,\ell}=\HashPrime(\ell|F_i)$ (or $\hbar_{i,\ell} = \HashPrime(\ell|F'_i)$ to quickly filter-out file differences by repeating the \df protocol for $\ell=1,2,\ldots$. 
-At each iteration, the parties will detect files which are not in common (\ie, files $F_i$ or $F'_i$ whose hash $\hbar_{i,\ell}$ or $\hbar'_{i,\ell}$ does not collide), reconciliate these differences (\ie, remove the relevant files from $\Files$ and $\Files'$) and ``launder'' again the remaining files $\Files$ and $\Files'$.
+Thus, it suffices to replace the hash of files $h_i = \HashPrime(F_i)$ (and $h'_i = \HashPrime(F'_i)$) by $\hbar_{i,\ell}=\HashPrime(\ell|F_i)$ (and $\hbar_{i,\ell} = \HashPrime(\ell|F'_i)$) to quickly filter-out file differences by repeating the whole \df protocol for $\ell=1,2,\ldots$ We will say that each such repetition of the complete \df protocol (which will usually involve several \emph{rounds} of the basic protocol) is an \emph{iteration}.
+At each iteration, the parties will detect files in $\Files \Delta \Files'$ whose hash $\hbar_{i,\ell}$ or $\hbar'_{i,\ell}$ does not collide, reconciliate these differences, remove these files from $\Files$ and $\Files'$ to avoid further collisions, and ``launder'' again the remaining files in $\Files$ and $\Files'$.
 
-We still need a condition to stop ``laundering'' files, \ie, a condition to ensure that there are no more collisions which hide remaining differences.
-Before showing this condition, let us first analyse precisely the three kinds of collisions which can appear over an execution $\ell$ of \df:
+We still need a condition to stop ``laundering'' files, \ie, a condition to ensure that there are no more differences hidden by collisions.
+Before we describe this condition, let us first spell out the three kinds of collisions which can appear over an iteration $\ell$ of \df:
 
 \begin{enumerate}
 \item Collisions between common files of Oscar and Neil, \ie, collisions in $\Files \cap \Files'$. These collisions are never a problem, because they cannot obliviate any differences.
-\item Collisions between a common file of Oscar and Neil, and a file not in common, \ie, collisions between $\Files \cap \Files'$ and $\Files \Delta \Files' = (\Files \setminus \Files') \cup (\Files' \setminus \Files)$;
-These collisions can be easily detected by Oscar or Neil, at the end of the execution $\ell$ of the \df protocol. 
-TODO(antoine) je ne comprends absolument pas ces deux phrases. This will prevent them from knowing easily to which file $F$ corresponds a hash not in common $h$.
-If such collision arrives, the corresponding file will not be reconciled in this execution of \df and another execution of \df is required.
+\item Collisions between a common file of Oscar and Neil, and a file not in common, \ie, collisions between $\Files \cap \Files'$ and $\Files \Delta \Files'$;
+These collisions can be easily detected by Oscar or Neil, at the end of iteration $\ell$ of the \df protocol. 
+However, given a $h$ in $\Set \Delta \Set'$, if there is a collision of this kind involving $h$, we will not be able to find the file in $\Files \Delta \Files'$ which matches $h$. For this reason, another iteration of \df will be necessary to reconcile this file.
 \item Collisions between files not in common, \ie, files in $\Files \Delta \Files'$.
-  TODO(antoine) à reformuler: These collisions obliviate a real difference between $\Files$ and $\Files'$. If no mechanism is added, these collisions can never be detected.
+  Such a collision obliviates a real difference between $\Files$ and $\Files'$ and cannot be detected unless we perform another iteration. This is why we need a condition to detect that no more collisions of this kind exist and stop the laundering.
 \end{enumerate}
 
-TODO(antoine): à clarifier.
-We propose the following method to check termination.
-Before anything else is sent, Neil needs to send a global hash $H'$ on a collision-resistant hash of files: $H' = \Hash((\Hash(F'_1),\dots,\Hash(F'_{n'})))$.
-Contrary to $H$ in $\df$, this hash is on a collision-resistant hash of files and not on (potentially colliding) diversified hash $ \HashPrime(\ell|F)$.
-Then, if the execution $\ell$ of the \df protocol is successful, Neil sends the list of $\Hash(F'_i)$ for the new files $F'_i$, \ie files $F'_i$ in $\Files' \setminus \Files$ whose hash $\hbar'_{i,\ell}$ is not colliding.
-Then Oscar can check whether a collision of the third kind appears by using $H'$.
-
+We propose the following method to check for termination. We assume that we have a collision-resistant hash function $\Hash$.
+Before the first \emph{iteration}, Neil sends a global hash $H' = \Hash((\Hash(F'_1),\dots,\Hash(F'_{n'})))$.
+This global hash should not be confused with the $H$ sent at the beginning of \emph{each} iteration which is a hash of the (potentially colliding) diversified hashes $ \HashPrime(\ell|F)$.
+Now, if the iteration $\ell$ of the \df protocol is successful, Neil sends the list of $\Hash(F'_i)$ for the new files $F'_i \in \Files' \setminus \Files$ whose hash $\hbar'_{i,\ell}$ does not collide with files in $\Files' \cap \Files$ (\ie, type-2 collisions).
+Oscar can then use $H'$ to check whether a type-3 collision remains, in which case a new iteration is performed. If no collisions of type 2 or 3 remain, then the reconciliation is complete.
 
 \subsubsection{Naive Analysis.}
 
+Let us now bound the number of iterations to perform, in a naive manner.
 We slightly change notations and write:
 \[ \Files \cup \Files' = \{ F_1, \dots, F_\eta \}. \]
 
-We notice that, as soon as a file $F_i$ or $F'_i$ in $\Files \Delta \Files'$ does not collide with another file in one execution of \df, then this difference between $\Files$ and $\Files'$ will be detected by our new protocol.
-Therefore, in this naive analysis, we just compute the probability that a file keeps colliding for $\lambda$ executions, to obtain an upper bound on the probability that at least one difference between $\Files$ and $\Files'$ will not be detected after $\lambda$ executions (\ie, at least one false positive survives $\lambda$ executions).
+We notice that, as soon as a file $F_i$ or $F'_i$ in $\Files \Delta \Files'$ does not collide with another file in one iteration of \df, then this difference between $\Files$ and $\Files'$ will be reconciled.
+In this naive analysis, we do not use the fact that such files are removed from one iteration to the next, and we just compute the probability that a file keeps colliding for $\lambda$ iterations. We will thus obtain an upper bound on the probability that at least one difference between $\Files$ and $\Files'$ has not been detected after $\lambda$ iterations (\ie, at least one false positive survives $\lambda$ iterations).
 
-Consider $\HashPrime$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^u-1\}$. Let $X_i$ be the random variable:
+Because there are are about $2^u \over u$ $u$-bit prime numbers (TODO ref), we write $u' = u - \ln(u)$ and see $\HashPrime$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^{u'}-1\}$. Let $X_i$ be the random variable:
 \[
 X_i =
 \left\{
@@ -481,13 +469,13 @@ X_i =
 \right.
 \]
 
-Clearly, we have $\Prob{X_i = 1} \le \frac{\eta -1}{2^u}$.
-The average number of colliding files is hence:
-\[ \EE{\sum_{i=1}^{\eta} X_i} \le \sum_{i=1}^{\eta} \frac{\eta -1}{2^u} = \frac{\eta (\eta - 1)}{2^u}. \]
-For instance, for $\eta=10^6$ files and 32-bit digests, the expected number of colliding files is less than $233$.
+Clearly, we have $\Prob{X_i = 1} \le \frac{\eta -1}{2^{u'}}$.
+Using this bound and the linearity of expectation, the average number of colliding files is hence:
+\[ \EE{\sum_{i=1}^{\eta} X_i} \le \sum_{i=1}^{\eta} \frac{\eta -1}{2^{u'}} = \frac{\eta (\eta - 1)}{2^{u'}}. \]
+For instance, for $\eta=10^6$ files and 42-bit digests, the expected number of colliding files is less than $4$.
 
 Assume that the diversified $\hbar_\ell(F)$'s are random and independent. 
-To understand why the probability that a stubborn file continues to collide decreases exponentially with the number of iterations $\lambda$, assume that $\eta$ remains invariant between iterations and define the following random variables:
+We will show that the probability that a stubborn file continues to collide decreases exponentially with the number of iterations $\lambda$. Assume that $\eta$ remains invariant between iterations and define the following random variables:
 \[
 \begin{array}{rcl}
 X^{\ell}_i & = &
@@ -498,7 +486,7 @@ X^{\ell}_i & = &
 \end{array}
 \right.\\
 \\
-Y_i = \prod_{\ell=1}^\lambda X^{\ell}_i & = &
+Y_i = \bigwedge_{\ell=1}^\lambda X^{\ell}_i & = &
 \left\{
 \begin{array}{lcl}
 1 & ~~~~&  \parbox[t]{.6\textwidth}{if file $F_i$ collides during all the $\lambda$ first iterations.}\\
@@ -510,22 +498,22 @@ Y_i = \prod_{\ell=1}^\lambda X^{\ell}_i & = &
 
 By independence, we have:
 \[
-  \Prob{Y_i = 1} = \prod_{\ell=1}^\lambda \Prob{X^{\ell}_i = 1} = \Prob{X^1_i = 1} \dots \Prob{X^\lambda_i = 1} \le \left( \frac{\eta -1}{2^u} \right)^\lambda
+  \Prob{Y_i = 1} = \prod_{\ell=1}^\lambda \Prob{X^{\ell}_i = 1} \le \left( \frac{\eta -1}{2^{u'}} \right)^\lambda
 \]
 Therefore the average number of colliding files is:
 \[
- \EE{\sum_{i=1}^{\eta} Y_i} \le \sum_{i=1}^{\eta} \left( \frac{\eta -1}{2^u} \right)^\lambda =  \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
+  \EE{\sum_{i=1}^{\eta} Y_i} \le \sum_{i=1}^{\eta} \left( \frac{\eta -1}{2^{u'}} \right)^\lambda =  \eta \left(\frac{\eta - 1}{2^{u'}}\right)^\lambda
 \]
 And the probability that at least one false positive survives $k$ rounds is:
 \[
-\epsilon_\lambda \le \eta \left(\frac{\eta - 1}{2^u}\right)^\lambda
+  \epsilon_\lambda \le \eta \left(\frac{\eta - 1}{2^{u'}}\right)^\lambda
 \]
 
-For the previously considered instance of $\eta=10^6$ and $u=32$, we get $\epsilon_2 \le 5.43\%$ and $\epsilon_3 \le 2 \cdot 10^{-3}\%$.
-In particular, this means that with probability more than $1-\epsilon_2 \approx 95\%$, two executions of \df will suffice.
+For the previously considered instance of $\eta=10^6$ and $u=42$, we get $\epsilon_2 \le 10^{-3} \%$, and with probability more than $1-\epsilon_2$, two iterations of \df will suffice.
 
 \subsubsection{A more refined (but somewhat technical) analysis.}
-TODO: ACTUALLY NOT CORRECT BECAUSE WE FORGOT COLLISIONS BETWEEN FILES NOT IN COMMON AND FILES IN COMMON !!!!!!!!!!!!!!!!!!!!!!
+TODO: ACTUALLY NOT CORRECT BECAUSE WE FORGOT type-2 COLLISIONS!!!!!!!!!!!!!!!!!!!!!!
+TODO: remplacer $u$ par $u'$ si on parvient à sauver cette analyse.
 
 In Appendix~\ref{app:refined-file-laundry}, we show a more refined analysis, which proves that  the survival probability of at least one false positive after $k$ iterations satisfies:
 \[
@@ -554,45 +542,49 @@ Dropping the proportionality factor $\eta\left(\eta-1\right)$, neglecting $2^u \
 
 $\phi_{10^6}(u)$ admits an optimum for $u=19$.
 
-\subsubsection{Note:} The previous analysis is incomplete because of the following approximations:
+\subsubsection{Possible refinements.} The previous analyses are incomplete because of the following approximations:
 \begin{itemize}
-\item We consider $u$-bit prime digests while $u$-bit strings contain only about $2^u/u$ primes.
 
 \item We used a fixed $u$ in all rounds. Nothing forbids using a different $u_\ell$ at each iteration, or even fine-tuning the $u_\ell$'s adaptively as a function of the laundry's effect on the progressively reconciliated multisets..
 
-\item Our analysis treats $t$ as a constant, but large $t$ values increase $p$ and hence the number of potential files detected as different per iteration - an effect disregarded \textit{supra}.
+\item \comm{À voir avec David.} Our analysis treats $t$ as a constant, but large $t$ values increase $p$ and hence the number of potential files detected as different per iteration - an effect disregarded \textit{supra}.
 \end{itemize}
 
-A different approach is to optimize $t$ and $u$ experimentally, \eg, using the open source \df program \btrsync developed by the authors (\cf Section~\ref{program}).
+A different approach is to optimize $t$ and $u$ experimentally, \eg, using the open source \df program \btrsync developed by the authors (\cf Section~\ref{sec:program}).
 
 \section{Computational Complexity}
-\label{comp}
-In this section, we determine the computational complexity of \df. We first describe the complexity using a straightforward implementation, and present how the complexity can be improved using four independent optimizations. A summary of all costs can be found in Table~\ref{tab:workload}.
+\label{sec:comp}
+In this section, we determine the computational complexity of \df. We first describe the complexity using a straightforward implementation, and then present how the complexity can be improved using four independent optimizations. A summary of all costs can be found in Table~\ref{tab:workload}.
 To simplify the analysis, we assume that there are no collisions, and that $n=n'$.
 
 %We first present some variants of the protocol we described above, and then we analyse the complexity of all these variants.
 
 \subsection{Basic Complexity}
+\label{sec:basiccomp}
 
 Let $\mu(l)$ be the time required to multiply two $l$-bit numbers, with the assumption that $\forall l,l', \mu(l+l') \ge \mu(l) + \mu(l')$.
-For naive (\ie, convolutive) algorithms, $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$; {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
+For naive (\ie, convolutive) algorithms, $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$. {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
 The modular division of two $l$-bit numbers and the reduction of a $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
 Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.
 
 The complexity of a naive algorithm to perform $\tt HashPrime$ is
-$u^2 \mu(u)$ (see Section~\ref{sec:hashprime} for details).
+$u^2 \mu(u)$ (see Section~\ref{sec:basichashprime} for details).
+
 Hence, if we we use the same $t$ for each round ($t=t_1=t_2=\dots$), the complexity of \df is as described in the third column of Table~\ref{tab:workload}.
 
 \subsection{Hashing Into Primes}
 \label{sec:hashprime}
 
-Hashing into primes is frequently needed in cryptography, independently from \df. In this section, we present a naive way to do so, and present an optimiation which sacrifices uniformity to achieve better performance.
+% TODO être sûr que c'est intégr'e:
+%If we choose a construction of $\HashPrime$ which ensures that its output is uniform, since there are about $\frac{2^m}{m}$ (TODO ref) prime numbers of size $m$, the size $u$ of the primes output by $\HashPrime$ should be chosen to be such that $u - \log u = 2 \log \eta$, because of the birthday paradox (TODO ref).
+%This means that $u \approx 2\log \eta$.
+Hashing into primes is frequently needed in cryptography, independently from \df. In this section, we present a naive way to perform this operation, and present an optimiation which sacrifices uniformity to achieve better performance.
 
 \subsubsection{Naive Algorithm.}
-\label{sec:basic}
+\label{sec:basichashprime}
 
 %A recommended implementation of $\HashPrime(F)$ is given in Algorithm \ref{alg:primes}
-A way to implement such hash function $\HashPrime$ is to use Algorithm~\ref{alg:primes}, where $\Hash'$ is a hash function with a $u$-bit output.
+A way to implement such a hash function $\HashPrime$ is to use Algorithm~\ref{alg:primes}, where $\Hash'$ is a hash function with a $u$-bit output.
 If the output of $\Hash'$ is considered to be uniformly random, the output of $\HashPrime$ is also a uniformly random $u$-bit prime number.
 
 \begin{algorithm}[t]
@@ -601,7 +593,7 @@ If the output of $\Hash'$ is considered to be uniformly random, the output of $\
   \begin{algorithmic}[1]
   \State $j=0$
 \Repeat
-\State $h = 2\cdot\Hash'(F|i)+1$
+\State $h = \Hash'(F|j)$
 \State $j = j+1$
 \Until{$h$ is prime}
 \State \Return{$h$}
@@ -616,19 +608,19 @@ Hence, the total cost of $\HashPrime$ is $\Oapp(u^2 \mu(u))$.
 \comm{Dans un article soumis à PKC j'ai une meilleure borne pour cela, ... je crois que David voulait le citer à un moment... Antoine: je pense que c'est tout à fait opportun de donner le meilleur résultat et de citer le papier en mettant qu'il est ``under review''}
 
 \subsubsection{Optimized Algorithm.}
-If $u$ is large enough (\eg $160$) one might sacrifice uniformity % to avoid repeated file hashing by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
-to improve time efficiency by replacing $\mbox{{\tt NextPrime}}$ by Algorithm \ref{alg:scanprime} where $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ is the product of the first primes until some rank $d$.
+If $u$ is large enough (\eg $160$) one might % to avoid repeated file hashing by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
+use Algorithm~\ref{alg:scanprime} to improve efficiency at the expense of uniformity. We write $\alpha=2\times 3\times 5\times \cdots \times \mbox{{\tt Prime}}[d]$ the product of the first primes until some rank $d$.
 
-Let us sketch a proof of the fact that this second algorithm performs about $\frac{\varphi(\alpha)}{\alpha}$ times fewer primality tests, where $\varphi$ is the Euler's totient function.
+Let us sketch a proof of the fact that this second algorithm performs about $\frac{\alpha}{\varphi(\alpha)}$ times fewer primality tests, where $\varphi$ is the Euler's totient function.
 Let us assume this algorithm behaves as if it chooses random $u$-bit numbers congruent to $1$ modulo $\alpha$ until finding a prime number.
 There are about $\frac{2^u}{u \varphi(\alpha)}$ $u$-bit prime numbers congruent to $1$ modulo $\alpha$ (TODO ref \url{http://fr.wikipedia.org/wiki/Th%C3%A9or%C3%A8me_de_la_progression_arithm%C3%A9tique#Version_quantitative}), and there are $\frac{2^u}{\alpha}$ $u$-bit numbers congruent to $1$ modulo $\alpha$.
-Therefore, the algorithm needs to do about $\frac{2^u}{u \varphi(\alpha)} / \frac{2^u}{\alpha} = \frac{\alpha}{\varphi(\alpha)} u$ primality tests before finding a prime number, which improves over the $u$ tests required by the naive algorithm on average.
+Therefore, the algorithm needs to do about $\frac{2^u}{\alpha} / \frac{2^u}{u \varphi(\alpha)} = \frac{\varphi(\alpha)}{\alpha} u$ primality tests before finding a prime number, which improves over the $u$ tests required by the naive algorithm on average.
 
 One main drawback of this algorithm is that, even if the output of $\Hash'$ is assumed to be uniformly random, the output of $\HashPrime$ is not a uniformly random $u$-bit prime number.
-This slightly increases the number of collisions of $\HashPrime$ and $u$ has to be increased subsequently. (TODO ?)
+This slightly increases the number of collisions of $\HashPrime$ and $u$ has to be increased subsequently.
 
 \begin{algorithm}[t]
-  \caption{Fast nonuniform hashing into primes}
+  \caption{Fast nonuniform implementation of $\HashPrime(F)$}
   \label{alg:scanprime}
   \begin{algorithmic}[1]
   \State $h =\alpha \left\lfloor\frac{\Hash'(F)}{\alpha}\right\rfloor+1$
@@ -642,40 +634,39 @@ This slightly increases the number of collisions of $\HashPrime$ and $u$ has to 
 \subsection{Adapting $p_k$}
 \label{sec:choicep}
 
-Taking the $p_k$'s to be $ut_k$-bit primes is not very practical, because generating a big prime number is slow, and storing a list of such primes require to be able to bound the number of rounds, and to fix all the parameters ($u$ and $t_1,t_2,\dots$).\comm{``bound the number of rounds''? Oscar et Neil ne peuvent pas se mettre d'accord sur une seed et en tirer une séquence infinie de premiers à utiliser?}
-In this section, we study alternate choices for the $p_k$ which are easier to generate and speed up the computation by constant factors.
+Taking the $p_k$'s to be $ut_k$-bit primes is not very practical, because generating big prime numbers is slow. In this section, we study alternate choices for the $p_k$ which are easier to generate and speed up the computation by constant factors.
 
-Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime, with $\mbox{{\tt Prime}}[1]=2$. Besides conditions on size, the \textit{only} property required from $p$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants:
+Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime, with $\mbox{{\tt Prime}}[1]=2$. Besides conditions on size, the \textit{only} property (*) required from a $p_k$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants, which will all imply a few conditions on the $h_i$'s and $h'_i$'s to ensure property (*):
 \subsubsection{Variant 1:} Smooth $p_k$:
 \[ p_k=\prod_{j=r_k}^{r_{k+1}-1} \mbox{{\tt Prime}}[j], \]
 where the bounds $r_k$ are chosen to ensure that each $p_k$ has the proper size.
-Generating such a prime is much faster than generating a big prime $p_k$.
+Generating such numbers is much faster than generating a big prime $p_k$.
 
 \subsubsection{Variant 2:} $p_k=\mbox{{\tt Prime}}[k]^{r_k}$ where the exponents $r_k$ are chosen to ensure that each $p_k$ has the proper size.
-This variant is even faster than the previous one, but require to choose $h_k$ bigger than all
-$\mbox{{\tt Prime}}[k]^{r_k}$.\comm{Je ne comprends pas: on ne \emph{choisit} pas les $h_k$, si ?}
+This variant is even faster than the previous one, but implies that the $h_k$ must all be bigger than all
+$\mbox{{\tt Prime}}[k]^{r_k}$.
 
 \subsubsection{Variant 3:} $p_k = P_k = 2^{ut_k}$. 
-In this case, $C_k = \prod_{i=1}^n h_i \bmod p_k$, $c_1 = C_1$ and $c_k = (C_k - C_{k-1}) / p_{k-1}$, {\it i.e.}, $c_k$ is the slice of bits $ut_{k-1}\dots ut_k-1$ of $C_k$ (with $T = 0$), which we write $c_k = C_k[ut_{k-1}\dots ut_k]$.
-Using Algorithm~\ref{alg:even-p-c} for the computation of $c_k$, this variant offers substantial constant-factor accelerations compared to previous variants, because it removes the need of all modulo operations and of CRT re-combination when multiple $p_k$ are needed: $C_k$ is just the binary concatenation of $c_k$ and $C_{k-1}$.
+In this case, $C_k = \prod_{i=1}^n h_i \bmod p_k$, $c_1 = C_1$ and $c_k = (C_k - C_{k-1}) / p_{k-1}$, {\it i.e.}, $c_k$ is the slice of bits $ut_{k-1}, \dots, ut_k-1$ of $C_k$, which we write $c_k = C_k[ut_{k-1}\cdots ut_k]$.
+We can use Algorithm~\ref{alg:even-p-c} for the computation of $c_k$. With this variant, we do not need to perform modulo operations and CRT re-combination anymore: $C_k$ is just the binary concatenation of $c_k$ and $C_{k-1}$. The computation is therefore much faster.
 
 Let us explain the main ideas of Algorithm~\ref{alg:even-p-c}.
-Let $X_i = \prod_{j=1}^n h_j$ ($X_0 = 1$), $X_{i,k} = X_i[ut_{k-1}\dots ut_{k}]$ and let $D_{i,k}$ be the $u$ upper-bits of the product of $Y_{i,k} = X_i[0\dots ut_{k}]$ and $h_i$, {\it i.e.}, $D_{i,k} = (Y_{i,k} \times h_i)[ut_k\dots u(t_k+1)]$ ($D_{i,0} = 0$ and $D_{0,k} = 0$).
+Let $X_i = \prod_{j=1}^i h_j$ (with $X_0 = 1$), $X_{i,k} = X_i[ut_{k-1}\cdots ut_{k}]$ and let $D_{i,k}$ be the $u$ most significant bits of the product of $Y_{i,k} = X_i[0\cdots ut_{k}]$ and $h_i$, {\it i.e.}, $D_{i,k} = (Y_{i,k} \times h_i)[ut_k\cdots u(t_k+1)]$ (with $D_{i,0} = 0$ and $D_{0,k} = 0$).
 Since $X_{i+1} = X_i \times h_{i+1}$, we have, for $k \ge 0$, $i \ge 0$:
 \begin{align*}
   D_{i+1,k+1} \times 2^{ut_{k+1}} + Y_{i+1,k+1} &= Y_{i,k+1} \times h_{i+1} \\
                  &= (X_{i,k+1} \times 2^{ut_{k}} + Y_{i,k}) \times h_{i+1} \\
                  &= X_{i,k+1} \times 2^{ut_k} \times h_{i+1} + Y_{i,k} \times h_{i+1} \\
-                 &= X_{i,k+1}  \times h_{i+1} \times 2^{ut_k} + (D_{i,k} \times 2^{ut_k} + \dots).
+                 &= X_{i,k+1}  \times h_{i+1} \times 2^{ut_k} + (D_{i,k} \times 2^{ut_k} + \cdots).
 \end{align*}
-Therefore, if we only consider bits $[ut_k \dots u(t_{k+1}+1)]$, for $k\ge1$,$i\ge0$:
+Therefore, if we only consider bits $[ut_k \cdots u(t_{k+1}+1)]$, for $k\ge1$, $i\ge0$:
 \begin{align*}
-  D_{i+1,k+1} \times 2^{u(t_{k+1}} + X_{i+1,k+1} &= X_{i,k+1} \times h_{i+1} + D_{i,k}. \\
+  D_{i+1,k+1} \times 2^{u(t_{k+1}-t_k)} + X_{i+1,k+1} &= X_{i,k+1} \times h_{i+1} + D_{i,k}. \\
 \end{align*}
 Since $c_k = X_{n,k}$, the algorithm is correct.
 
 We notice we only need to store $D_{k,i}$ and $D_{k+1,i}$ during round $k$ (for all $i$).
-So the space complexity is $O(nu)$.
+So the space overhead is $O(nu)$.
 
 
 \begin{algorithm}
@@ -692,30 +683,29 @@ So the space complexity is $O(nu)$.
   \State $X \gets 0$
 \EndIf
 
-\For{$i = 0,\dots,n-1$}
-  \State $Z \gets X \times h_{i+1}$
-  \State $D_{i+1,k+1} \gets Z[u(t_{k+1}-t_k)\dots u(t_{k+1}-t_k+1)]$
+\For{$i = 1,\dots,n$}
+  \State $Z \gets X \times h_i$
+  \State $D_{i,k+1} \gets Z[u(t_{k+1}-t_k)\dots u(t_{k+1}-t_k+1)]$
   \State $X \gets Z[0\dots u(t_{k+1}-t_k)]$
 \EndFor
 
 \State $c_{k+1} \gets X$
 \end{algorithmic}
-\caption{Computation of $c_k$ for $p_k = 2^{ut_k}$}\label{alg:even-p-c}
+\caption{Computation of $c_k$ for $p_k = 2^{ut_k}$}
+\label{alg:even-p-c}
 \end{algorithm}
 
 \subsection{Algorithmic Optimizations using Product Trees}
 \label{sec:algo-opt-prod-trees}
 
 The complexities of the computations of $(c,c')$ and of the factorizations can be reduced to $\Oapp(\frac{n}{t_k} \mu(u t_k))$ and $\Oapp(\frac{n}{T_k} \mu(u T_k))$ using product trees. 
-Therefore, the cost of these steps drops to $\Oapp(n u)$ with {\sc fft}~\cite{schonhage1971schnelle}. 
-To simplify the presentation, we suppose there is only one round, write $p=p_1$, $t=t_1=T_1$, and assume that $t=2^\tau$ is a power of two dividing $n$.
+To simplify the presentation, we suppose there is only one round, write $p=p_1$, $t=t_1=T_1$, and assume that $t$ is a power of two dividing $n$. We write $t = 2^\tau$.
 For simplicity, we also assume that $p$ is prime, though the algorithm can be easily adapted to the other variants described in Section~\ref{sec:choicep}.
 
-The idea is the following: group $h_i$'s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$:
-\[ H_j = \prod_{i=(j-1) t + 1}^{j t} h_i\in\mathbb{N}, \]
-for $j \in \{1,\dots,n/t\}$.
+The idea is the following: group $h_i$'s by subsets of $t$ elements and compute the product of each such subset in $\mathbb{N}$ (\ie, without modulo). For $j \in \{1,\dots,n/t\}$, we define:
+\[ H_j = \prod_{i=(j-1) t + 1}^{j t} h_i. \]
 
-Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm~\ref{alg:prod-tree} (for $j=1$) illustrated in Figure~\ref{fig:prod-tree}.
+Each $H_j$ can be computed in $\Oapp(\mu(u t))$ using the standard product tree method described in Algorithm~\ref{alg:prod-tree}. (for $j=1$) illustrated in Figure~\ref{fig:prod-tree}.
 Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu(u t))$. We can then compute $c$ by multiplying the $H_j$ modulo $p$, which costs $\Oapp(\frac{n}{t} \mu(u t))$.
 
 \begin{algorithm}
@@ -740,7 +730,8 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 \EndFunction
 \State $\pi_1 \gets $\Call{prodTree}{$1,0,t$}
 \end{algorithmic}
-\caption{Product tree algorithm}\label{alg:prod-tree}
+\caption{Product tree algorithm (assuming $j=1$ for simplicity).}
+\label{alg:prod-tree}
 \end{algorithm}
 
 The same technique applies to factorization. We explain the process with $a$, though the same process applies \textit{ne variatur} to $b$.
@@ -767,13 +758,14 @@ We can use the same method for the tree product associated to any $H_j$, and the
 \State \Call{modTree}{$2$}
 \State \Call{modTree}{$3$}
 \end{algorithmic}
-\caption{Division using a product tree}\label{alg:div-prod-tree}
+\caption{Division using a product tree}
+\label{alg:div-prod-tree}
 \end{algorithm}
 
 \subsection{Doubling}
 \label{sec:doubling}
 
-As seen in Section~\ref{sec:complete-df}, instead of using $t_1 = t_2 = \dots = t$, we can use $t_k = 2^k t'$, and double $t_k$ at each iteration.
+As seen in Section~\ref{sec:complete-df}, instead of using $t_1 = t_2 = \dots = t$, we can use $t_k = 2^k t'$ (\ie double $t_k$ at each iteration).
 This increases the transmission complexity slightly, but drastically reduces the computational complexity.
 
 \begin{table}[ht]
@@ -788,10 +780,10 @@ This increases the transmission complexity slightly, but drastically reduces the
 \midrule
 Both  & computation of $h_i$ and $h'_i$ 
       & $n u^2 \mu(u)$ 
-      & $\frac{\alpha}{\phi(\alpha)} n u^2 \mu(u)$
+      & $\frac{\phi(\alpha)}{\alpha} n u^2 \mu(u)$
       & fast hashing (\ref{sec:hashprime}) \\
 \midrule
-      & \textit{for round $i$} &  &  \\
+      & \textit{Round $i$} &  &  \\
 Both  & compute redundancies $c_i$ and $c'_i$ 
       & $n \cdot \mu(ut_i)$ 
       & $\frac{n}{t_i} \cdot \mu(ut_i)$
@@ -813,7 +805,7 @@ Neil  & factor $a_i$
       & $\frac{n}{T_i} \cdot \mu(uT_i)$
       & product trees (\ref{sec:algo-opt-prod-trees})  \\
 \midrule
-      & \textit{last round} \\
+      & \textit{Last round} \\
 Oscar & factor $b_i$
       & $n \cdot \mu(ut_i)$ 
       & $\frac{n}{t_i} \cdot \mu(ut_i)$
@@ -826,14 +818,14 @@ Oscar & factor $b_i$
 \bottomrule
   \end{tabularx}
   \begin{tablenotes}
-    \item[a] using the basic algo of Section~\ref{sec:basic}, and taking $t_1=t_2=\dots=t$.
-    \item[b] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling}. In addition, choosing $p_k = 2^{ut_k}$ provides substantial constant factor accelerations which cannot be seen on the asymptotic complexities given in this table.
-    \item[c] only for $p_i$ prime (or variant~1 or~2 in Section~\ref{sec:choicep});
-    \item[d] only for $p_i = 2^{ut_i}$. TODO: Antoine: dans ce cas, pourquoi ça apparaît dans la colonne basic ? Fabrice: ???????
-    \item[e] using advanced algorithms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$.
+    \item[a] using the basic algorithms of Section~\ref{sec:basiccomp}, and taking $t_1=t_2=\dots=t$
+    \item[b] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$, also yielding substatial constant factor accelerations not shown in this table), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling}
+    \item[c] only for $p_i$ prime (or variant~1 or~2 in Section~\ref{sec:choicep})
+    \item[d] only for $p_i = 2^{ut_i}$
+    \item[e] using advanced algorithms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$\smallskip
   \end{tablenotes}
  \end{threeparttable}
-  \hrule\smallskip
+ \rule{\textwidth}{1pt}
   \caption{Protocol complexity synopsis}
   \label{tab:workload}
 \end{table}
@@ -842,42 +834,34 @@ Oscar & factor $b_i$
 
 The asymptotic computational complexity that can be achieved with the optimizations described in this section is described in the fourth column of Table~\ref{tab:workload}.
 \section{From File Reconciliation to File Synchronization}
-\label{files}
+\label{sec:files}
 
-The previous sections presented how to perform set reconciliation on a set of
-fixed-size hashes, and how to choose the hash size when it is used to represent
-the content of files. This suggests a simple protocol to synchronize a set of
-files: first synchronize the set of hashes as described, then exchange the
-content of the files corresponding to the hash values that were found to be in
-the symmetric difference.
-
+In Section~\ref{sec:hashing}, we reconciliated a set of files by looking only at their content.
 However, in practice, we do not wish to synchronize file \emph{sets}, but file
 \emph{hierarchies}: we are not just interested in the \emph{content} of the
 files but in their \emph{metadata}. The most important metadata is the file's
 path (i.e., its name and its location in the filesystem), though other kinds of
-metadata exist (e.g., modification time, owner, permissions). In many use
+metadata exist (\eg, modification time, owner, permissions). In many use
 cases, the file metadata can change without changes in the file content: for
 instance, files can be \emph{moved} to a different location. When performing
 reconciliation, we must be aware of this fact, and reflect file moves without
 re-transferring the contents of the moved files (which is an improvement over
 popular synchronization tools such as \rsync).
 
-In this section, we present how to solve this \emph{file synchronization}
-problem, using our set reconciliation program as a building block.
+We will call this task \emph{file synchronization}. This section shows how it can be solved using the file reconciliation protocol that we introduced.
 
 \subsection{General Principle}
 
 To perform file synchronization, Oscar and Neil will compute the hash of the
-contents of each of their file (which we will denote as the \emph{content
-hash}). They will then compute the hash of the concatenation of the content hash
-and file metadata (which we will call the \emph{mixed hash}). Oscar and Neil
-then perform set reconciliation on the set of mixed hashes.
+contents of each of their files using a collision-resistant hash function
+$\Hash$: we will call this the \emph{content hash} of the file and write it
+$C_i$ or $C_i'$ for the $i$-th file in $\Files$ or $\Files'$. Likewise, we
+write $M_i$ or $M_i'$ the metadata of files. We then take $F_i$ or $F_i'$ to be
+the pair $(C_i, M_i)$ or $(C_i', M_i)$. Oscar and Neil then reconciliate those
+sets as presented in Section~\ref{sec:hashing}.
 
-Once the reconciliation has completed, all mixed hashes common to Oscar and Neil
-represent files which have the same content and metadata in Oscar and in Neil.
-Neil now sends to Oscar the content hashes and metadata of the files whose mixed
-hash appears in Neil but not in Oscar. Oscar is now aware of the metadata and
-content hash of all of Neil's files that do not exist in Oscar with the same
+Once the reconciliation has completed, Oscar is aware of the metadata and
+content hash of all of Neil's files that do not exist in his copy with the same
 content and metadata (we will call them the \emph{missing files}).
 
 Oscar now looks at the list of content hashes of the missing files. For some of
@@ -889,17 +873,17 @@ needs to retrieve the full file contents from Neil. To complete the file
 synchronization, we first deal with all of Oscar's files which fall in the first
 case: this is a bit tricky because ``altering the metadata'' is not obvious to
 perform in-place when it involves file moves, and is the focus of
-Section~\ref{moving}. Once this has been performed, we transfer all missing
-files: this is explained in Section~\ref{transferring}.
+Section~\ref{sec:moving}. Once this has been performed, we deal with the second case by transferring all missing
+files: this is explained in Section~\ref{sec:transferring}.
 
 \subsection{Moving Existing Files}
-\label{moving}
+\label{sec:moving}
 
-To reproduce the structure of Oscar on Neil's disk, we need to perform a sequence of file moves. Sadly, it is not straightforward to apply the moves, because, if we take a file to move, its destination might be blocked, either because a file already exists (we want to move $a$ to $b$, but $b$ already exists), or because a folder cannot be created (we want to move $a$ to $b/c$, but $b$ already exists as a file and not as a folder). Note that for a move operation $a \rightarrow b$, there is at most one file blocking the location $b$: we will call it the \textit{blocker}.
+Adjusting the metadata of existing files is trivial, except for file location which is the focus of this section: Oscar needs to perform a sequence of file moves on his copy to reproduce the structure of Neil's copy. Sadly, it is not straightforward to apply the moves, because, if we take a file to move, its destination might be blocked, either because a file already exists (we want to move $a$ to $b$, but $b$ already exists), or because a folder cannot be created (we want to move $a$ to $b/c$, but $b$ already exists as a file and not as a folder). Note that for a move operation $a \rightarrow b$, there is at most one file blocking the location $b$: we will call it the \textit{blocker}.
 
-If the blocker is absent on Oscar, then we can just delete the blocker. However, if a blocker exists, then we might need to move it somewhere else before we solve the move we are interested in. This move itself might have a blocker, and so on. It seems that we just need to continue until we reach a move which has no blocker or whose blocker can be deleted, but we can get caught in a cycle: if we must move $a$ to $b$, $b$ to $c$ and $c$ to $a$, then we will not be able to perform the operations without using a temporary location.
+If the blocker is absent on Neil, then we can just delete the blocker. However, if a blocker exists and is a file which appears in Neil with different metadata, then we might need to move this blocker somewhere else before we apply the move we are interested in. Moving the blocker might be impossible because of another blocker that we need to keep, and so on. It seems that we just need to continue until we reach a move which has no blocker or whose blocker can be deleted, but we can get caught in a cycle: if we must move $a$ to $b$, $b$ to $c$ and $c$ to $a$, then we will not be able to perform the operations without using a temporary location.
 
-How can we perform the moves? A simple way would be to move each file to a unique temporary location and then rearrange files to our liking: however, this performs many unnecessary moves and could lead to problems if the program is interrupted. We can do something more clever by performing a decomposition in Strongly Connected Components ({\sc scc}) of the \textit{move graph} (with one vertex per file and one edge per move operation going from to the file to its blocker or to its destination if no blocker exists). The computation of the {\sc scc} decomposition is simplified by the observation that because two files being moved to the same destination must be equal, we can only keep one arbitrary in-edge per node, and look at the graph pruned in this fashion: its nodes have in-degree at most one, so the strongly connected components are either single nodes or cycles. Once the {\sc scc} decomposition is known, the moves can be applied by applying each {\sc scc} in a bottom-up fashion, an {\sc scc}'s moves being solved either trivially (for single files) or using one intermediate location (for cycles).
+How should we perform the moves? A simple way would be to move each file to a unique temporary location and then rearrange files to our liking: however, this performs many unnecessary moves and could lead to problems if the program is interrupted. We can do something more clever by performing a decomposition in Strongly Connected Components ({\sc scc}) of the \textit{move graph} (with one vertex per file and one edge per move operation going from to the file to its blocker or to its destination if no blocker exists). The computation of the {\sc scc} decomposition is simplified by the observation that because two files being moved to the same destination must have the same content, we can only keep one arbitrary in-edge per node, and look at the graph pruned in this fashion: its nodes have in-degree at most one, so the strongly connected components are either single nodes or cycles. Once the {\sc scc} decomposition is known, the moves can be applied by performing them in each {\sc scc} in a bottom-up fashion, an {\sc scc}'s moves being solved either trivially (for single files) or using one intermediate location (for cycles).
 
 The detailed algorithm is implemented as two mutually recursive functions and presented as Algorithm \ref{alg:moves}.
 
@@ -915,8 +899,8 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
     \For{$f$ in $\mathfrak{M}$'s keys}
       \Let{$C[f]$}{not\_done}
     \EndFor
-    \Function{unblock\_copy}{$f, t$}
-      \If{$t$ is blocked by some $b$}
+    \Function{unblock\_copy}{$f, d$}
+      \If{$d$ is blocked by some $b$}
         \If{$b$ is not in $\mathfrak{M}$'s keys}
           \State delete($b$) \Comment{We don't need $b$}
         \Else
@@ -933,9 +917,10 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
         \State \Return \Comment{Already managed by another in-edge}
       \EndIf
       \If{$C[f] =$ doing}
-        \Let{$T[f]$}{mktemp()}
-        \State move($f$, $T[f]$)
-        \Let{$C[f]$}{done}
+        \If{$T[f]$ was not set}
+          \Let{$T[f]$}{mktemp()}
+          \State move($f$, $T[f]$)
+        \EndIf
         \State \Return \Comment{We found a loop, moved $f$ out of the way}
       \EndIf
       \Let{$C[f]$}{doing}
@@ -950,6 +935,7 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
       \If{$T[f]$ was set}
         \State delete($T[f]$)
       \EndIf
+      \Let{$C[f]$}{done}
     \EndFunction
 
     \For{$f$ in $\mathfrak{M}$'s keys}
@@ -959,41 +945,43 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
 \end{algorithm}
 
 \subsection{Transferring Missing Files}
-\label{transferring}
+\label{sec:transferring}
 
 Once all moves have been applied, Oscar's hierarchy contains all of its files
-which also exist on Neil, and they have been put at the correct location. The
+which also exist on Neil, and they have been put at the correct location and have the right metadata. The
 only thing that remains is to transfer the contents of Neil's files that do not
 exist in Oscar's hierarchy and create those files at the right position. To do
 so, a simple solution is to use \rsync to synchronize explicitly the correct
-files on Neil to the same location in Oscar's hierarchy, using the fact that
-Oscar is now aware of all of Neil's files and their location.
+files on Neil to the matching locations in Oscar's hierarchy, using the fact that
+Oscar is now aware of all of Neil's files and their location. In so doing, we should ensure that multiple files on Neil that have the same content are only transferred once and then copied to all their locations without being retransferred.
+
+It is interesting to notice that if a file's contents has been changed slightly on Neil but its location hasn't changed, then in most cases the \rsync invocation should try to transfer this file from Neil to Oscar and should reuse the older copy of the file on Oscar which is already at the correct location. Because \rsync uses rolling checksums to retransfer only relevant parts of a file, this may actually reduce the transmission complexity. If a file's content is slightly changed and the file is moved, however, then \btrsync will not be able to do anything intelligent; however, \rsync by itself also fails to detect such a case.
 
 \section{Implementation}
-\label{program}
+\label{sec:program}
 
 We implemented the \df set reconciliation protocol, extended it to perform file
 synchronization, and benchmarked it against \rsync. The implementation is called
 \btrsync, its source code is available from~\cite{Robin}; it was written using
 the Python programming language (using {\sf gmp} to perform the number theoretic
-operations), and using a bash script (invoking ssh) to create the communication
-channel between the two hosts.
+operations), and using a bash script (invoking ssh) to create a secure communication
+channel between Oscar and Neil.
 
 \subsection{Implementation Choices}
 
 Our implementation does not take into account all the possible optimizations
-described in Section~\ref{comp}: it implements doubling
+described in Section~\ref{sec:comp}: it implements doubling
 (Section~\ref{sec:doubling}) and uses powers of small primes for the $p_k$
-(Variant~2 of Section~\ref{sec:choicep}), but does not implement product trees
+(variant~2 of Section~\ref{sec:choicep}), but does not implement product trees
 (Section~\ref{sec:algo-opt-prod-trees}) or use the prime hashing scheme
-described in Section~\ref{sec:hashprime}. Besides, we did not implement the
-proposed improvement in transmission complexity
-(Section~\ref{sec:probabilistic}).
+(Section~\ref{sec:hashprime}). Besides, we did not implement the two
+proposed improvements in transmission complexity for set reconciliation or file reconciliation 
+(Sections~\ref{sec:probabilistic} and~\ref{sec:shortu}).
 
-As for file synchronization (Section~\ref{files}), The only metadata managed by
+As for file synchronization (Section~\ref{sec:files}), the only metadata managed by
 \btrsync is the file path (name and location). Other kinds of metadata
 (modification date, owner, permissions) are not implemented, though it would be
-easy to do so. An optimization implemented by \btrsync over the move resolution algorithm described in Section~\ref{moving} is to avoid doing a copy of a file $F$ and then removing $F$: the implementation replaces such operations by move operations, which are faster than copies on most filesystems as the OS does not need to copy the actual file contents.
+easy to do so. An optimization implemented by \btrsync over the move resolution algorithm described in Section~\ref{sec:moving} is to avoid doing a copy of a file $F$ and then removing $F$: the implementation replaces such operations by move operations, which are faster than copies on most filesystems as the OS does not need to copy the actual file contents.
 
 \subsection{Experimental Comparison to \rsync}
 
@@ -1015,25 +1003,23 @@ information about all unmodified files, and even more so in the case where there
 
 \section{Conclusion and Further Improvements}
 
-TODO write a conclusion.
+In this paper, we introduced the novel set reconciliation protocol \df based on number theory. We analysed its transmission and computational complexity, describing several possible optimizations and desing choices. We have shown how this protocol could be extended to perform file reconciliation through hashing, and solve the practical problem of file synchronization. We prove the validity of this theoretical approach by a working implementation which we benchmarked against \rsync to demonstrate transmission complexity gains.
 
-Many fine questions of the probabilistic discussions in the paper are left as future work.\comm{Be more specific!} Another further line of research would be to pursue development of \btrsync to make it suitable for end users.
+Many interesting problems are left as future work, both theoretical and practical. On the theoretical side, the main effort to undertake would be to eliminate entirely the costly step of hashing to prime numbers by hashing instead to any integer coprime with all the $p_k$. This would make it harder to perform the actual reconciliation once $a$ and $b$ have been obtained, because there could exist multiple factorizations of $a$ and $b$ as products of $h_i$ and $h_i'$ and only one of them would be the correct one. A careful probabilistic analysis would be required to determine the probability of multiple factorizations, and to bound the cost of recovering the correct factorization.
+As for other aspects of our construction, many bounds on the transmisssion and computational complexity could be improved.
 
-Another possible line of future work is to try to detect files that have been
-moved and altered slightly. With the current algorithm, the file hash will be
-different and the whole file will be retransferred, unless if the file location
-hasn't changed and the underlying call to \rsync can proceed in a clever manner.
+Other theoretical questions are left open by our study of move resolution. The algorithm that we propose is not \emph{optimal} in the sense that there should never be any need to use two different temporary file locations: one location is always sufficient to break cycles, and a more careful exploration of the move graph could proceed in this fashion. It is also interesting to wonder if there is a way to perform a minimal number of temporary moves (or if this problem is NP-complete), or if we can reduce the total number of moves by moving folders in addition to files.
 
-\subsection{Future work: Remove Hashing to Prime Numbers}
+On the practical side, our implementation \btrsync could be improved in a number of ways. First, the numerous possible improvements described in the paper should be implemented and benchmarked to test their effectiveness. Secondly, heuristics could be added to work around the situations on which \btrsync is outperformed by \rsync, such as the ones identified by our experimental comparison of the two programs. For instance, whenever the product of Neil's hashes becomes smaller than $P_k$, then Neil should send its hashes immediately to Oscar and terminate the protocol: this would avoid the case where much data is exchanged although Neil's copy is empty or very small. Last but not least, the development of our prototype implementation \btrsync could be continued to make it suitable for end users, including proper management of all metadata, use of the file modification time as a heuristic, and caching of file content hashes so that they would not need to be recomputed each time.
 
-In most cases, the most costly operation is the hashing to prime number.
-That is why, a further optimization can consist in removing the need to hash to prime numbers by hashing to any integer coprime with all the $p_i$.
-The problem is that, even if there are no collision and $a$ and $b$ are correctly recovered, the fact that $h_i$ divides $a$ does not mean $F_i$ should be a file in $\mathcal{S}$, because, for example, we can have $a = 150$, $h_1 = 10$, $h_2 = 15$, $h_3 = 6$, and $a = h_1 \times h_2$, but $h_3$ divides $a$.
-Therefore, we need a slightly more complex method for the factorization and a careful probability analysis to ensure this case does not come too often.
-we should implement the non-prime version stuff... but difficult to find the correct subset of hi which factorizes...
-This is left for future work.
+Last, a possible additional feature that could be added to our file synchronization protocol is to detect files that have been both moved and altered slightly. A related improvement would be to use \rsync to transfer Neil's new files to Oscar by considering simultaneously several related files on Oscar's copy and computing rolling checksums.
 
-Other future work: Pour éviter le cas empty $\rightarrow$ source trop gros, on pourrait imaginer l'astuce suivante: si jamais Neil la taille de c est plus petite que la taille du produit des nombres premiers $p_1$...$p_n$ utilisés, Neil envoie un message pour l'indiquer, et on arr\^ete là le protocole. Et Oscar peut directement factoriser ce nombre envoyé...
+%In most cases, the most costly operation is the hashing to prime number.
+%That is why, a further optimization can consist in removing the need to hash to prime numbers by hashing to any integer coprime with all the $p_i$.
+%The problem is that, even if there are no collision and $a$ and $b$ are correctly recovered, the fact that $h_i$ divides $a$ does not mean $F_i$ should be a file in $\mathcal{S}$, because, for example, we can have $a = 150$, $h_1 = 10$, $h_2 = 15$, $h_3 = 6$, and $a = h_1 \times h_2$, but $h_3$ divides $a$.
+%Therefore, we need a slightly more complex method for the factorization and a careful probability analysis to ensure this case does not come too often.
+%we should implement the non-prime version stuff... but difficult to find the correct subset of hi which factorizes...
+%This is left for future work.
 
 \section{Acknowledgment}
 
@@ -1043,11 +1029,8 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 
 \begin{itemize}
 \item Refaire une dernière fois les expériences, vu que Fabrice a significativement amélioré les perfs.
-\item Fabrice: comparer nos perfs avec http://ipsit.bu.edu/programs/reconcile/ ? ou pas ?
-\item S'assurer qu'on explique explicitement comment/pourquoi on passe de set
-  reconciliation (sync bidirectionnelle) à neil et oscar (sync
-  unidirectionnelle).
-\item Fabrice: Comparaison théorique et bien insister sur ce que l'on apporte réellement.
+% plus tard: \item Fabrice: comparer nos perfs avec http://ipsit.bu.edu/programs/reconcile/ ? ou pas ?
+% plus tard: \item Fabrice: Comparaison théorique et bien insister sur ce que l'on apporte réellement.
 \end{itemize}
 
 \nocite{rsync}
@@ -1101,7 +1084,8 @@ X^{\ell}_{i,j} &=
         (1) edge [<->,above,dashed,sloped]  node {round 3} (3)
         (5) edge [<->,bend left,above,dashed]  node {round 3} (4);
 \end{tikzpicture}
-\caption{Illustration of three masquerade balls. Each protocol round is materialized by a different type of arrow. Arrows denotes collisions.}\label{fig:masked}
+\caption{Illustration of three masquerade balls. Each protocol round is materialized by a different type of arrow. Arrows denotes collisions.}
+\label{fig:masked}
 \end{figure}
 
 Set $Z^0_i = 1$ and write $p_\ell = \Prob{Z^{\ell}_{i} = 1 \text{ and } Z^{\ell}_{j} = 1} $ for all $\ell$ and $i \neq j$.
@@ -1197,7 +1181,8 @@ For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.
 \end{tikzpicture}
 \end{turn}
 }
-\caption{Product tree}\label{fig:prod-tree}
+\caption{Product tree (assuming $j=1$ for simplicity).}
+\label{fig:prod-tree}
 \end{figure}
 
 \begin{figure}
@@ -1256,7 +1241,8 @@ For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.
 \path (q) -- (v) node [midway] {$\displaystyle =$};
 \end{tikzpicture}
 \end{turn}}
-\caption{Modular reduction from product tree}\label{fig:div-prod-tree}
+\caption{Modular reduction from product tree (assuming $j=1$ for simplicity.}
+\label{fig:div-prod-tree}
 \end{figure}
 
 
