@@ -1,4 +1,3 @@
-% TODOFABRICE: harmonisations
 % TODO: spellcheck
 
 \documentclass[11pt]{llncs}
@@ -65,7 +64,14 @@
 \itshape\hrule\smallskip#1\par\smallskip\hrule}}
 \setlength{\marginparwidth}{2cm}
 
-\usepackage[bookmarks=false,hidelinks]{hyperref}
+\usepackage[bookmarks=false]{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    filecolor=black,
+    urlcolor=black,
+}
 \usepackage{geometry}
 
 \begin{document}
@@ -257,8 +263,11 @@ We then construct a protocol which works with any $T$.
 
 \subsubsection{Detecting Bad Reconciliation.}
 We first remark that, if we execute the previous protocol when $t < T$, either $a$ and $b$ are still correct (in which case the protocol works correctly), or $a$ and $b$ are not correct.
-In the second case, with high probability, the product of the $h_i$'s which divide $a$ is not equal to $a$ (TODOFABRICE: prove this claim).
-This check has the advantage to be very fast, and it does not require Neil to send any data to Oscar. We will call $\bot_1$ the event where this check identifies a problem. 
+In the second case, with high probability, the product of the $h'_i$'s which divide $a$ is not equal to $a$.
+Indeed, in this case, $a$ is not recovered correctly and so, we can roughly suppose $a$ is a random number of $(tu)$-bits. So, for each $i$, the probability that $h'_i$ divides $a$ is at most $1/2^u$, and the probability the product of $h'_i$'s which divide $a$ is equal to $a$ is roughly the probability that exactly $t$ $h'_i$'s among the $n'$ $h'_i$'s divides $a$, namely $\binom{n'}{t} 2^{-ut} (1-2^{-u})^{n'-t} \le n 2^{-ut}$ which is negligible (if $2^{u} \gg n'$, condition we suppose in the sequel).
+TODO: check this
+
+Therefore, checking that the product of the $h_i$'s which divide $a$ is equal to $a$ has the advantage to be very fast, and it does not require Neil to send any data to Oscar. We will call $\bot_1$ the event where this check identifies a problem. 
 However, if we are unlucky, it can happen that this check is not sufficient. We will call $\bot_2$ the event where this check passes but the set reconciliation failed.
 
 To handle the $\bot_2$ case, we will assume that we have a collision-resistant hash function $\Hash$ which takes as input any bit string and output a short binary string of a fixed number of bits (\eg, $160$).
@@ -356,7 +365,6 @@ This section proves that \df achieves optimal asymptotic transmission complexity
 
 \subsection{Proof of Transmission Complexity Optimality}
 
-\comm{TODOFABRICE: Il faut quantifier la probabilité de $\bot_2$ si on dit qu'elle est négligeable !}
 Assuming that there is no event $\bot_2$ (since these events happen with negligible probability), the transmission complexity of \df is as follows:
 \[  \sum_{k=1}^\kappa \log c_k + \log b + \log |\SetD'|
  \,\leq\, \sum_{k=1}^\kappa (ut_k+1) + \frac{1}{2} (uT_\kappa) + u T
@@ -517,24 +525,33 @@ For the previously considered instance of $\eta=10^6$ and $u=42$, we get $\epsil
 
 
 \subsubsection{How to Select $u$?}
-TODOFABRICE: corriger ça.
 
 For the sake of simplicity, we consider $t_1=t_2=\cdots=t$.
-For a fixed $\lambda$, $\epsilon'_\lambda$ decreases as $u$ grows. For a fixed $u$, $\epsilon'_\lambda$ also decreases as $\lambda$ grows. Transmission, however, grows with both $u$ (bigger digests) and $k$ (more iterations). We write for the sake of clarity: $\epsilon'_\lambda = \epsilon'_{\lambda,u,\eta}$.
+For a fixed $\lambda$, $\epsilon'_\lambda$ decreases as $u'$ grows. For a fixed $u'$, $\epsilon'_\lambda$ also decreases as $\lambda$ grows. Transmission, however, grows with both $u'$ (bigger digests) and $k$ (more iterations). We write for the sake of clarity: $\epsilon'_\lambda = \epsilon'_{\lambda,u',\eta}$.
 
 Fix $\eta$. Note that the number of bits transmitted per iteration ($\simeq 3ut$), is proportional to $u$. This yields an expected transmission complexity bound $T_{u,\eta}$ such that:
 
-\[T_{u,\eta} \propto u \sum_{\lambda=1}^{\infty} \lambda \cdot \epsilon'_{\lambda,u,\eta}=
-\frac{u \eta\left(\eta-1\right)}{2^u} \sum_{\lambda=1}^{\infty} \lambda \left( \frac{1}{2^u} + \frac{\left(\eta-2\right)^2}{2^{2u}} \right)^{\lambda-1}=
-\frac{u \eta\left(\eta-1\right) 8^u}{\left(2^u-4^u+\left(\eta-2\right)^2\right)^2}\]
-
-Dropping the proportionality factor $\eta\left(\eta-1\right)$, neglecting $2^u \ll 2^{2u}$ and approximating $(\eta-2)\simeq\eta$, we can optimize the function:
-\nopagebreak
-\[
-\phi_\eta(u)=\frac{u \cdot 8^u}{\left(4^u-\eta^2\right)^2}
+\[T_{u,\eta} 
+\propto u \sum_{\lambda=1}^{\infty} \lambda \cdot \epsilon'_{\lambda,u',\eta}
+=
+%\frac{u \eta\left(\eta-1\right)}{2^u} \sum_{\lambda=1}^{\infty} \lambda \left( \frac{1}{2^u} + \frac{\left(\eta-2\right)^2}{2^{2u}} \right)^{\lambda-1}
+\frac{u' \eta (\eta-1)}{2^{u'}} \sum_{\lambda=1}^\infty \left( \frac{\eta-1}{2^{u'}} \right)^{\lambda-1}
+=
+\frac{ u \eta (\eta-1) }{ 2^{u'} - \eta + 1}
+= \frac{u \eta\left(\eta-1\right) 8^u}{\left(2^u-4^u+\left(\eta-2\right)^2\right)^2}
 \]
 
-$\phi_{10^6}(u)$ admits an optimum for $u=19$.
+%Dropping the proportionality factor $\eta\left(\eta-1\right)$, neglecting $2^u \ll 2^{2u}$ and approximating $(\eta-2)\simeq\eta$, we can optimize the function:
+%\nopagebreak
+%\[
+%\phi_\eta(u)=\frac{u \cdot 8^u}{\left(4^u-\eta^2\right)^2}
+%\]
+
+Dropping the proportionality factor $\eta (\eta-1)$ and approximating $\eta-1 \approx \eta$, we can optimize the function:
+\[\phi_\eta(u') = \frac{u'}{2^{u'} - \eta} \]
+
+$\phi_{10^6}(u')$ admits an optimum for $u'\approx15$.
+TODO: Fabrice: check my computations !
 
 \subsubsection{Possible Refinements.} The previous analyses are incomplete because of the following approximations:
 \begin{itemize}
@@ -759,53 +776,60 @@ We can use the same method for the tree product associated to any $H_j$, and the
 As seen in Section~\ref{sec:complete-df}, instead of using $t_1 = t_2 = \cdots = t$, we can use $t_k = 2^k t'$ (\ie double $t_k$ at each iteration).
 This increases the transmission complexity slightly, but drastically reduces the computational complexity.
 
+TODO: check this table and improve it ?
 \begin{table}[ht]
 %\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
 %\newcommand{\mcqc}[1]{\multicolumn{4}{c}{#1}}
  \begin{threeparttable}
-  \begin{tabularx}{\textwidth}{lXC{2cm}C{2cm}p{4.0cm}}
+  \begin{tabularx}{\textwidth}{lXC{3cm}C{3cm}p{2.8cm}}
 \toprule
-{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{2}{c}{{\bf Complexity in $\Oapp$ of}} & {\bf \hfill Optimization used \hfill \null} \\
+{\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{2}{c}{{\bf Complexity in $\Oapp$ of}} & {\bf \hfill Optimization \hfill \null} \\
 \cmidrule(lr){3-4}
 & & {\bf Basic algo.\tnote{a}} & {\bf Opt. algo.\tnote{b}} \\
 \midrule
 Both  & computation of $h_i$ and $h'_i$ 
-      & $n u^2 \mu(u)$ 
-      & $\frac{\phi(\alpha)}{\alpha} n u^2 \mu(u)$
+      & $n u^2 \cdot \mu(u)$ 
+      & $\frac{\phi(\alpha)}{\alpha} n u^2 \cdot \mu(u)$
       & fast hashing (\ref{sec:hashprime}) \\
 \midrule
-      & \textit{Round $i$} &  &  \\
-Both  & compute redundancies $c_i$ and $c'_i$ 
-      & $n \cdot \mu(ut_i)$ 
-      & $\frac{n}{t_i} \cdot \mu(ut_i)$
+      & \textit{Round $k$} &  &  \\
+Both  & compute redundancies $c_k$ and $c'_k$ 
+      & $n \cdot \mu(ut_k)$ 
+      & $\frac{n}{t_k} \cdot \mu(ut_k)$
       & product trees (\ref{sec:algo-opt-prod-trees}) \\
-Neil  & compute $s_i = c'_i/c_i$\tnote{c} or $S_i = C'_i / C_i$\tnote{d}
-      & $\mu(uT_i)$
-      & $\mu(uT_i)$
+Neil  & compute ${s_k = c'_k/c_k}$\tnote{c} or ${S_k = C'_k / C_k}$\tnote{d}
+      & $\mu(uT_k)$
+      & $\mu(uT_k)$
       &   \\
-Neil  & compute $S_i$ from $S_{i-1}$ and $s_i$ (CRT)\tnote{c}
-      & $\mu(u T_i)$ 
+Neil  & compute $S_k$ from $S_{k-1}$ and $s_k$ (CRT)\tnote{c}
+      & $\mu(u T_k)$ 
       & n/a
       & use $p_k = 2^{ut_k}$ (\ref{sec:choicep}) \\
-Neil  & find $a_i,b_i$ such that $S_i = a_i/b_i \bmod p_i$\tnote{e}
-      & $\mu(u T_i)$
-      & $\mu(u T_i)$
+Neil  & find $a_k,b_k$ such that ${S_k = a_k/b_k \bmod P_k}$\tnote{e}
+      & $\mu(u T_k)$
+      & $\mu(u T_k)$
       & \\
-Neil  & factor $a_i$
-      & $n \cdot \mu(uT_i)$ 
-      & $\frac{n}{T_i} \cdot \mu(uT_i)$
+Neil  & factor $a_k$
+      & $n \cdot \mu(uT_k)$ 
+      & $\frac{n}{T_k} \cdot \mu(uT_k)$
       & product trees (\ref{sec:algo-opt-prod-trees})  \\
 \midrule
       & \textit{Last round} \\
-Oscar & factor $b_i$
-      & $n \cdot \mu(ut_i)$ 
-      & $\frac{n}{t_i} \cdot \mu(ut_i)$
+Oscar & factor $b_k$
+      & $n \cdot \mu(ut_k)$ 
+      & $\frac{n}{t_k} \cdot \mu(ut_k)$
       & product trees (\ref{sec:algo-opt-prod-trees}) \\
 \midrule
-      & \textbf{overwhelming complexity TODOFABRICE}
-      & TODO 
-      & TODO 
-      & prev. opt. + doubling (\ref{sec:doubling}) \\
+      & \textbf{overwhelming complexity}
+      & $\sum_{k=1}^\kappa n \cdot \mu(ukt) + n u^2 \cdot \mu(u)$
+      & $\sum_{k=1}^\kappa \frac{n \cdot \mu(u2^{k+1}t')}{t'2^{k+1}} + \frac{\phi(\alpha)}{\alpha} n u^2 \cdot \mu(u)  $
+      & doubling (\ref{sec:doubling})\tnote{f} \\
+      & \dots with naive mul.
+      & $n u^2 T^3 / t + n u^4$
+      & $n u^2 T^2 + \frac{\phi(\alpha)}{\alpha} n u^4$ \\
+      & \dots with FFT
+      & $n u T^2 + n u^3$
+      & $n u + \frac{\phi(\alpha)}{\alpha} n u^3$ \\
 \bottomrule
   \end{tabularx}
   \begin{tablenotes}
@@ -813,7 +837,8 @@ Oscar & factor $b_i$
     \item[b] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$, also yielding substatial constant factor accelerations not shown in this table), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling}
     \item[c] only for $p_i$ prime (or variant~1 or~2 in Section~\ref{sec:choicep})
     \item[d] only for $p_i = 2^{ut_i}$
-    \item[e] using advanced algorithms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$\smallskip
+    \item[e] using advanced algorithms in~\cite{pan2004rational,wang2003acceleration} --- naive extended GCD leads $(uT_i)^2$
+    \item[f] and previous optimizations\smallskip
   \end{tablenotes}
  \end{threeparttable}
  \rule{\textwidth}{1pt}
