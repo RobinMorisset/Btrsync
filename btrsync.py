@@ -4,9 +4,6 @@ from __future__ import print_function
 """Btrsync (python version)"""
 __author__ = "Antoine Amarilli and Fabrice Ben Hamouda"
 
-# TODOFABRICE: check that in our program we ensure $a$ and $b$ co-prime !!
-# otherwise, it may fail !!!!!
-
 import os, sys, inspect
 import shutil
 from subprocess import Popen, PIPE, STDOUT
@@ -153,7 +150,11 @@ def make_frac(n, d):
     b = r
     (x, lastx) = (lastx - q * x, x)
     (y, lasty) = (lasty - q * y, y)
-  return (b, y%n)
+  (a,b) = (b,y%n)
+  if gmpy.gcd(a,b) != 1:
+    return (None, None)
+  else:
+    return (a, b)
 
 def factor(a, l):
   """ Factor a on the basis l (list of primes), return the list of factors or None, if not completely factorized """
@@ -178,6 +179,8 @@ def round_neil(hashes, pi_oscar, prev_pp=1, prev_d=1):
   pp = p * prev_pp
 
   (oscar, neil) = make_frac(pp, d)
+  if oscar==None:
+    return (pp, d, None)
   factors_neil = factor(neil, hashes)
 
   if factors_neil != None:
