@@ -4,6 +4,9 @@ from __future__ import print_function
 """Btrsync (python version)"""
 __author__ = "Antoine Amarilli and Fabrice Ben Hamouda"
 
+# TODOFABRICE: check that in our program we ensure $a$ and $b$ co-prime !!
+# otherwise, it may fail !!!!!
+
 import os, sys, inspect
 import shutil
 from subprocess import Popen, PIPE, STDOUT

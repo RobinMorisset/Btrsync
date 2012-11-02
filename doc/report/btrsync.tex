@@ -222,7 +222,7 @@ Let $a$,$b \in {\mathbb Z}$ be two co-prime integers such that $0 \leq a \leq A$
 \end{theorem}
 
 Taking $A=B=2^{ut}-1$, Equation \eqref{eq:equp} implies that $AB<p$. Moreover, $0 \leq a \leq A$ and $0 <b \leq B$. Thus Oscar can recover $a$ and $b$ from $s$ in polynomial time: a possible option is to use Gauss's algorithm for finding the shortest vector in a bi-dimensional lattice~\cite{vallee}.
-\comm{Fabrice: certes, mais on utilise directement un Euclide étendu tronqué. Et pourquoi citer Vallée qui est un peu incompréhensible dans notre cas... TODO: check that in our program we ensure $a$ and $b$ co-prime !! otherwise, it may fail !!!!!}
+\comm{TODODAVID: Fabrice: certes, mais on utilise directement un Euclide étendu tronqué. Et pourquoi citer Vallée qui est un peu incompréhensible dans notre cas...}
 Once $a$ and $b$ have been recovered, Oscar and Neil, can test, respectively, by which $h_i$ and $h'_i$ they are divisible. Thus, they can identify the differences between $\Set$ and $\Set'$ and settle them\footnote{Actually, this only works if $\Set$ and $\Set'$ are sets. If they are multisets, and if, for example, the multiplicity of $h'_i$ in $\Set'$ is $j'$, we need to check the divisibility of $b$ by $h_i,h_i^2,\dots,h_i^{j'}$. For clarity, in what follows, we will present the algorithms for the case where $\Set$ and $\Set'$ are sets.
 We let the reader adapt them to the general case.}.
 
@@ -461,7 +461,7 @@ We slightly change notations and write:
 We notice that, as soon as a file $F_i$ or $F'_i$ in $\Files \Delta \Files'$ does not collide with another file in one iteration of \df, then this difference between $\Files$ and $\Files'$ will be reconciled.
 In this naive analysis, we do not use the fact that such files are removed from one iteration to the next, and we just compute the probability that a file keeps colliding for $\lambda$ iterations. We will thus obtain an upper bound on the probability that at least one difference between $\Files$ and $\Files'$ has not been detected after $\lambda$ iterations (\ie, at least one false positive survives $\lambda$ iterations).
 
-Because there are are about $2^u \over u$ $u$-bit prime numbers (TODO ref), we write $u' = u - \ln(u)$ and see $\HashPrime$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^{u'}-1\}$. Let $X_i$ be the random variable:
+Because there are are about $\frac{2^u}{u}$ $u$-bit prime numbers (TODO ref), we write $u' = u - \ln(u)$ and see $\HashPrime$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^{u'}-1\}$. Let $X_i$ be the random variable:
 \[
 X_i =
 \left\{
@@ -541,7 +541,7 @@ $\phi_{10^6}(u)$ admits an optimum for $u=19$.
 
 \item We used a fixed $u$ in all rounds. Nothing forbids using a different $u_\ell$ at each iteration, or even fine-tuning the $u_\ell$'s adaptively as a function of the laundry's effect on the progressively reconciliated multisets..
 
-\item \comm{À voir avec David.} Our analysis treats $t$ as a constant, but large $t$ values increase $p$ and hence the number of potential files detected as different per iteration - an effect disregarded \textit{supra}.
+\item \comm{TODODAVID: Fabrice et moi ne comprenons pas cet item.} Our analysis treats $t$ as a constant, but large $t$ values increase $p$ and hence the number of potential files detected as different per iteration - an effect disregarded \textit{supra}.
 \end{itemize}
 
 A different approach is to optimize $t$ and $u$ experimentally, \eg, using the open source \df program \btrsync developed by the authors (\cf Section~\ref{sec:program}).
@@ -596,7 +596,7 @@ We know there are roughly $\frac{2^u}{u}$ $u$-bit primes (TODO ref).
 Therefore, in average, we need to perform $u$ primality tests before we find a suitable $h$.
 The cost of a Miller-Rabin primality test is $\Oapp(u \mu(u))$ (TODO ref).
 Hence, the total cost of $\HashPrime$ is $\Oapp(u^2 \mu(u))$.
-\comm{Dans un article soumis à PKC j'ai une meilleure borne pour cela, ... je crois que David voulait le citer à un moment... Antoine: je pense que c'est tout à fait opportun de donner le meilleur résultat et de citer le papier en mettant qu'il est ``under review''}
+\comm{Dans un article soumis à PKC j'ai une meilleure borne pour cela, ... je crois que David voulait le citer à un moment... Antoine: je pense que c'est tout à fait opportun de donner le meilleur résultat et de citer le papier en mettant qu'il est ``under review''. TODODAVID: Fabrice voudrait que tu lui dises comment s'y prendre pour ça. :)}
 
 \subsubsection{Optimized Algorithm.}
 If $u$ is large enough (\eg $160$) one might % to avoid repeated file hashing by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
@@ -676,8 +676,8 @@ So the space overhead is $O(nu)$.
 
 \For{$i = 1,\dots,n$}
   \State $Z \gets X \times h_i$
-  \State $D_{i,k+1} \gets Z[u(t_{k+1}-t_k)\dots u(t_{k+1}-t_k+1)]$
-  \State $X \gets Z[0\dots u(t_{k+1}-t_k)]$
+  \State $D_{i,k+1} \gets Z[u(t_{k+1}-t_k)\cdots u(t_{k+1}-t_k+1)]$
+  \State $X \gets Z[0\cdots u(t_{k+1}-t_k)]$
 \EndFor
 
 \State $c_{k+1} \gets X$
