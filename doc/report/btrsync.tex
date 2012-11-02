@@ -516,7 +516,7 @@ For the previously considered instance of $\eta=10^6$ and $u=42$, we get $\epsil
 
 
 
-\subsubsection{How to select $u$?}
+\subsubsection{How to Select $u$?}
 TODOFABRICE: corriger ça.
 
 For the sake of simplicity, we consider $t_1=t_2=\cdots=t$.
@@ -536,7 +536,7 @@ Dropping the proportionality factor $\eta\left(\eta-1\right)$, neglecting $2^u \
 
 $\phi_{10^6}(u)$ admits an optimum for $u=19$.
 
-\subsubsection{Possible refinements.} The previous analyses are incomplete because of the following approximations:
+\subsubsection{Possible Refinements.} The previous analyses are incomplete because of the following approximations:
 \begin{itemize}
 
 \item We used a fixed $u$ in all rounds. Nothing forbids using a different $u_\ell$ at each iteration, or even fine-tuning the $u_\ell$'s adaptively as a function of the laundry's effect on the progressively reconciliated multisets..
@@ -628,16 +628,16 @@ This slightly increases the number of collisions of $\HashPrime$ and $u$ has to 
 Taking the $p_k$'s to be $ut_k$-bit primes is not very practical, because generating big prime numbers is slow. In this section, we study alternate choices for the $p_k$ which are easier to generate and speed up the computation by constant factors.
 
 Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime, with $\mbox{{\tt Prime}}[1]=2$. Besides conditions on size, the \textit{only} property (*) required from a $p_k$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants, which will all imply a few conditions on the $h_i$'s and $h'_i$'s to ensure property (*):
-\subsubsection{Variant 1:} Smooth $p_k$:
+\subsubsection{Variant 1.} Smooth $p_k$:
 \[ p_k=\prod_{j=r_k}^{r_{k+1}-1} \mbox{{\tt Prime}}[j], \]
 where the bounds $r_k$ are chosen to ensure that each $p_k$ has the proper size.
 Generating such numbers is much faster than generating a big prime $p_k$.
 
-\subsubsection{Variant 2:} $p_k=\mbox{{\tt Prime}}[k]^{r_k}$ where the exponents $r_k$ are chosen to ensure that each $p_k$ has the proper size.
+\subsubsection{Variant 2.} $p_k=\mbox{{\tt Prime}}[k]^{r_k}$ where the exponents $r_k$ are chosen to ensure that each $p_k$ has the proper size.
 This variant is even faster than the previous one, but implies that the $h_k$ must all be bigger than all
 $\mbox{{\tt Prime}}[k]^{r_k}$.
 
-\subsubsection{Variant 3:} $p_k = P_k = 2^{ut_k}$. 
+\subsubsection{Variant 3.} $p_k = P_k = 2^{ut_k}$. 
 In this case, $C_k = \prod_{i=1}^n h_i \bmod p_k$, $c_1 = C_1$ and $c_k = (C_k - C_{k-1}) / p_{k-1}$, {\it i.e.}, $c_k$ is the slice of bits $ut_{k-1}, \dots, ut_k-1$ of $C_k$, which we write $c_k = C_k[ut_{k-1}\cdots ut_k]$.
 We can use Algorithm~\ref{alg:even-p-c} for the computation of $c_k$. With this variant, we do not need to perform modulo operations and CRT re-combination anymore: $C_k$ is just the binary concatenation of $c_k$ and $C_{k-1}$. The computation is therefore much faster.
 
