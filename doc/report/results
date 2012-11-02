@@ -1,8 +1,8 @@
-test/source/ test/empty/ 779517 10140 778311 1614 9732 435 81
-test/empty/ test/source/ 11927 5952 24 12 17843 410 59
-test/empty/ test/empty/ 19 30 24 12 13 329 46
-test/synthetic/ test/synthetic_shuffled/ 7308 3417 54799 19012 -63086 1481 222
-test/synthetic_shuffled/ test/synthetic/ 6822 3042 54407 18822 -63365 772 230
-test/synthetic/ test/synthetic/ 327 30 54799 19012 -73454 672 149
-test/firefox-13.0.1/ test/firefox-13.0/ 39604079 3305 40998350 1187 -1392153 10214 1531
-test/source_moved/ test/source/ 2757 1966 778176 1473 -774926 642 59
+test/source/ test/empty/ 779517 10140 778311 1614 9732 727 78
+test/empty/ test/source/ 11927 5952 24 12 17843 393 43
+test/empty/ test/empty/ 19 30 24 12 13 292 46
+test/synthetic/ test/synthetic_shuffled/ 7308 3417 54799 19012 -63086 799 461
+test/synthetic_shuffled/ test/synthetic/ 6822 3042 54407 18822 -63365 789 163
+test/synthetic/ test/synthetic/ 327 30 54799 19012 -73454 697 470
+test/firefox-13.0.1/ test/firefox-13.0/ 39604079 3305 40998350 1187 -1392153 8126 1649
+test/source_moved/ test/source/ 2757 1966 778176 1473 -774926 391 85
