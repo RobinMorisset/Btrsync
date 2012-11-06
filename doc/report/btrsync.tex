@@ -130,7 +130,7 @@ determine the symmetric difference of the two sets while minimizing the amount
 of data transferred. The lower bound of the quantity of data to transfer is
 clearly the size of the symmetric difference (i.e., the number of elements in the
 difference times the size of these elements), and some known algorithms achieve
-this bound~\cite{PSRec}. We refer the reader to~\cite{Whats,PSRec,Mins1} (to
+this bound~\cite{PSRec}. We refer the reader to~\cite{byers,Whats,PSRec,Mins1} (to
 quote a few references) for more on this problem's history and its existing
 solutions.
 
@@ -191,6 +191,34 @@ Let $T$ be the number of differences between $\Set$ and $\Set'$:
 \[ T = \# \SetD + \# \SetD' = \# \left( \Files \Delta \Files' \right) \]
 where we write:
 \[ \Files \Delta \Files' = (\Files \setminus \Files') \cup (\Files' \setminus \Files). \]
+
+\subsection{Related Work on Set Reconciliation}\label{sec:related-work}
+TODO (Fabrice): this may not be the good place !! and it is important to ntoe that we go further simple set reconciliation
+
+As explained in the introduction, various algorithms for set reconciliations have already been proposed in~\cite{byers,Whats,PSRec,Mins1}.
+Let us compare \df with all these algorithms.
+
+Firstly, \df can be seen as a (independently found) number theoretical variant of the polynomial based algorithm of Minsky, Trachtenberg and Zippel in~\cite{Mins1} (named MTZ in the sequel).
+Its transmission complexity is roughly the same, if we omit the fact that our algorithm only deal with fixed-size prime numbers, whereas theirs deal with any fixed-size bitstring.
+We discuss the computational complexity of these two algorithms in~\ref{sec:opt-MTZ} and show that they are quite close and that the optimizations we introduce can also be used with \cite{Mins1} to improve substantially its time efficiency.
+
+TODO (Fabrice): another point is that we use a global hash to check termination, whereas MTZ uses another method which is maybe less optimal ! But this is quite trivial...
+
+TODO: introduce $\Oapp$
+
+Secondly, the algorithm, which we call PART-MTE, uses MTZ as a blackbox, and which performs set reconciliation using at least about $24e$ times more bandwith (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ.
+Since this algorithm is actually not specific to MTZ, it can also be used with \df.
+Let us call PART-\df this new algorithm.
+PART-\df and PART-MTZ have roughly the same transmission complexity.
+We compare their computational complexity in~\ref{sec:opt-MTZ}.
+
+Finally, let us compare \df and MTZ with the algorithms described in~\cite{Whats} and~\cite{byers}, which we call DD and ART.
+In~\cite{Whats}, the authors compared MTZ, DD and ART.
+Due to the fact MTZ and \df have roughly the same transmission complexity and computational complexity, this comparison is still valid when we replace MTZ by \df.
+It shows that MTZ and \df use less bandwidth than DD (by a constant factor), and that it uses a lot less bandwidth than ART, when the number of differences $T$ is small enough (less than 10\% of the size of $\Set \cup \Set'$).
+Concerning the computational complexity, it shows that MTZ and \df without any of the optimizations introduced in~\ref{sec:comp} are slower than DD.
+The comparison of the time efficiency of PART-MTZ, PART-\df and optimized MTZ and \df (with optimizations in~\ref{sec:comp}) seems to be promising and is left as future work.
+
 
 \subsection{Basic Protocol with Bounded $T$}
 \label{sec:basic}
@@ -849,6 +877,18 @@ Oscar & factor $b_k$
 \subsection{Summary of the Optimizations}
 
 The asymptotic computational complexity that can be achieved with the optimizations described in this section is described in the fourth column of Table~\ref{tab:workload}.
+
+\subsection{Comparison with MTZ}\label{sec:opt-MTZ}
+
+TODOFABRICE
+
+TODO: add a sentence at the beginning of the section to introduce this subsection
+
+As explained in Section~\ref{sec:related-work}, MTZ and \df are very close:
+MTZ works the same way as \df but with polynomials.
+
+TODO TODO
+
 \section{From File Reconciliation to File Synchronization}
 \label{sec:files}
 
@@ -1018,6 +1058,7 @@ difference.
 On non-trivial tasks, however, \btrsync outperforms \rsync. This is the case of the {\tt synthetic} datasets, where \btrsync does not have to transfer
 information about all unmodified files, and even more so in the case where there are no modifications at all. For Firefox source code datasets, \btrsync saves a very small amount of bandwidth, presumably because of unmodified files. For the \btrsync source code dataset, we notice that \btrsync, unlike \rsync, was able to detect the move and avoid retransferring the moved folder.
 
+
 \section{Conclusion and Further Improvements}
 
 In this paper, we introduced the novel set reconciliation protocol \df based on number theory. We analysed its transmission and computational complexity, describing several possible optimizations and desing choices. We have shown how this protocol could be extended to perform file reconciliation through hashing, and solve the practical problem of file synchronization. We prove the validity of this theoretical approach by a working implementation which we benchmarked against \rsync to demonstrate transmission complexity gains.
@@ -1042,12 +1083,12 @@ Last, a possible additional feature that could be added to our file synchronizat
 
 The authors acknowledge Guillain Potron for his early involvement in this research work.
 
-\section{ToDo}
+%\section{ToDo}
 
-\begin{itemize}
+%\begin{itemize}
 % plus tard: \item Fabrice: comparer nos perfs avec http://ipsit.bu.edu/programs/reconcile/ ? ou pas ?
 % plus tard: \item Fabrice: Comparaison théorique et bien insister sur ce que l'on apporte réellement.
-\end{itemize}
+%\end{itemize}
 
 \nocite{rsync}
 \nocite{wagner}
