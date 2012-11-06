@@ -206,7 +206,7 @@ TODO (Fabrice): another point is that we use a global hash to check termination,
 
 TODO: introduce $\Oapp$
 
-Secondly, the algorithm, which we call PART-MTE, uses MTZ as a blackbox, and which performs set reconciliation using at least about $24e$ times more bandwith (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ.
+Secondly, the algorithm, which we call PART-MTZ, uses MTZ as a blackbox, and which performs set reconciliation using at least about $24e$ times more bandwith (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ.
 Since this algorithm is actually not specific to MTZ, it can also be used with \df.
 Let us call PART-\df this new algorithm.
 PART-\df and PART-MTZ have roughly the same transmission complexity.
@@ -880,9 +880,10 @@ The asymptotic computational complexity that can be achieved with the optimizati
 
 \subsection{Comparison with MTZ}\label{sec:opt-MTZ}
 
-TODOFABRICE
-
 TODO: add a sentence at the beginning of the section to introduce this subsection
+
+
+In this section, we only consider the complete \df protocol for set reconciliation (and so forget about the complexity of the computation of $h_i$ and $h'_i$), and we compare the computational complexity of \df with the one of MTZ.
 
 As explained in Section~\ref{sec:related-work}, MTZ and \df are very close:
 MTZ works the same way as \df but with polynomials.
@@ -901,13 +902,17 @@ We can also easily see that all the optimizations (except the ones of Section~\r
 
 We notice however a big difference between MTZ and \df for the factorization step.
 For both of them, we can simply check whether $a$ and $b$ are divisible by each of the $h_i$ and $h'_i$ (or $X-h_i$ and $X - h'_i$ for MTZ).
-With the optimization of Section~\ref{alg:div-prod-tree}, it costs $\Oapp(\frac{n}{T_k} \mu(nuT_k))$.
+With the optimization of Section~\ref{alg:div-prod-tree}, it costs $\Oapp(\frac{n}{T_k} \mu(nuT_k))$, if we consider that the multiplication of a degree $T_k$ polynomial over $\mathbb{F}_q$ is $\mu(uT_k)$.
 But with MTZ, we can also do a direct factorization of $a$ and $b$ in time $O(T_k^3 \mu(u))$.
 
-TODO: say that we can drop this complexity to $\Oapp(T_k^\omega \mu(u))$, with $\omega$ the exponent of matrix mult. ?????
- \url{http://www.google.fr/url?sa=t&rct=j&q=&esrc=s&source=web&cd=3&cad=rja&ved=0CDcQFjAC&url=http%3A%2F%2Freference.kfupm.edu.sa%2Fcontent%2Ff%2Fa%2Ffactoring_polynomials_over_finite_fields_120357.pdf&ei=M02ZUJWtJYGW0QWe7oDYCw&usg=AFQjCNGirX3kl2V4zJsaA9cZ0nK-lKzjDA}
+However, this can gain only logarithmic factors on the overall asymptotic computational complexity of MTZ due to the computation of the redundancies ($\Oapp(\frac{n}{t_k} \mu(ut_k))$ for each round $k$), and only when $T^3$ is smaller or approximatively equal to $n$.
 
-However, this can only decrease the overall asymptotic computational complexity of MTZ, since the computation of the redundacies is alrea TODO...
+Concerning the PART-MTZ and PART-\df protocols, defined in Section~\ref{sec:related-work}, we can remark that, their overall complexity is the same (up to logarithmic factors) and is roughly $\Oapp(n \mu(u))$.
+We can notice, that in~\cite{Mins1,PSRec}, the authors do not consider the computation of the redundancies in the overall complexity, because they consider a model where sets $\Set$ and $\Set'$ are often updated (by adding or removing a value in $\Set$ or $\Set'$) and often synchronised.
+Then, if a reasonnable bound on $T$ is known, it is possible to compute one time the redundancies, and this makes the overall complexity $\Oapp(T^3 \mu(u))$ for MTZ and $\Oapp(T \mu(u))$ for PART-MTZ.
+But we cannot have such optimization with \df.
+
+TODO: maybe find something more positive ???
 
 
 
