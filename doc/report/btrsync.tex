@@ -886,8 +886,30 @@ TODO: add a sentence at the beginning of the section to introduce this subsectio
 
 As explained in Section~\ref{sec:related-work}, MTZ and \df are very close:
 MTZ works the same way as \df but with polynomials.
+More precisely, we can see MTZ as \df, where:
+\begin{itemize}
+\item we synchronize monomic polynomial $X-h_i$ and $X-h'_i$ over a field $\mathbb{F}_q$ (with $q$ a $(u+1)$-bit prime number or power of prime number), instead of $u$-bit prime numbers $h_i$ and $h'_i$;
+\item $p_k$ are square-free polynomials with are co-prime together and also co-prime with all $X-h_i$ and $X-h'_i$, instead of an numbers which are co-prime together and co-prime with all $h_i$ and $h'_i$ (for all the variants in~\ref{sec:choicep} except the last one);
+\end{itemize}
+because, we have (in the basic version with only one round, for the sake of simplicity):
+\begin{itemize}
+\item if we write $p = (X-\rho_1) \cdots (X-\rho_t)$, $c = \prod_{i=1}^n (X-h_i) \bmod p_k$ and $\chi_\Set = \prod_{i=1}^n (X-h_i)$, $\chi_\Set(\rho_j) = c(\rho_j)$, and so, due to Lagrange interpolation theorems, sending evaluations of $\chi_\Set$ in $t$ points $\rho_1,\dots,\rho_j$ as does Oscar in~\cite{Mins1}, is equivalent to sending $c$ !
+\item the rational function interpolation of~\cite{Mins1} can also be seen as a rational number reconstruction of Theorem~\ref{th:theo}, but for polynomials: we try to recover two polynomials $a$,$b$ (with correct bound on degrees) such that $a b^{-1} \bmod p = c' c^{-1} \bmod p$.
+Notice this means that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended gcd computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
+\end{itemize}
+We can also easily see that all the optimizations (except the ones of Section~\ref{sec:choicep} obviously) we propose also work for MTZ.
 
-TODO TODO
+We notice however a big difference between MTZ and \df for the factorization step.
+For both of them, we can simply check whether $a$ and $b$ are divisible by each of the $h_i$ and $h'_i$ (or $X-h_i$ and $X - h'_i$ for MTZ).
+With the optimization of Section~\ref{alg:div-prod-tree}, it costs $\Oapp(\frac{n}{T_k} \mu(nuT_k))$.
+But with MTZ, we can also do a direct factorization of $a$ and $b$ in time $O(T_k^3 \mu(u))$.
+
+TODO: say that we can drop this complexity to $\Oapp(T_k^\omega \mu(u))$, with $\omega$ the exponent of matrix mult. ?????
+ \url{http://www.google.fr/url?sa=t&rct=j&q=&esrc=s&source=web&cd=3&cad=rja&ved=0CDcQFjAC&url=http%3A%2F%2Freference.kfupm.edu.sa%2Fcontent%2Ff%2Fa%2Ffactoring_polynomials_over_finite_fields_120357.pdf&ei=M02ZUJWtJYGW0QWe7oDYCw&usg=AFQjCNGirX3kl2V4zJsaA9cZ0nK-lKzjDA}
+
+However, this can only decrease the overall asymptotic computational complexity of MTZ, since the computation of the redundacies is alrea TODO...
+
+
 
 \section{From File Reconciliation to File Synchronization}
 \label{sec:files}
