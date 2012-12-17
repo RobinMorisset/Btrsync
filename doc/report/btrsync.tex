@@ -1,10 +1,11 @@
 % TODO: spellcheck
+% TODO: correct figures, put algo 1/2 together, put table title above tables, put proofs in appendix, ...
 
 \documentclass{llncs}
 
 %\usepackage{fullpage}
 
-% A bit bad but we have to gain place...
+% A bit bad but we need more space !
 \usepackage{times}
 
 \sloppy
@@ -614,7 +615,7 @@ Hashing into primes is frequently needed in cryptography, independently from \df
 \label{sec:basichashprime}
 
 %A recommended implementation of $\HashPrime(F)$ is given in Algorithm \ref{alg:primes}
-A way to implement such a hash function $\HashPrime$ is to use Algorithm~\ref{alg:primes}, where $\Hash'$ is a hash function with a $u$-bit output.
+A way to implement such a hash function $\HashPrime$ is to use Algorithm~\ref{alg:primes}, where $\Hash'$ is a hash function with a $u$-bit output, as explained in~\cite{PKC:AbdBenPoi13}.
 If the output of $\Hash'$ is considered to be uniformly random, the output of $\HashPrime$ is also a uniformly random $u$-bit prime number.
 
 \begin{algorithm}[t]
@@ -635,7 +636,7 @@ We know there are roughly $\frac{2^u}{u}$ $u$-bit primes\todo{(TODO ref)}.
 Therefore, in average, we need to perform $u$ primality tests before we find a suitable $h$.
 The cost of a Miller-Rabin primality test is $\Oapp(u \mu(u))$\todo{(TODO ref)}.
 Hence, the total cost of $\HashPrime$ is $\Oapp(u^2 \mu(u))$.
-\comm{Dans un article accepté à PKC j'ai une meilleure borne pour cela, ... je crois que David voulait le citer à un moment... Antoine: je pense que c'est tout à fait opportun de donner le meilleur résultat.}
+A more precise analysis can be found in~\cite{PKC:AbdBenPoi13}.
 
 \subsubsection{Optimized Algorithm.}
 If $u$ is large enough (\eg $160$) one might % to avoid repeated file hashing by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
