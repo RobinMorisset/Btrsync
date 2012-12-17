@@ -1,20 +1,11 @@
 % TODO: spellcheck
 
-\documentclass[11pt]{llncs}
+\documentclass{llncs}
 
-\def\makeitbig{%
-\setlength{\textwidth}{15.9cm}%
-\setlength{\oddsidemargin}{.01cm}%
-\setlength{\evensidemargin}{.01cm}%
-\setlength{\textheight}{21.5cm}%
-\setlength{\topmargin}{-.25cm}%
-\setlength{\headheight}{.7cm}%
-\leftmargini 20pt     \leftmarginii 20pt%
-\leftmarginiii 20pt   \leftmarginiv 20pt%
-\leftmarginv 12pt     \leftmarginvi 12pt%
-\pagestyle{myheadings}}%
+%\usepackage{fullpage}
 
-\makeitbig
+% A bit bad but we have to gain place...
+\usepackage{times}
 
 \sloppy
 
@@ -58,11 +49,13 @@
 
 \DeclareMathOperator{\CRT}{CRT}
 
-\newcommand{\comm}[1]{\marginpar{%
-\vskip-\baselineskip %raise the marginpar a bit
-\raggedright\footnotesize
-\itshape\hrule\smallskip#1\par\smallskip\hrule}}
+%\newcommand{\comm}[1]{\marginpar{%
+%\vskip-\baselineskip %raise the marginpar a bit
+%\raggedright\footnotesize
+%\itshape\hrule\smallskip#1\par\smallskip\hrule}}
+\usepackage[textsize=footnotesize,backgroundcolor=blue!10,linecolor=black!20,shadow]{todonotes}
 \setlength{\marginparwidth}{2cm}
+\newcommand{\comm}[1]{\todo{#1}}
 
 \usepackage[bookmarks=false]{hyperref}
 \hypersetup{
@@ -72,7 +65,7 @@
     filecolor=black,
     urlcolor=black,
 }
-\usepackage{geometry}
+
 
 \begin{document}
 
@@ -193,7 +186,7 @@ where we write:
 \[ \Files \Delta \Files' = (\Files \setminus \Files') \cup (\Files' \setminus \Files). \]
 
 \subsection{Related Work on Set Reconciliation}\label{sec:related-work}
-TODO (Fabrice): this may not be the good place !! and it is important to ntoe that we go further simple set reconciliation
+\todo{TODO (Fabrice): this may not be the good place !! and it is important to ntoe that we go further simple set reconciliation}
 
 As explained in the introduction, various algorithms for set reconciliations have already been proposed in~\cite{byers,Whats,PSRec,Mins1}.
 Let us compare \df with all these algorithms.
@@ -202,9 +195,9 @@ Firstly, \df can be seen as a (independently found) number theoretical variant o
 Its transmission complexity is roughly the same, if we omit the fact that our algorithm only deal with fixed-size prime numbers, whereas theirs deal with any fixed-size bitstring.
 We discuss the computational complexity of these two algorithms in~\ref{sec:opt-MTZ} and show that they are quite close and that the optimizations we introduce can also be used with \cite{Mins1} to improve substantially its time efficiency.
 
-TODO (Fabrice): another point is that we use a global hash to check termination, whereas MTZ uses another method which is maybe less optimal ! But this is quite trivial...
+\todo{TODO (Fabrice): another point is that we use a global hash to check termination, whereas MTZ uses another method which is maybe less optimal ! But this is quite trivial...
 
-TODO: introduce $\Oapp$
+TODO: introduce $\Oapp$}
 
 Secondly, the algorithm, which we call PART-MTZ, uses MTZ as a blackbox, and which performs set reconciliation using at least about $24e$ times more bandwith (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ.
 Since this algorithm is actually not specific to MTZ, it can also be used with \df.
@@ -309,7 +302,7 @@ To extend the protocol to an arbitrary $T$, we will assume that Oscar and Neil a
 
 Formally, let us assume that $2^{2 u t_k} \le p_k < 2^{2 u t_k +1}$.
 Let us write $P_k = p_1 \cdots p_k$ and $T_k = t_1 + \cdots + t_k$.
-After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as much information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the Chinese remainder theorem (CRT) (TODO ref ?): 
+After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as much information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the Chinese remainder theorem (CRT)\todo{(TODO ref ?)}: 
 \[ S_k = \CRT(S_{k-1},P_{k-1},s_k,p_k) = S_{k-1} (p_k^{-1} \bmod P_{k-1}) p_k + s_k (P_{k-1}^{-1} \bmod p_k) P_{k-1} \bmod P_k. \]
 The full protocol is depicted in Figure~\ref{fig:complete-df}.
 Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it becomes sufficiently large to reconcile $\Set$ and $\Set'$.
@@ -498,7 +491,7 @@ We slightly change notations and write:
 We notice that, as soon as a file $F_i$ or $F'_i$ in $\Files \Delta \Files'$ does not collide with another file in one iteration of \df, then this difference between $\Files$ and $\Files'$ will be reconciled.
 In this naive analysis, we do not use the fact that such files are removed from one iteration to the next, and we just compute the probability that a file keeps colliding for $\lambda$ iterations. We will thus obtain an upper bound on the probability that at least one difference between $\Files$ and $\Files'$ has not been detected after $\lambda$ iterations (\ie, at least one false positive survives $\lambda$ iterations).
 
-Because there are are about $\frac{2^u}{u}$ $u$-bit prime numbers (TODO ref), we write $u' = u - \ln(u)$ and see $\HashPrime$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^{u'}-1\}$. Let $X_i$ be the random variable:
+Because there are are about $\frac{2^u}{u}$ $u$-bit prime numbers\todo{(TODO ref)}, we write $u' = u - \ln(u)$ and see $\HashPrime$ as a random function from $\{0,1\}^*$ to $\{0,\dots,2^{u'}-1\}$. Let $X_i$ be the random variable:
 \[
 X_i =
 \left\{
@@ -580,7 +573,7 @@ Dropping the proportionality factor $\eta (\eta-1)$ and approximating $\eta-1 \a
 \[\phi_\eta(u') = \frac{u'}{2^{u'} - \eta} \]
 
 $\phi_{10^6}(u')$ admits an optimum for $u'\approx15$.
-TODO: Fabrice: check my computations !
+\todo{TODO: Fabrice: check my computations !}
 
 \subsubsection{Possible Refinements.} The previous analyses are incomplete because of the following approximations:
 \begin{compactitem}
@@ -638,11 +631,11 @@ If the output of $\Hash'$ is considered to be uniformly random, the output of $\
 \end{algorithm}
 
 Let us analyse the time complexity of this algorithm.
-We know there are roughly $\frac{2^u}{u}$ $u$-bit primes (TODO ref).
+We know there are roughly $\frac{2^u}{u}$ $u$-bit primes\todo{(TODO ref)}.
 Therefore, in average, we need to perform $u$ primality tests before we find a suitable $h$.
-The cost of a Miller-Rabin primality test is $\Oapp(u \mu(u))$ (TODO ref).
+The cost of a Miller-Rabin primality test is $\Oapp(u \mu(u))$\todo{(TODO ref)}.
 Hence, the total cost of $\HashPrime$ is $\Oapp(u^2 \mu(u))$.
-\comm{Dans un article soumis à PKC j'ai une meilleure borne pour cela, ... je crois que David voulait le citer à un moment... Antoine: je pense que c'est tout à fait opportun de donner le meilleur résultat et de citer le papier en mettant qu'il est ``under review''. TODODAVID: Fabrice voudrait que tu lui dises comment s'y prendre pour ça. :)}
+\comm{Dans un article accepté à PKC j'ai une meilleure borne pour cela, ... je crois que David voulait le citer à un moment... Antoine: je pense que c'est tout à fait opportun de donner le meilleur résultat.}
 
 \subsubsection{Optimized Algorithm.}
 If $u$ is large enough (\eg $160$) one might % to avoid repeated file hashing by defining $\HashPrime(F)=\mbox{{\tt NextPrime}}(\Hash(F))$. 
@@ -650,7 +643,7 @@ use Algorithm~\ref{alg:scanprime} to improve efficiency at the expense of unifor
 
 Let us sketch a proof of the fact that this second algorithm performs about $\frac{\alpha}{\varphi(\alpha)}$ times fewer primality tests, where $\varphi$ is the Euler's totient function.
 Let us assume this algorithm behaves as if it chooses random $u$-bit numbers congruent to $1$ modulo $\alpha$ until finding a prime number.
-There are about $\frac{2^u}{u \varphi(\alpha)}$ $u$-bit prime numbers congruent to $1$ modulo $\alpha$ (TODO ref \url{http://fr.wikipedia.org/wiki/Th%C3%A9or%C3%A8me_de_la_progression_arithm%C3%A9tique#Version_quantitative}), and there are $\frac{2^u}{\alpha}$ $u$-bit numbers congruent to $1$ modulo $\alpha$.
+There are about $\frac{2^u}{u \varphi(\alpha)}$ $u$-bit prime numbers congruent to $1$ modulo $\alpha$(TODO ref \url{http://fr.wikipedia.org/wiki/Th%C3%A9or%C3%A8me_de_la_progression_arithm%C3%A9tique#Version_quantitative}), and there are $\frac{2^u}{\alpha}$ $u$-bit numbers congruent to $1$ modulo $\alpha$.
 Therefore, the algorithm needs to do about $\frac{2^u}{\alpha} / \frac{2^u}{u \varphi(\alpha)} = \frac{\varphi(\alpha)}{\alpha} u$ primality tests before finding a prime number, which improves over the $u$ tests required by the naive algorithm on average.
 
 One main drawback of this algorithm is that, even if the output of $\Hash'$ is assumed to be uniformly random, the output of $\HashPrime$ is not a uniformly random $u$-bit prime number.
@@ -809,8 +802,8 @@ We can use the same method for the tree product associated to any $H_j$, and the
 
 As seen in Section~\ref{sec:complete-df}, instead of using $t_1 = t_2 = \cdots = t$, we can use $t_k = 2^k t'$ (\ie double $t_k$ at each iteration).
 This increases the transmission complexity slightly, but drastically reduces the computational complexity.
+\todo{TODO: check this table and improve it ?}
 
-TODO: check this table and improve it ?
 \begin{table}[ht]
 %\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
 %\newcommand{\mcqc}[1]{\multicolumn{4}{c}{#1}}
@@ -918,7 +911,7 @@ We can notice, that in~\cite{Mins1,PSRec}, the authors do not consider the compu
 Then, if a reasonnable bound on $T$ is known, it is possible to compute one time the redundancies, and this makes the overall complexity $\Oapp(T^3 \mu(u))$ for MTZ and $\Oapp(T \mu(u))$ for PART-MTZ.
 But we cannot have such optimization with \df.
 
-TODO: maybe find something more positive ???
+\comm{TODO: maybe find something more positive ???}
 
 
 
