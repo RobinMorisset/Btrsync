@@ -23,7 +23,7 @@
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath, amsfonts, amssymb, graphicx, rotating, epsfig}
-\usepackage{verbatim,algorithm}
+\usepackage{verbatim,algorithm,paralist}
 \usepackage[noend]{algpseudocode}
 \usepackage{url,tikz,tabularx,multirow,xspace,booktabs}
 \usepackage{array,threeparttable}
@@ -97,7 +97,7 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 %\subsection*{Notations}
 %
 %Cette section est temporaire et ne sert que pour assurer des notations cohérentes le long du papier, notamment pour les indices:
-%\begin{itemize}
+%\begin{compactitem}
 %\item $i,j$: pour les fichiers/hashés $h_i$,$F_i$
 %\item $k$: pour les rounds avec changement de modulo: $p_k,c_k,s_k,C_k,S_k,t_k,T_k$
 %\item $\ell$: pour les rounds liés aux traitements des collisions
@@ -105,7 +105,7 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 %\item $\kappa$: pour une borne pour le $k$
 %\item $T_k = \sum_{j=1}^k t_j$, $T$ le nombre réel de différences, $t$ le nombre
 %  maximal accepté au cours d'un round, lorsqu'on ne présente qu'un round.
-%\end{itemize}
+%\end{compactitem}
 
 %fait: Corriger les $n$,$n'$,$\eta$,$\eta'$.
 %fait: faire commencer le $i$ à 1  PARTOUT
@@ -137,7 +137,7 @@ solutions.
 In this paper, we look at the problems of set reconciliation and file
 synchronization from a theoretical and practical perspective. Our contribution
 are as follows:
-\begin{itemize}
+\begin{compactitem}
   \item In Section~\ref{sec:dandf}, we introduce ``Divide \& Factor'', a new set
     reconciliation algorithm. \df is based on number theory: it represents the
     items to synchronize as prime numbers, accumulates information about the
@@ -146,7 +146,7 @@ are as follows:
     reconstruction.
   \item In Section~\ref{sec:trans}, we show that \df, like existing algorithms,
     has a transmission complexity which is linear in the size of the symmetric
-    difference, and discuss a possible constant factor optimization.
+    difference.%, and discuss a possible constant factor optimization.
   \item In Section~\ref{sec:hashing}, we explain how \df can be extended with
     hash functions to perform \emph{file reconciliation}, i.e., reconcile sets
     of files which do not have a fixed size. We analyze how the hash functions
@@ -166,7 +166,7 @@ are as follows:
     of file synchronization through \df, and benchmark it against \rsync. The
     results show that \btrsync has a higher computational complexity but
     transmits less data in most scenarios.
-\end{itemize}
+\end{compactitem}
 
 \section{``Divide \& Factor'' Set Reconciliation}
 \label{sec:dandf}
@@ -316,10 +316,10 @@ Note that no information is lost and that the transmitted modular knowledge abou
 Therefore, the number $\kappa$ of rounds used is the minimum number $k$ such that $T_k \ge T$.
 
 In what follows, we will focus on two following choices of $t_\ell$:
-\begin{itemize}
+\begin{compactitem}
 \item $t_1 = t_2 = \cdots = t$ for some fixed $t$, in which case $\kappa = \lceil T/t \rceil$;
 \item $t_k = 2^k t'$ for some fixed $t'$, in which case $\kappa = \lceil \log_2(T / t') \rceil$.
-\end{itemize}
+\end{compactitem}
 
 \begin{figure}
 \centering
@@ -358,17 +358,17 @@ $c_2 \gets \prod_{i=1}^n h_i \bmod p_2$    &                & $c'_2 \gets \prod_
                                   &                        & \hspace{0.2cm} then go to \text{final phase} \\
                                   &                        & \hspace{0.2cm} else continue (event $\bot_1$ occured) \\
 \midrule
-\multicolumn{3}{c}{\textit{Round 3}} \\
-$c_3 \gets \prod_{i=1}^n h_i \bmod p_3$    &                & $c'_3 \gets \prod_{i=1}^{n'} h'_i \bmod p_3$ \\
-                                  & $\Rflow{c_3}$            & \\
-                                  &                        & $s_3 \gets c'_3/c_3 \bmod p_3$ \\
-                                  &                        & $S_3 \gets \CRT(S_2,P_2,s_3,p_3)$ \\
-                                  &                        & reconstruct $a,b$ from $S_3$ (modulo $P_3$)\\
-                                  &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
-                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_3 = a$ \\
-                                  &                        & \hspace{0.2cm} then go to \text{final phase} \\
-                                  &                        & \hspace{0.2cm} else continue (event $\bot_1$ occured) \\
-\midrule
+%\multicolumn{3}{c}{\textit{Round 3}} \\
+%$c_3 \gets \prod_{i=1}^n h_i \bmod p_3$    &                & $c'_3 \gets \prod_{i=1}^{n'} h'_i \bmod p_3$ \\
+%                                  & $\Rflow{c_3}$            & \\
+%                                  &                        & $s_3 \gets c'_3/c_3 \bmod p_3$ \\
+%                                  &                        & $S_3 \gets \CRT(S_2,P_2,s_3,p_3)$ \\
+%                                  &                        & reconstruct $a,b$ from $S_3$ (modulo $P_3$)\\
+%                                  &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
+%                                  &                        & if $\prod_{h \in \SetD'} h \bmod P_3 = a$ \\
+%                                  &                        & \hspace{0.2cm} then go to \text{final phase} \\
+%                                  &                        & \hspace{0.2cm} else continue (event $\bot_1$ occured) \\
+%\midrule
  & \vdots & \\
 \midrule
 \multicolumn{3}{c}{\textit{Final phase}: Oscar obtains the new values and performs a final check } \\
@@ -389,9 +389,10 @@ if $\Hash(S') \neq H$ & & \\
 \section{Transmission Complexity}
 \label{sec:trans}
 
-This section proves that \df achieves optimal asymptotic transmission complexity and explores two strategies to reduce the size of $p$ and hence improve transmission by \emph{constant factors}.
+%This section proves that \df achieves optimal asymptotic transmission complexity and explores two strategies to reduce the size of $p$ and hence improve transmission by \emph{constant factors}.
+This section proves that \df achieves optimal asymptotic transmission complexity.
 
-\subsection{Proof of Transmission Complexity Optimality}
+%\subsection{Proof of Transmission Complexity Optimality}
 
 Assuming that there is no event $\bot_2$ (since these events happen with negligible probability), the transmission complexity of \df is as follows:
 \[  \sum_{k=1}^\kappa \log c_k + \log b + \log |\SetD'|
@@ -401,38 +402,38 @@ Assuming that there is no event $\bot_2$ (since these events happen with negligi
 where $\kappa$ is the maximum number of rounds needed.
 
 For the two choices of $t_\ell$ that we are interested in, the transmission complexity is as follows:
-\begin{itemize}
+\begin{compactitem}
 \item if $t_1 = \cdots = t$, $\kappa = \lceil T/t \rceil$, $T_\kappa = \kappa t < T+t$ and the transmission complexity is at most $\frac{5}{2} u (T+t) + \lceil T/t \rceil = O(uT)$;
 \item if $t_k = 2^k t'$, $\kappa = \lceil \log(T/t') \rceil$, $T_\kappa < 2T$ and the transmission complexity is at most $\frac{5}{2} 2uT + \lceil \log(T/t') \rceil = O(uT)$.
-\end{itemize}
+\end{compactitem}
 Though the asymptotic transmission complexity is the same for both choices, we can remark that the first one is slightly better in terms of constant factors: it may require two times less data to be exchanged.
 However, as we will see in Section~\ref{sec:doubling}, the second choice has lower computational complexity.
 
 In both cases, however, we notice that the asymptotic transmission complexity is the size of the symmetric difference of the two multisets (i.e., the number of differences times the size of an individual item). This is also the information-theoretic lower bound on the quantity of data needed to perform reconciliation. Hence, our protocol is asymptotically optimal for transmission complexity.
 
-\subsection{Probabilistic Decoding: Reducing $p$}
-\label{sec:probabilistic}
-
-This section describes a proposed improvement to \df which reduces the transmission complexity by a constant factor at the expense of a higher failure rate when performing rational number reconstruction. For simplicity, we will focus on one round of \df and denote by $p$ the current $P_\ell$. We will generate a $p$ about twice smaller than the $p$ recommended in Section~\ref{sec:basic}, namely:
-\begin{equation}
-\label{eq:eqnewp}
-2^{ut-1}\leq p < 2^{ut}.
-\end{equation}
-
-Unlike in Section~\ref{sec:basic}, we do not have a useful fixed bound for $a$ and $b$ anymore; we only have a bound for the \textit{product} $a b$: 
-\begin{equation}
-\label{eq:eqab}
-ab \leq 2^{ut}.
-\end{equation} 
-Therefore, we define a sequence of $t+1$ couples of possible bounds:
-\[\left(A_j, B_j\right)_{0 \leq j \leq t} = \left(2^{uj}, 2^{u(t-j)}\right). \]
-
-Equations~\eqref{eq:eqnewp} and~\eqref{eq:eqab} imply that there must exist at least one index $j$ such that $0 \leq a \leq A_j$ and $0 <b \leq B_j$. 
-We can therefore apply Theorem~\ref{th:theo} with $A = A_j$ and $B = B_j$: since $A_j B_j = 2^{ut} < p$, given $(A_j,B_j,p,s)$, one can recover $(a,b)$, and hence Oscar can compute $\Set'$.
-
-This variant of the protocol will roughly halve the quantity of transmitted bits with respect to Section~\ref{sec:basic}.
-The drawback is that, unlike in Section~\ref{sec:basic}, we have no guarantee that such an $(a,b)$ is unique. Namely, we could in theory stumble over an $(a',b')\neq (a,b)$ satisfying Equation~\eqref{eq:eqab} for some index $j' \neq j$. We conjecture that, when $u$ is large enough, such failures happen with negligible probability (that we do not try to estimate here), so that the expected number of bits to transfer with this variant is lower.
-In any case, thanks to the global hash $H = \Hash(\Set')$, if a failure occurs, it will be detected.
+%\subsection{Probabilistic Decoding: Reducing $p$}
+%\label{sec:probabilistic}
+%
+%This section describes a proposed improvement to \df which reduces the transmission complexity by a constant factor at the expense of a higher failure rate when performing rational number reconstruction. For simplicity, we will focus on one round of \df and denote by $p$ the current $P_\ell$. We will generate a $p$ about twice smaller than the $p$ recommended in Section~\ref{sec:basic}, namely:
+%\begin{equation}
+%\label{eq:eqnewp}
+%2^{ut-1}\leq p < 2^{ut}.
+%\end{equation}
+%
+%Unlike in Section~\ref{sec:basic}, we do not have a useful fixed bound for $a$ and $b$ anymore; we only have a bound for the \textit{product} $a b$: 
+%\begin{equation}
+%\label{eq:eqab}
+%ab \leq 2^{ut}.
+%\end{equation} 
+%Therefore, we define a sequence of $t+1$ couples of possible bounds:
+%\[\left(A_j, B_j\right)_{0 \leq j \leq t} = \left(2^{uj}, 2^{u(t-j)}\right). \]
+%
+%Equations~\eqref{eq:eqnewp} and~\eqref{eq:eqab} imply that there must exist at least one index $j$ such that $0 \leq a \leq A_j$ and $0 <b \leq B_j$. 
+%We can therefore apply Theorem~\ref{th:theo} with $A = A_j$ and $B = B_j$: since $A_j B_j = 2^{ut} < p$, given $(A_j,B_j,p,s)$, one can recover $(a,b)$, and hence Oscar can compute $\Set'$.
+%
+%This variant of the protocol will roughly halve the quantity of transmitted bits with respect to Section~\ref{sec:basic}.
+%The drawback is that, unlike in Section~\ref{sec:basic}, we have no guarantee that such an $(a,b)$ is unique. Namely, we could in theory stumble over an $(a',b')\neq (a,b)$ satisfying Equation~\eqref{eq:eqab} for some index $j' \neq j$. We conjecture that, when $u$ is large enough, such failures happen with negligible probability (that we do not try to estimate here), so that the expected number of bits to transfer with this variant is lower.
+%In any case, thanks to the global hash $H = \Hash(\Set')$, if a failure occurs, it will be detected.
 
 \section{From Set Reconciliation to File Reconciliation}
 \label{sec:hashing}
@@ -473,14 +474,14 @@ At each iteration, the parties will detect files in $\Files \Delta \Files'$ whos
 We still need a condition to stop ``laundering'' files, \ie, a condition to ensure that there are no more differences hidden by collisions.
 Before we describe this condition, let us first spell out the three kinds of collisions which can appear over an iteration $\ell$ of \df:
 
-\begin{enumerate}
+\begin{compactenum}
 \item Collisions between common files of Oscar and Neil, \ie, collisions in $\Files \cap \Files'$. These collisions are never a problem, because they cannot obliviate any differences.
 \item Collisions between a common file of Oscar and Neil, and a file not in common, \ie, collisions between $\Files \cap \Files'$ and $\Files \Delta \Files'$;
 These collisions can be easily detected by Oscar or Neil, at the end of iteration $\ell$ of \df. 
 However, given a $h$ in $\Set \Delta \Set'$, if there is a collision of this kind involving $h$, we will not be able to find the file in $\Files \Delta \Files'$ which matches $h$. For this reason, another iteration of \df will be necessary to reconcile this file.
 \item Collisions between files not in common, \ie, files in $\Files \Delta \Files'$.
   Such a collision obliviates a real difference between $\Files$ and $\Files'$ and cannot be detected unless we perform another iteration. This is why we need a condition to detect that no more collisions of this kind exist and stop the laundering.
-\end{enumerate}
+\end{compactenum}
 
 We propose the following method to check for termination. We assume that we have a collision-resistant hash function $\Hash$.
 Before the first \emph{iteration}, Neil sends a global hash $H' = \Hash((\Hash(F'_1),\dots,\Hash(F'_{n'})))$.
@@ -582,12 +583,12 @@ $\phi_{10^6}(u')$ admits an optimum for $u'\approx15$.
 TODO: Fabrice: check my computations !
 
 \subsubsection{Possible Refinements.} The previous analyses are incomplete because of the following approximations:
-\begin{itemize}
+\begin{compactitem}
 
 \item We used a fixed $u$ in all rounds. Nothing forbids using a different $u_\ell$ at each iteration, or even fine-tuning the $u_\ell$'s adaptively as a function of the laundry's effect on the progressively reconciliated multisets..
 
 \item \comm{TODODAVID: Fabrice et moi ne comprenons pas cet item.} Our analysis treats $t$ as a constant, but large $t$ values increase $p$ and hence the number of potential files detected as different per iteration - an effect disregarded \textit{supra}.
-\end{itemize}
+\end{compactitem}
 
 A different approach is to optimize $t$ and $u$ experimentally, \eg, using the open source \df program \btrsync developed by the authors (\cf Section~\ref{sec:program}).
 
@@ -775,8 +776,8 @@ Thus, all these $\frac{n}{t}$ products can be computed in $\Oapp(\frac{n}{t} \mu
 The same technique applies to factorization. We explain the process with $a$, though the same process applies \textit{ne variatur} to $b$.
 After computing the tree product, we can compute the residues of $a$ modulo $H_1$.
 Then we can compute the residues of $a \bmod{H_1}$ modulo the two children $\pi_2$ and $\pi_3$ of $H_1 = \pi_1$ in the product tree (depicted in Figure~\ref{fig:prod-tree}), and so on. Intuitively, we descend the product tree doing modulo reduction. At the end (\ie, as we reach the leaves), we obtain the residues of $a$ modulo each of the $h_i$ ($i \in \{1,\dots,t\}$).
-%This is described in Algorithm \ref{fig:div-prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
-This is described in Algorithm \ref{fig:div-prod-tree}.
+%This is described in Algorithm \ref{alg:prod-tree} and illustrated in Figure \ref{fig:div-prod-tree}.
+This is described in Algorithm \ref{alg:prod-tree}.
 We can use the same method for the tree product associated to any $H_j$, and the residues of $a$ modulo each of the $h_i$ ($i \in \{(j-1)t+1,\dots,jt\}$) for any $j$, \ie, $a$ modulo each of the $h_i$ for any $i$. Complexity is $\Oapp(\mu(u t))$ for each $j$, which amounts to a total complexity of $\Oapp(\frac{n}{t} \mu(u t))$.
 
 \begin{algorithm}
@@ -893,16 +894,16 @@ In this section, we only consider the complete \df protocol for set reconciliati
 As explained in Section~\ref{sec:related-work}, MTZ and \df are very close:
 MTZ works the same way as \df but with polynomials.
 More precisely, we can see MTZ as \df, where:
-\begin{itemize}
+\begin{compactitem}
 \item we synchronize monomic polynomial $X-h_i$ and $X-h'_i$ over a field $\mathbb{F}_q$ (with $q$ a $(u+1)$-bit prime number or power of prime number), instead of $u$-bit prime numbers $h_i$ and $h'_i$;
 \item $p_k$ are square-free polynomials with are co-prime together and also co-prime with all $X-h_i$ and $X-h'_i$, instead of an numbers which are co-prime together and co-prime with all $h_i$ and $h'_i$ (for all the variants in~\ref{sec:choicep} except the last one);
-\end{itemize}
+\end{compactitem}
 because, we have (in the basic version with only one round, for the sake of simplicity):
-\begin{itemize}
+\begin{compactitem}
 \item if we write $p = (X-\rho_1) \cdots (X-\rho_t)$, $c = \prod_{i=1}^n (X-h_i) \bmod p_k$ and $\chi_\Set = \prod_{i=1}^n (X-h_i)$, $\chi_\Set(\rho_j) = c(\rho_j)$, and so, due to Lagrange interpolation theorems, sending evaluations of $\chi_\Set$ in $t$ points $\rho_1,\dots,\rho_j$ as does Oscar in~\cite{Mins1}, is equivalent to sending $c$ !
 \item the rational function interpolation of~\cite{Mins1} can also be seen as a rational number reconstruction of Theorem~\ref{th:theo}, but for polynomials: we try to recover two polynomials $a$,$b$ (with correct bound on degrees) such that $a b^{-1} \bmod p = c' c^{-1} \bmod p$.
 Notice this means that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended gcd computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
-\end{itemize}
+\end{compactitem}
 We can also easily see that all the optimizations (except the ones of Section~\ref{sec:choicep} obviously) we propose also work for MTZ.
 
 We notice however a big difference between MTZ and \df for the factorization step.
@@ -1063,9 +1064,9 @@ described in Section~\ref{sec:comp}: it implements doubling
 (Section~\ref{sec:doubling}) and uses powers of small primes for the $p_k$
 (variant~2 of Section~\ref{sec:choicep}), but does not implement product trees
 (Section~\ref{sec:algo-opt-prod-trees}) or use the prime hashing scheme
-(Section~\ref{sec:hashprime}). Besides, we did not implement the two
-proposed improvements in transmission complexity for set reconciliation or file reconciliation 
-(Sections~\ref{sec:probabilistic} and~\ref{sec:shortu}).
+(Section~\ref{sec:hashprime}).
+%Besides, we did not implement the two proposed improvements in transmission complexity for set reconciliation or file reconciliation (Sections~\ref{sec:probabilistic} and~\ref{sec:shortu}).
+Besides, we did not implement the proposed improvement in transmission complexity for file reconciliation (Section~\ref{sec:shortu}).
 
 As for file synchronization (Section~\ref{sec:files}), the only metadata managed by
 \btrsync is the file path (name and location). Other kinds of metadata
@@ -1117,10 +1118,10 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 
 %\section{ToDo}
 
-%\begin{itemize}
+%\begin{compactitem}
 % plus tard: \item Fabrice: comparer nos perfs avec http://ipsit.bu.edu/programs/reconcile/ ? ou pas ?
 % plus tard: \item Fabrice: Comparaison théorique et bien insister sur ce que l'on apporte réellement.
-%\end{itemize}
+%\end{compactitem}
 
 \nocite{rsync}
 \nocite{wagner}
