@@ -1,6 +1,7 @@
 % TODO: spellcheck
 % TODO: correct figures, put algo 1/2 together, put table title above tables, put proofs in appendix, ...
 
+% synthetic -> syn[_shuf]
 \documentclass{llncs}
 
 %\usepackage{fullpage}
@@ -618,7 +619,10 @@ Hashing into primes is frequently needed in cryptography, independently from \df
 A way to implement such a hash function $\HashPrime$ is to use Algorithm~\ref{alg:primes}, where $\Hash'$ is a hash function with a $u$-bit output, as explained in~\cite{PKC:AbdBenPoi13}.
 If the output of $\Hash'$ is considered to be uniformly random, the output of $\HashPrime$ is also a uniformly random $u$-bit prime number.
 
-\begin{algorithm}[t]
+\begin{figure}[t]
+\centering
+\begin{minipage}[t]{0.49\textwidth}
+\begin{algorithm}[H]
   \caption{Possible implementation of $\HashPrime(F)$}
   \label{alg:primes}
   \begin{algorithmic}[1]
@@ -630,6 +634,21 @@ If the output of $\Hash'$ is considered to be uniformly random, the output of $\
 \State \Return{$h$}
   \end{algorithmic}
 \end{algorithm}
+\end{minipage}
+\begin{minipage}[t]{0.49\textwidth}
+\begin{algorithm}[H]
+  \caption{Fast nonuniform implementation of $\HashPrime(F)$}
+  \label{alg:scanprime}
+  \begin{algorithmic}[1]
+  \State $h =\alpha \left\lfloor\frac{\Hash'(F)}{\alpha}\right\rfloor+1$
+\While{$h$ is composite}
+\State $h = h-\alpha$
+\EndWhile
+\State \Return{$h$}
+  \end{algorithmic}
+\end{algorithm}
+\end{minipage}
+\end{figure}
 
 Let us analyse the time complexity of this algorithm.
 We know there are roughly $\frac{2^u}{u}$ $u$-bit primes\todo{(TODO ref)}.
@@ -650,17 +669,6 @@ Therefore, the algorithm needs to do about $\frac{2^u}{\alpha} / \frac{2^u}{u \v
 One main drawback of this algorithm is that, even if the output of $\Hash'$ is assumed to be uniformly random, the output of $\HashPrime$ is not a uniformly random $u$-bit prime number.
 This slightly increases the number of collisions of $\HashPrime$ and $u$ has to be increased subsequently.
 
-\begin{algorithm}[t]
-  \caption{Fast nonuniform implementation of $\HashPrime(F)$}
-  \label{alg:scanprime}
-  \begin{algorithmic}[1]
-  \State $h =\alpha \left\lfloor\frac{\Hash'(F)}{\alpha}\right\rfloor+1$
-\While{$h$ is composite}
-\State $h = h-\alpha$
-\EndWhile
-\State \Return{$h$}
-  \end{algorithmic}
-\end{algorithm}
 
 \subsection{Adapting $p_k$}
 \label{sec:choicep}
@@ -1077,12 +1085,12 @@ were performed without any network transfer, by synchronizing two folders on
 the same host. Hence, time measurements mostly represent the {\sc cpu} cost of
 the synchronization.
 
-Results are given in Table \ref{tab:results}. In general, \btrsync spent more time than \rsync on computation (especially when the number of files is large, which is typically seen in the experiments involving {\tt synthetic}). Transmission results, however, turn out to be favorable to \btrsync.
+Results are given in Table \ref{tab:results}. In general, \btrsync spent more time than \rsync on computation (especially when the number of files is large, which is typically seen in the experiments involving {\tt syn}). Transmission results, however, turn out to be favorable to \btrsync.
 
 In the trivial experiments where either Oscar or Neil have no data at all, \rsync outperforms \btrsync. This is especially visible when Neil has no data: \rsync immediately notices that there is nothing to transfer, but \btrsync engages in information transfers to determine the symmetric
 difference.
 
-On non-trivial tasks, however, \btrsync outperforms \rsync. This is the case of the {\tt synthetic} datasets, where \btrsync does not have to transfer
+On non-trivial tasks, however, \btrsync outperforms \rsync. This is the case of the {\tt syn} datasets, where \btrsync does not have to transfer
 information about all unmodified files, and even more so in the case where there are no modifications at all. For Firefox source code datasets, \btrsync saves a very small amount of bandwidth, presumably because of unmodified files. For the \btrsync source code dataset, we notice that \btrsync, unlike \rsync, was able to detect the move and avoid retransferring the moved folder.
 
 
@@ -1349,9 +1357,9 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 \begin{center}
 \begin{tabular}{ll}\toprule
 ~~{\bf Directory}              ~~&~~{\bf Description}\\\midrule
-~~{\tt synthetic}              ~~&~~A directory containing 1000 very small files containing~~\\
+~~{\tt syn}              ~~&~~A directory containing 1000 very small files containing~~\\
 ~~                             ~~&~~the numbers $1,2,\ldots,1000$. \\
-~~{\tt synthetic\_shuffled}    ~~&~~{\tt synthetic} with:\\
+~~{\tt syn\_shuf}    ~~&~~{\tt syn} with:\\
                              ~~& ~~~~~10 deleted files\\
                              ~~& ~~~~~10 renamed files \\
                              ~~& ~~~~~10 modified files \\
