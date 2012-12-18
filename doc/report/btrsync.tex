@@ -8,6 +8,8 @@
 
 % A bit bad but we need more space !
 \usepackage{times}
+%\usepackage[small,compact]{titlesec}
+%\renewcommand{\baselinestretch}{0.90}
 
 \sloppy
 
@@ -260,7 +262,7 @@ The basic protocol is depicted in Figure~\ref{fig:basic-df}.
 \begin{figure}
 \centering
 %\setlength{\tabcolsep}{6pt}
-\begin{tabular}{lcl}
+\begin{tabular}{p{\dimexpr 0.4\linewidth-3\tabcolsep}cp{\dimexpr 0.4\linewidth-3\tabcolsep}}
 \toprule
 \textbf{Oscar}                    &                        & \textbf{Neil}\\
 \midrule
@@ -319,7 +321,7 @@ In what follows, we will focus on two following choices of $t_\ell$:
 \begin{figure}
 \centering
 %\setlength{\tabcolsep}{6pt}
-\begin{tabular}{p{7cm}cp{7cm}}
+\begin{tabular}{p{\dimexpr 0.4\linewidth-3\tabcolsep}cp{\dimexpr 0.4\linewidth-3\tabcolsep}}
 \toprule
 \textbf{Oscar}                    &                                        & \textbf{Neil}\\
 \midrule
@@ -372,7 +374,8 @@ $c_2 \gets \prod_{i=1}^n h_i \bmod p_2$    &                & $c'_2 \gets \prod_
 $\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i \}$ & & \\
 compute $S'$ from $S$, $\SetD$ and $\SetD'$ & & \\
 if $\Hash(S') \neq H$ & & \\
-\hspace{0.2cm} then go back to Main phase (event $\bot_2$ occured) & & \\
+\hspace{0.2cm} then go back to Main phase && \\
+\hspace{0.4cm} (event $\bot_2$ occured) & & \\
 \hspace{0.2cm} else the protocol is complete. & & \\
 \bottomrule
 \end{tabular}\vspace{-0.25cm} % why the hell do we need that?!
@@ -816,8 +819,11 @@ This increases the transmission complexity slightly, but drastically reduces the
 \begin{table}[ht]
 %\newcommand{\mcdc}[1]{\multicolumn{2}{c}{#1}}
 %\newcommand{\mcqc}[1]{\multicolumn{4}{c}{#1}}
+  \centering
+  \caption{Protocol complexity synopsis}
+  \label{tab:workload}
  \begin{threeparttable}
-  \begin{tabularx}{\textwidth}{lXC{3cm}C{3cm}p{2.8cm}}
+  \begin{tabularx}{\textwidth}{lXC{3cm}C{3cm}l}
 \toprule
 {\bf \hfill Entity \hfill \null} & {\bf \hfill Computation \hfill \null} &  \multicolumn{2}{c}{{\bf Complexity in $\Oapp$ of}} & {\bf \hfill Optimization \hfill \null} \\
 \cmidrule(lr){3-4}
@@ -832,7 +838,7 @@ Both  & computation of $h_i$ and $h'_i$
 Both  & compute redundancies $c_k$ and $c'_k$ 
       & $n \cdot \mu(ut_k)$ 
       & $\frac{n}{t_k} \cdot \mu(ut_k)$
-      & product trees (\ref{sec:algo-opt-prod-trees}) \\
+      & prod.\ trees (\ref{sec:algo-opt-prod-trees}) \\
 Neil  & compute ${s_k = c'_k/c_k}$\tnote{c} or ${S_k = C'_k / C_k}$\tnote{d}
       & $\mu(uT_k)$
       & $\mu(uT_k)$
@@ -840,7 +846,7 @@ Neil  & compute ${s_k = c'_k/c_k}$\tnote{c} or ${S_k = C'_k / C_k}$\tnote{d}
 Neil  & compute $S_k$ from $S_{k-1}$ and $s_k$ (CRT)\tnote{c}
       & $\mu(u T_k)$ 
       & n/a
-      & use $p_k = 2^{ut_k}$ (\ref{sec:choicep}) \\
+      & $p_k = 2^{ut_k}$ (\ref{sec:choicep}) \\
 Neil  & find $a_k,b_k$ such that ${S_k = a_k/b_k \bmod P_k}$\tnote{e}
       & $\mu(u T_k)$
       & $\mu(u T_k)$
@@ -848,13 +854,13 @@ Neil  & find $a_k,b_k$ such that ${S_k = a_k/b_k \bmod P_k}$\tnote{e}
 Neil  & factor $a_k$
       & $n \cdot \mu(uT_k)$ 
       & $\frac{n}{T_k} \cdot \mu(uT_k)$
-      & product trees (\ref{sec:algo-opt-prod-trees})  \\
+      & prod.\ trees (\ref{sec:algo-opt-prod-trees})  \\
 \midrule
       & \textit{Last round} \\
 Oscar & factor $b_k$
       & $n \cdot \mu(ut_k)$ 
       & $\frac{n}{t_k} \cdot \mu(ut_k)$
-      & product trees (\ref{sec:algo-opt-prod-trees}) \\
+      & prod.\ trees (\ref{sec:algo-opt-prod-trees}) \\
 \midrule
       & \textbf{overwhelming complexity}
       & $\sum_{k=1}^\kappa n \cdot \mu(ukt) + n u^2 \cdot \mu(u)$
@@ -877,9 +883,7 @@ Oscar & factor $b_k$
     \item[f] and previous optimizations\smallskip
   \end{tablenotes}
  \end{threeparttable}
- \rule{\textwidth}{1pt}
-  \caption{Protocol complexity synopsis}
-  \label{tab:workload}
+ %\rule{\textwidth}{1pt}
 \end{table}
 
 \subsection{Summary of the Optimizations}
@@ -1354,7 +1358,9 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 %Tables~\ref{tab:benchdirec}, \ref{tab:rsyncopt} and~\ref{tab:results}.
 
 \begin{table}
-\begin{center}
+\centering
+  \caption{Test directories}
+  \label{tab:benchdirec}
 \begin{tabular}{ll}\toprule
 ~~{\bf Directory}              ~~&~~{\bf Description}\\\midrule
 ~~{\tt syn}              ~~&~~A directory containing 1000 very small files containing~~\\
@@ -1365,18 +1371,18 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
                              ~~& ~~~~~10 modified files \\
 ~~{\tt source}                 ~~& ~~A snapshot of \btrsync's own source tree \\
 ~~{\tt source\_moved}          ~~& ~~{\tt source} with one big folder (a few megabits) renamed.~~\\
-~~{\tt firefox-13.0}           ~~& ~~The source archive of Mozilla Firefox 13.0.\\
-~~{\tt firefox-13.0.1}         ~~& ~~The source archive of Mozilla Firefox 13.0.1\\
+~~{\tt ff-13.0}           ~~& ~~The source archive of Mozilla Firefox 13.0.\\
+~~{\tt ff-13.0.1}         ~~& ~~The source archive of Mozilla Firefox 13.0.1\\
 ~~{\tt empty}                  ~~& ~~An empty folder.\\\bottomrule
 \end{tabular}\smallskip
-  \caption{Test directories}
-  \label{tab:benchdirec}
-\end{center}
 \end{table}
 
 \begin{table}
-  \begin{tabular}{p{\dimexpr 0.25\linewidth-2\tabcolsep} p{\dimexpr
-    0.75\linewidth-2\tabcolsep}}
+  \centering
+  \caption{Options used when benchmarking \rsync}
+  \label{tab:rsyncopt}
+  \begin{tabular}{p{\dimexpr 0.3\linewidth-2\tabcolsep} p{\dimexpr
+    0.7\linewidth-2\tabcolsep}}
     \toprule
     $\blacktriangleright$ {\tt --delete} & Delete existing files on Oscar which
     do not exist on Neil like \btrsync does.\\
@@ -1393,11 +1399,12 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
     transmitted during \btrsync's own negotiations.\\
     \bottomrule
   \end{tabular}\smallskip
-  \caption{Options used when benchmarking \rsync}
-  \label{tab:rsyncopt}
 \end{table}
 
 \begin{table}
+  \centering
+  \caption{Experimental results. Synchronization is performed \textit{from} Neil \textit{to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes, {\tt rs} and {\tt bt} denote {\tt rsync} and {\tt btrsync}, and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between \rsync and \btrsync. The last two columns show timing results on an Intel Core i3-2310M CPU clocked at 2.10 Ghz.}
+  \label{tab:results}
   \setlength{\tabcolsep}{3pt}
   \begin{tabularx}{\textwidth}{ll X r r r r r r X r r }
     \toprule
@@ -1409,9 +1416,6 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
     \input{results.tex}
     \bottomrule
   \end{tabularx}\smallskip
-
-  \caption{Experimental results. Synchronization is performed \textit{from} Neil \textit{to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes, {\tt rs} and {\tt bt} denote {\tt rsync} and {\tt btrsync}, and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between \rsync and \btrsync. The last two columns show timing results on an Intel Core i3-2310M CPU clocked at 2.10 Ghz.}
-  \label{tab:results}
 \end{table}
 
 
