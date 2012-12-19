@@ -115,7 +115,7 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 \maketitle
 
 \begin{abstract}
-  This work revisits \textit{set reconciliation}, the problem of synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new reconciliation protocol called ``Divide \& Factor'' (\df), based on number theory, which achieves optimal asymptotic transmission complexity like prior proposals. We study the computational complexity of \df in detail for multiple alternative design choices. We then study the problem of synchronizing sets of variable-size files using hash functions, and analyze how the hash size should be chosen. We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync transmits much less data at the expense of a small computational overhead.
+  This work revisits \textit{set reconciliation}, the problem of synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new reconciliation protocol called ``Divide \& Factor'' (\df), based on number theory, which achieves optimal asymptotic transmission complexity like existing algorithms for this task. We study the computational complexity of \df in detail for multiple alternative design choices. We then study the problem of synchronizing sets of variable-size files using hash functions. We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync transmits much less data at the expense of a small computational overhead.
 \end{abstract}
 
 %\subsection*{Notations}
@@ -192,6 +192,33 @@ are as follows:
     transmits less data in most scenarios.
 \end{compactitem}
 
+\section{Related Work on Set Reconciliation}
+\label{sec:related-work}
+
+Various algorithms for set reconciliation have already been proposed in~\cite{byers, Whats, PSRec, Mins1}.
+Let us compare \df with these algorithms.
+
+Firstly, \df can be seen as a (independently found) number theoretical variant of the polynomial based algorithm of Minsky, Trachtenberg and Zippel in~\cite{Mins1} (named MTZ in the sequel).
+Its transmission complexity is roughly the same, if we omit the fact that our algorithm only deal with fixed-size prime numbers, whereas theirs deal with any fixed-size bitstring.
+We discuss the computational complexity of these two algorithms in~\ref{sec:opt-MTZ} and show that they are quite close and that the optimizations we introduce can also be used with \cite{Mins1} to improve substantially its time efficiency.
+\todo{TODO (Fabrice): another point is that we use a global hash to check termination, whereas MTZ uses another method which is maybe less optimal ! But this is quite trivial...
+
+TODO: introduce $\Oapp$}
+
+Secondly, the algorithm, which we call PART-MTZ, uses MTZ as a blackbox, and which performs set reconciliation using at least about $24e$ times more bandwith (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ.
+Since this algorithm is actually not specific to MTZ, it can also be used with \df.
+Let us call PART-\df this new algorithm.
+PART-\df and PART-MTZ have roughly the same transmission complexity.
+We compare their computational complexity in~\ref{sec:opt-MTZ}.
+
+Finally, let us compare \df and MTZ with the algorithms described in~\cite{Whats} and~\cite{byers}, which we call DD and ART.
+In~\cite{Whats}, the authors compared MTZ, DD and ART.
+Due to the fact MTZ and \df have roughly the same transmission complexity and computational complexity, this comparison is still valid when we replace MTZ by \df.
+It shows that MTZ and \df use less bandwidth than DD (by a constant factor), and that it uses a lot less bandwidth than ART, when the number of differences $T$ is small enough (less than 10\% of the size of $\Set \cup \Set'$).
+Concerning the computational complexity, it shows that MTZ and \df without any of the optimizations introduced in~\ref{sec:comp} are slower than DD.
+The comparison of the time efficiency of PART-MTZ, PART-\df and optimized MTZ and \df (with optimizations in~\ref{sec:comp}) seems to be promising and is left as future work.
+
+
 \section{``Divide \& Factor'' Set Reconciliation}
 \label{sec:dandf}
 
@@ -213,33 +240,6 @@ Let us write $\Set = \{h_1,\dots,h_n\}$ and $\Set' = \{h'_1,\dots,h'_{n'}\}$, su
 Let $\SetD = \Set \setminus \Set'$ be the values deleted in Neil's version (compared to Oscar's version), and $\SetD' = \Set' \setminus \Set$ be the values added in Neil's version, with the adequate multiplicities.
 Let $T = \# \SetD + \# \SetD' = \# \left( \Files \Delta \Files' \right)$ be the number of differences between $\Set$ and $\Set'$, where we write
 $ \Files \Delta \Files' = (\Files \setminus \Files') \cup (\Files' \setminus \Files)$.
-
-\subsection{Related Work on Set Reconciliation}\label{sec:related-work}
-
-As explained in the introduction, various algorithms for set reconciliations have already been proposed in~\cite{byers,Whats,PSRec,Mins1}.
-Let us compare \df with all these algorithms.
-\todo{TODO (Fabrice): this may not be the good place !! and it is important to ntoe that we go further simple set reconciliation}
-
-
-Firstly, \df can be seen as a (independently found) number theoretical variant of the polynomial based algorithm of Minsky, Trachtenberg and Zippel in~\cite{Mins1} (named MTZ in the sequel).
-Its transmission complexity is roughly the same, if we omit the fact that our algorithm only deal with fixed-size prime numbers, whereas theirs deal with any fixed-size bitstring.
-We discuss the computational complexity of these two algorithms in~\ref{sec:opt-MTZ} and show that they are quite close and that the optimizations we introduce can also be used with \cite{Mins1} to improve substantially its time efficiency.
-\todo{TODO (Fabrice): another point is that we use a global hash to check termination, whereas MTZ uses another method which is maybe less optimal ! But this is quite trivial...
-
-TODO: introduce $\Oapp$}
-
-Secondly, the algorithm, which we call PART-MTZ, uses MTZ as a blackbox, and which performs set reconciliation using at least about $24e$ times more bandwith (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ.
-Since this algorithm is actually not specific to MTZ, it can also be used with \df.
-Let us call PART-\df this new algorithm.
-PART-\df and PART-MTZ have roughly the same transmission complexity.
-We compare their computational complexity in~\ref{sec:opt-MTZ}.
-
-Finally, let us compare \df and MTZ with the algorithms described in~\cite{Whats} and~\cite{byers}, which we call DD and ART.
-In~\cite{Whats}, the authors compared MTZ, DD and ART.
-Due to the fact MTZ and \df have roughly the same transmission complexity and computational complexity, this comparison is still valid when we replace MTZ by \df.
-It shows that MTZ and \df use less bandwidth than DD (by a constant factor), and that it uses a lot less bandwidth than ART, when the number of differences $T$ is small enough (less than 10\% of the size of $\Set \cup \Set'$).
-Concerning the computational complexity, it shows that MTZ and \df without any of the optimizations introduced in~\ref{sec:comp} are slower than DD.
-The comparison of the time efficiency of PART-MTZ, PART-\df and optimized MTZ and \df (with optimizations in~\ref{sec:comp}) seems to be promising and is left as future work.
 
 
 \subsection{Basic Protocol with Bounded $T$}
