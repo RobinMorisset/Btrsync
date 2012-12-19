@@ -192,31 +192,6 @@ are as follows:
     transmits less data in most scenarios.
 \end{compactitem}
 
-\section{Related Work on Set Reconciliation}
-\label{sec:related-work}
-
-In this section, we compare \df with existing algorithms for set reconciliation.
-
-\df can be seen as a independently found number-theoretical variant of the polynomial-based algorithm of Minsky, Trachtenberg and Zippel in~\cite{Mins1} (named MTZ in the sequel).
-\df and MTZ have roughly the same transmission complexity, if we omit the fact that our algorithm only deals with fixed-size prime numbers, whereas their algorithm deal with any fixed-size bitstring.
-We discuss the computational complexity of these two algorithms in~\ref{sec:opt-MTZ}: we show that they are quite close and that the optimizations we introduce can also be used with \cite{Mins1} to improve substantially its time efficiency.
-\todo{TODO (Fabrice): another point is that we use a global hash to check termination, whereas MTZ uses another method which is maybe less optimal ! But this is quite trivial...
-
-TODO: introduce $\Oapp$}
-
-Secondly, the algorithm, which we call PART-MTZ, uses MTZ as a blackbox, and which performs set reconciliation using at least about $24e$ times more bandwith (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ.
-Since this algorithm is actually not specific to MTZ, it can also be used with \df.
-Let us call PART-\df this new algorithm.
-PART-\df and PART-MTZ have roughly the same transmission complexity.
-We compare their computational complexity in~\ref{sec:opt-MTZ}.
-
-Finally, let us compare \df and MTZ with the algorithms described in~\cite{Whats} and~\cite{byers}, which we call DD and ART.
-In~\cite{Whats}, the authors compared MTZ, DD and ART.
-Due to the fact MTZ and \df have roughly the same transmission complexity and computational complexity, this comparison is still valid when we replace MTZ by \df.
-It shows that MTZ and \df use less bandwidth than DD (by a constant factor), and that it uses a lot less bandwidth than ART, when the number of differences $T$ is small enough (less than 10\% of the size of $\Set \cup \Set'$).
-Concerning the computational complexity, it shows that MTZ and \df without any of the optimizations introduced in~\ref{sec:comp} are slower than DD.
-The comparison of the time efficiency of PART-MTZ, PART-\df and optimized MTZ and \df (with optimizations in~\ref{sec:comp}) seems to be promising and is left as future work.
-
 
 \section{``Divide \& Factor'' Set Reconciliation}
 \label{sec:dandf}
@@ -602,41 +577,60 @@ Oscar & factor $b_k$
 
 The asymptotic computational complexity that can be achieved with the optimizations described in this section is described in the fourth column of Table~\ref{tab:workload}.
 
-\subsection{Comparison with MTZ}\label{sec:opt-MTZ}
-
-TODO: add a sentence at the beginning of the section to introduce this subsection
 
 
-In this section, we only consider the complete \df protocol for set reconciliation (and so forget about the complexity of the computation of $h_i$ and $h'_i$), and we compare the computational complexity of \df with the one of MTZ.
+\section{Related Work on Set Reconciliation}
+\label{sec:related-work}
 
-As explained in Section~\ref{sec:related-work}, MTZ and \df are very close:
-MTZ works the same way as \df but with polynomials.
-More precisely, we can see MTZ as \df, where:
+In this section, we compare \df with existing algorithms for set reconciliation.
+Note that this section is not concerned about the file reconciliation and file
+synchronization problems.
+
+\paragraph{The MTZ algorithm.}
+An existing set reconciliation algorithm achieving linear transmission
+complexity is the one by Minsky, Trachtenberg and Zippel in~\cite{Mins1} (which
+we call MTZ). In contrast with MTZ which is based on polynomials, our
+independently found \df algorithm is based on number theory.
+\df and MTZ have roughly the same transmission complexity, if we omit the fact
+that \df only deals with fixed-size prime numbers, whereas MTZ deals with any fixed-size bitstring. The improved algorithm from~\cite{Mins1} (TODOfabrice: is it really from this reference? could you indicate more precisely which algorithm is MTZ and which one is PART-MTZ?) (which we call PART-MTZ) is based on MTZ: it requires at least about $24e$ times more bandwidth (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ. As PART-MTZ uses MTZ as a blackbox, we can use the same construction with \df, yielding an algorithm that we call PART-\df. PART-\df and PART-MTZ have roughly the same transmission complexity.
+
+\paragraph{Complexity of MTZ and \df.}
+In this section, we only consider the complete \df protocol for set reconciliation: we therefore do not take the complexity of the computation of $h_i$ and $h'_i$ into account. Let us compare the computational complexities of \df and MTZ.
+
+The main differences of MTZ compared to \df are the following:
 \begin{compactitem}
-\item we synchronize monomic polynomial $X-h_i$ and $X-h'_i$ over a field $\mathbb{F}_q$ (with $q$ a $(u+1)$-bit prime number or power of prime number), instead of $u$-bit prime numbers $h_i$ and $h'_i$;
-\item $p_k$ are square-free polynomials with are co-prime together and also co-prime with all $X-h_i$ and $X-h'_i$, instead of an numbers which are co-prime together and co-prime with all $h_i$ and $h'_i$ (for all the variants in~\ref{sec:choicep} except the last one);
+\item we synchronize monomic polynomials $X-h_i$ and $X-h'_i$ over a field $\mathbb{F}_q$ (with $q$ a $(u+1)$-bit primary number), instead of $u$-bit prime numbers $h_i$ and $h'_i$;
+\item $p_k$ are square-free polynomials with are co-prime together and also co-prime with all $X-h_i$ and $X-h'_i$, instead of numbers which are co-prime together and co-prime with all $h_i$ and $h'_i$ (for all the variants in Section~\ref{sec:choicep} except the last one);
 \end{compactitem}
-because, we have (in the basic version with only one round, for the sake of simplicity):
+
+Indeed, in the basic version with one round, we have:
 \begin{compactitem}
-\item if we write $p = (X-\rho_1) \cdots (X-\rho_t)$, $c = \prod_{i=1}^n (X-h_i) \bmod p_k$ and $\chi_\Set = \prod_{i=1}^n (X-h_i)$, $\chi_\Set(\rho_j) = c(\rho_j)$, and so, due to Lagrange interpolation theorems, sending evaluations of $\chi_\Set$ in $t$ points $\rho_1,\dots,\rho_j$ as does Oscar in~\cite{Mins1}, is equivalent to sending $c$ !
-\item the rational function interpolation of~\cite{Mins1} can also be seen as a rational number reconstruction of Theorem~\ref{th:theo}, but for polynomials: we try to recover two polynomials $a$,$b$ (with correct bound on degrees) such that $a b^{-1} \bmod p = c' c^{-1} \bmod p$.
-Notice this means that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended gcd computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
+\item If we write $p = (X-\rho_1) \cdots (X-\rho_t)$, $c = \prod_{i=1}^n (X-h_i) \bmod p_k$ and $\chi_\Set = \prod_{i=1}^n (X-h_i)$, $\chi_\Set(\rho_j) = c(\rho_j)$, and so, due to Lagrange interpolation theorems, sending evaluations of $\chi_\Set$ in $t$ points $\rho_1,\dots,\rho_j$ as does Oscar in~\cite{Mins1}, is equivalent to sending $c$.
+\item The rational function interpolation of~\cite{Mins1} can also be seen as a rational number reconstruction of Theorem~\ref{th:theo}, but for polynomials: we try to recover two polynomials $a$,$b$ (with correct bound on degrees) such that $a b^{-1} \bmod p = c' c^{-1} \bmod p$.
+Notice that this implies that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended gcd computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
 \end{compactitem}
-We can also easily see that all the optimizations (except the ones of Section~\ref{sec:choicep} obviously) we propose also work for MTZ.
+
+We can thus easily see that all the optimizations (except, of course, the ones of Section~\ref{sec:choicep}) would also be applicable to MTZ.
 
 We notice however a big difference between MTZ and \df for the factorization step.
 For both of them, we can simply check whether $a$ and $b$ are divisible by each of the $h_i$ and $h'_i$ (or $X-h_i$ and $X - h'_i$ for MTZ).
 \full{With the optimization of Section~\ref{alg:div-prod-tree}}{With the product tree optimizations of Section~\ref{sec:algo-opt-prod-trees}}, it costs $\Oapp(\frac{n}{T_k} \mu(nuT_k))$, if we consider that the multiplication of a degree $T_k$ polynomial over $\mathbb{F}_q$ is $\mu(uT_k)$.
-But with MTZ, we can also do a direct factorization of $a$ and $b$ in time $O(T_k^3 \mu(u))$.
+But, with MTZ, we can also do a direct factorization of $a$ and $b$ in time $O(T_k^3 \mu(u))$.
 
 However, this can gain only logarithmic factors on the overall asymptotic computational complexity of MTZ due to the computation of the redundancies ($\Oapp(\frac{n}{t_k} \mu(ut_k))$ for each round $k$), and only when $T^3$ is smaller or approximatively equal to $n$.
 
-Concerning the PART-MTZ and PART-\df protocols, defined in Section~\ref{sec:related-work}, we can remark that, their overall complexity is the same (up to logarithmic factors) and is roughly $\Oapp(n \mu(u))$.
-We can notice, that in~\cite{Mins1,PSRec}, the authors do not consider the computation of the redundancies in the overall complexity, because they consider a model where sets $\Set$ and $\Set'$ are often updated (by adding or removing a value in $\Set$ or $\Set'$) and often synchronised.
+Concerning the PART-MTZ and PART-\df protocols, we can remark that, their overall complexity is the same (up to logarithmic factors) and is roughly $\Oapp(n \mu(u))$.
+We can notice that in~\cite{Mins1,PSRec}, the authors do not consider the computation of the redundancies in the overall complexity, because they consider an ``incremental'' model where sets $\Set$ and $\Set'$ are often updated (by adding or removing a value in $\Set$ or $\Set'$) and often synchronised.
 Then, if a reasonnable bound on $T$ is known, it is possible to compute one time the redundancies, and this makes the overall complexity $\Oapp(T^3 \mu(u))$ for MTZ and $\Oapp(T \mu(u))$ for PART-MTZ.
-But we cannot have such optimization with \df.
+There seem to be no obvious way to extend this optimization for the ``incremental'' setting to \df.
 \comm{TODO: maybe find something more positive ???}
 
+% We discuss the computational complexity of these two algorithms in~\ref{sec:opt-MTZ}: we show that they are quite close and that the optimizations we introduce can also be used with \cite{Mins1} to improve substantially its time efficiency.
+\todo{TODO (Fabrice): another point is that we use a global hash to check termination, whereas MTZ uses another method which is maybe less optimal ! But this is quite trivial...
+TODO: introduce $\Oapp$}
+
+\paragraph{Other algorithms.}
+Other set reconciliation algorithms such as the ones from~\cite{Whats} and~\cite{byers} have been benchmarked against MTZ~\cite{Whats} and found to have better running times but worse bandwidth requirements. Our main focus is on transmission complexity, but it would be an interesting study to compare PART-\df and PART-MTZ with such algorithms.
 
 
 \section{From File Reconciliation to File Synchronization}
