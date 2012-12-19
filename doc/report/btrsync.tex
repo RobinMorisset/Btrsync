@@ -178,8 +178,8 @@ are as follows:
   \item In Section~\ref{sec:comp}, we study the computational complexity of \df
     and present possible trade-offs between constant-factor transmission
     complexity and computational complexity through alternative design choices.
-  \item In Section~\ref{sec:related-work}, we compare \df with existing set
-    reconciliation algorithms.
+  \item In Section~\ref{sec:related-work}, we compare \df with an existing set
+    reconciliation algorithm.
   \item In Section~\ref{sec:files}, we spell out how the previous construction
     can be extended to perform \emph{file synchronization}, taking into account
     the location and metadata of files and managing situations such as file
@@ -582,22 +582,16 @@ The asymptotic computational complexity that can be achieved with the optimizati
 \section{Related Work on Set Reconciliation}
 \label{sec:related-work}
 
-In this section, we compare \df with existing algorithms for set reconciliation.
-Note that this section is not concerned about the file reconciliation and file
-synchronization problems.
+In this section, we compare \df with the existing set reconciliation algorithm by Minsky, Trachtenberg and Zippel in~\cite{Mins1} (which
+we call MTZ). This section is not concerned with the tasks of file reconciliation or file
+synchronization.
 
-\paragraph{The MTZ algorithm.}
-An existing set reconciliation algorithm achieving linear transmission
-complexity is the one by Minsky, Trachtenberg and Zippel in~\cite{Mins1} (which
-we call MTZ). In contrast with MTZ which is based on polynomials, our
+In contrast with MTZ which is based on polynomials, our
 independently found \df algorithm is based on number theory.
-\df and MTZ have roughly the same transmission complexity, if we omit the fact
+\df and MTZ have both achieve an optimal (i.e., linear) transmission complexity, if we omit the fact
 that \df only deals with fixed-size prime numbers, whereas MTZ deals with any fixed-size bitstring. The improved algorithm from~\cite{Mins1} (TODOfabrice: is it really from this reference? could you indicate more precisely which algorithm is MTZ and which one is PART-MTZ?) (which we call PART-MTZ) is based on MTZ: it requires at least about $24e$ times more bandwidth (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ. As PART-MTZ uses MTZ as a blackbox, we can use the same construction with \df, yielding an algorithm that we call PART-\df. PART-\df and PART-MTZ have roughly the same transmission complexity.
 
-\paragraph{Complexity of MTZ and \df.}
-In this section, we only consider the complete \df protocol for set reconciliation: we therefore do not take the complexity of the computation of $h_i$ and $h'_i$ into account. Let us compare the computational complexities of \df and MTZ.
-
-The main differences of MTZ compared to \df are the following:
+Let us now compare the computational complexities of \df and MTZ. The main differences of MTZ compared to \df are the following:
 \begin{compactitem}
 \item we synchronize monomic polynomials $X-h_i$ and $X-h'_i$ over a field $\mathbb{F}_q$ (with $q$ a $(u+1)$-bit primary number), instead of $u$-bit prime numbers $h_i$ and $h'_i$;
 \item $p_k$ are square-free polynomials with are co-prime together and also co-prime with all $X-h_i$ and $X-h'_i$, instead of numbers which are co-prime together and co-prime with all $h_i$ and $h'_i$ (for all the variants in Section~\ref{sec:choicep} except the last one);
@@ -628,9 +622,6 @@ There seem to be no obvious way to extend this optimization for the ``incrementa
 % We discuss the computational complexity of these two algorithms in~\ref{sec:opt-MTZ}: we show that they are quite close and that the optimizations we introduce can also be used with \cite{Mins1} to improve substantially its time efficiency.
 \todo{TODO (Fabrice): another point is that we use a global hash to check termination, whereas MTZ uses another method which is maybe less optimal ! But this is quite trivial...
 TODO: introduce $\Oapp$}
-
-\paragraph{Other algorithms.}
-Other set reconciliation algorithms such as the ones from~\cite{Whats} and~\cite{byers} have been benchmarked against MTZ~\cite{Whats} and found to have better running times but worse bandwidth requirements. Our main focus is on transmission complexity, but it would be an interesting study to compare PART-\df and PART-MTZ with such algorithms.
 
 
 \section{From File Reconciliation to File Synchronization}
@@ -865,6 +856,10 @@ In this paper, we introduced the novel set reconciliation protocol \df based on 
 
 Many interesting problems are left as future work, both theoretical and practical. On the theoretical side, the main effort to undertake would be to eliminate entirely the costly step of hashing to prime numbers by hashing instead to any integer coprime with all the $p_k$. This would make it harder to perform the actual reconciliation once $a$ and $b$ have been obtained, because there could exist multiple factorizations of $a$ and $b$ as products of $h_i$ and $h_i'$ and only one of them would be the correct one. A careful probabilistic analysis would be required to determine the probability of multiple factorizations, and to bound the cost of recovering the correct factorization.
 As for other aspects of our construction, many bounds on the transmisssion and computational complexity could be improved.
+It would also be interesting to compare the bandwidth use and running time of
+\df with that of other set reconciliation algorithms such as the ones
+from~\cite{Whats} and~\cite{byers}, and with that of MTZ~\cite{Whats}, also
+including the PART-\df and PART-MTZ variants.
 
 Other theoretical questions are left open by our study of move resolution. The algorithm that we propose is not \emph{optimal} in the sense that there should never be any need to use two different temporary file locations: one location is always sufficient to break cycles, and a more careful exploration of the move graph could proceed in this fashion. It is also interesting to wonder if there is a way to perform a minimal number of temporary moves (or if this problem is NP-complete), or if we can reduce the total number of moves by moving folders in addition to files.
 
