@@ -1367,14 +1367,14 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
   \centering
   \caption{Options used when benchmarking \rsync}
   \label{tab:rsyncopt}
-  \begin{tabular}{p{\dimexpr 0.3\linewidth-2\tabcolsep} p{\dimexpr
-    0.7\linewidth-2\tabcolsep}}
+  \begin{tabular}{p{\dimexpr 0.32\linewidth-2\tabcolsep} p{\dimexpr
+    0.68\linewidth-2\tabcolsep}}
     \toprule
-    $\blacktriangleright$ {\tt --delete} & Delete Oscar's files that were
+    $\blacktriangleright$ {\tt {-}{-}delete} & Delete Oscar's files that were
     deleted on Neil, like \btrsync does.\\
     $\blacktriangleright$ {\tt -I} & Ensure that \rsync does not cheat by
     looking at file modification times (which \btrsync does not do).\\
-    $\blacktriangleright$ {\tt --chmod="a=rx,u+w"} & Tell \rsync it does not
+    $\blacktriangleright$ {\tt {-}{-}chmod="a=rx,u+w"} & Tell \rsync it does not
     need to transfer file permissions (which \btrsync doesn't tranfer). Verbose
     logging suggests that \rsync transfers them despite this option and thus
     loses a few bytes per file as compared to \btrsync.\\
