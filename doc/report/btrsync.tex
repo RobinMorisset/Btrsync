@@ -115,7 +115,7 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 \maketitle
 
 \begin{abstract}
-  This work revisits \textit{set reconciliation}, a problem consisting in synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new reconciliation protocol called ``Divide \& Factor'' (\df), based on number theory, which achieves optimal asymptotic transmission complexity like prior proposals. We study the computational complexity of \df in detail for multiple alternative design choices. We then study the problem of synchronizing sets of variable-size files using hash functions, and analyze how the hash size should be chosen. We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync transmits much less data at the expense of a small computational overhead.
+  This work revisits \textit{set reconciliation}, the problem of synchronizing two multisets of fixed-size values while minimizing the amount of data transmitted. We propose a new reconciliation protocol called ``Divide \& Factor'' (\df), based on number theory, which achieves optimal asymptotic transmission complexity like prior proposals. We study the computational complexity of \df in detail for multiple alternative design choices. We then study the problem of synchronizing sets of variable-size files using hash functions, and analyze how the hash size should be chosen. We show how this process can be applied to synchronize file hierarchies, taking into account the location of files. We describe \btrsync, our open-source implementation of the protocol, and benchmark it against the popular software \rsync to demonstrate that \btrsync transmits much less data at the expense of a small computational overhead.
 \end{abstract}
 
 %\subsection*{Notations}
@@ -136,7 +136,7 @@ Robin Morisset \and David Naccache \and Pablo Rauzy}
 
 \section{Introduction}
 
-\emph{File synchronization} is the important practical problem consisting of
+\emph{File synchronization} is the important practical problem of
 retrieving a hierarchy of files on a remote host given some outdated or
 incomplete version of this hierarchy of files on the local machine. In many use
 cases, the bottleneck is the bandwidth of the network link between the local machine
