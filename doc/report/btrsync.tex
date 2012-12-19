@@ -468,25 +468,20 @@ To simplify the analysis, we assume that there are no collisions, and that $n=n'
 
 %We first present some variants of the protocol we described above, and then we analyse the complexity of all these variants.
 
-\subsection{Basic Complexity}
+\subsection{Basic Complexity and Hashing Into Primes}
 \label{sec:basiccomp}
+\label{sec:hashprime}
 
 Let $\mu(l)$ be the time required to multiply two $l$-bit numbers, with the assumption that $\forall l,l', \mu(l+l') \ge \mu(l) + \mu(l')$.
 For naive (\ie, convolutive) algorithms, $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$. {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
 The modular division of two $l$-bit numbers and the reduction of a $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
 Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.
 
-The complexity of a naive algorithm to perform $\tt HashPrime$ is
-$u^2 \mu(u)$ (see Section~\ref{sec:basichashprime} for details).
+The complexity of a naive algorithm to perform $\tt HashPrime$ is $u^2 \mu(u)$, as for algorithms presented in~\cite{C:HohWat09,PKC:AbdBenPoi13}.
+In \apref{ap:hashprime}, we recall this algorithm and present an optimization which sacrifices uniformity to achieve better performance.
+\todo{Check this is ok, I put it here because its own section was ridiculous !}
 
 Hence, if we we use the same $t$ for each round ($t_1=t_2=\cdots=t$), the complexity of \df is as described in the third column of Table~\ref{tab:workload}.
-
-\subsection{Hashing Into Primes}
-\label{sec:hashprime}
-
-Hashing into primes is frequently needed in cryptography, independently from \df. 
-%In this section, 
-In \apref{ap:hashprime}, we recall a naive method to perform this operation, presented in~\cite{C:HohWat09,PKC:AbdBenPoi13}, and present an optimization which sacrifices uniformity to achieve better performance.
 
 \subsection{Optimizations}
 
@@ -632,7 +627,7 @@ We can also easily see that all the optimizations (except the ones of Section~\r
 
 We notice however a big difference between MTZ and \df for the factorization step.
 For both of them, we can simply check whether $a$ and $b$ are divisible by each of the $h_i$ and $h'_i$ (or $X-h_i$ and $X - h'_i$ for MTZ).
-With the optimization of Section~\ref{alg:div-prod-tree}, it costs $\Oapp(\frac{n}{T_k} \mu(nuT_k))$, if we consider that the multiplication of a degree $T_k$ polynomial over $\mathbb{F}_q$ is $\mu(uT_k)$.
+\full{With the optimization of Section~\ref{alg:div-prod-tree}}{With the product tree optimizations of Section~\ref{sec:algo-opt-prod-trees}}, it costs $\Oapp(\frac{n}{T_k} \mu(nuT_k))$, if we consider that the multiplication of a degree $T_k$ polynomial over $\mathbb{F}_q$ is $\mu(uT_k)$.
 But with MTZ, we can also do a direct factorization of $a$ and $b$ in time $O(T_k^3 \mu(u))$.
 
 However, this can gain only logarithmic factors on the overall asymptotic computational complexity of MTZ due to the computation of the redundancies ($\Oapp(\frac{n}{t_k} \mu(ut_k))$ for each round $k$), and only when $T^3$ is smaller or approximatively equal to $n$.
