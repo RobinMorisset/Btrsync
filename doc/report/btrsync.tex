@@ -286,7 +286,7 @@ We then construct a protocol which works with any $T$.
 We first remark that, if we execute the previous protocol when $t < T$, either $a$ and $b$ are still correct (in which case the protocol works correctly), or $a$ and $b$ are not correct.
 In the second case, with high probability, the product of the $h'_i$'s which divide $a$ is not equal to $a$.
 Indeed, in this case, $a$ is not recovered correctly and so, we can roughly suppose $a$ is a random number of $(tu)$-bits. So, for each $i$, the probability that $h'_i$ divides $a$ is at most $1/2^u$, and the probability the product of $h'_i$'s which divide $a$ is equal to $a$ is roughly the probability that exactly $t$ $h'_i$'s among the $n'$ $h'_i$'s divides $a$, namely $\binom{n'}{t} 2^{-ut} (1-2^{-u})^{n'-t} \le n 2^{-ut}$ which is negligible (if $2^{u} \gg n'$, condition we suppose in the sequel).
-TODO: check this
+\comm{TODODAVID: check this}
 
 Therefore, checking that the product of the $h_i$'s which divide $a$ is equal to $a$ has the advantage to be very fast, and it does not require Neil to send any data to Oscar. We will call $\bot_1$ the event where this check identifies a problem. 
 However, if we are unlucky, it can happen that this check is not sufficient. We will call $\bot_2$ the event where this check passes but the set reconciliation failed.
@@ -302,7 +302,7 @@ To extend the protocol to an arbitrary $T$, we will assume that Oscar and Neil a
 
 Formally, let us assume that $2^{2 u t_k} \le p_k < 2^{2 u t_k +1}$.
 Let us write $P_k = p_1 \cdots p_k$ and $T_k = t_1 + \cdots + t_k$.
-After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as much information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the Chinese remainder theorem (CRT)\todo{(TODO ref ?)}: 
+After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k$, Neil has as much information as if Oscar had transmitted a redundancy $C_k$ corresponding to the modulo $P_k$, and can compute $S_k = C'_k / C_k$ from $s_k = c'_k/c_k$ and $S_{k-1}$ using the Chinese remainder theorem (CRT)\todo{(TODODAVID ref ?)}: 
 \begin{align*}
  S_k &= \CRT(S_{k-1},P_{k-1},s_k,p_k) \\
      &= S_{k-1} (p_k^{-1} \bmod P_{k-1}) p_k + s_k (P_{k-1}^{-1} \bmod p_k) P_{k-1} \bmod P_k.
@@ -319,7 +319,6 @@ In what follows, we will focus on two following choices of $t_\ell$:
 
 \begin{figure}[t]
 \centering
-\scriptsize
 %\setlength{\tabcolsep}{6pt}
 \begin{tabular}{p{\dimexpr 0.4\linewidth-3\tabcolsep}cp{\dimexpr 0.4\linewidth-3\tabcolsep}}
 \toprule
@@ -451,11 +450,11 @@ For naive (\ie, convolutive) algorithms, $\mu(l) = O(l^2)$, but using {\sc fft} 
 The modular division of two $l$-bit numbers and the reduction of a $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
 Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.
 
-The complexity of a naive algorithm to perform $\tt HashPrime$ is $u^2 \mu(u)$, as for algorithms presented in~\cite{C:HohWat09,PKC:AbdBenPoi13}.
+Now, for the $\tt HashPrime$ function, the complexity of a naive algorithm is $u^2 \mu(u)$, as for algorithms presented in~\cite{C:HohWat09,PKC:AbdBenPoi13}.
 In \apref{ap:hashprime}, we recall this algorithm and present an optimization which sacrifices uniformity to achieve better performance.
 \todo{Check this is ok, I put it here because its own section was ridiculous !}
 
-Hence, if we we use the same $t$ for each round ($t_1=t_2=\cdots=t$), the complexity of \df is as described in the third column of Table~\ref{tab:workload}.
+Hence, if we use the same $t$ for each round ($t_1=t_2=\cdots=t$), the complexity of \df using the operations described in this section is given in the third column of Table~\ref{tab:workload}.
 
 \subsection{Optimizations}
 
@@ -464,7 +463,7 @@ Hence, if we we use the same $t$ for each round ($t_1=t_2=\cdots=t$), the comple
 
 Taking the $p_k$'s to be $ut_k$-bit primes is not very practical, because generating big prime numbers is slow. In this section, we study alternate choices for the $p_k$ which are easier to generate and speed up the computation by constant factors.
 
-Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime, with $\mbox{{\tt Prime}}[1]=2$. Besides conditions on size, the \textit{only} property (*) required from a $p_k$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants, which will all imply a few conditions on the $h_i$'s and $h'_i$'s to ensure property (*):
+Let $\mbox{{\tt Prime}}[i]$ denote the $i$-th prime, with $\mbox{{\tt Prime}}[1]=2$. Besides conditions on size, the \textit{only} property required from a $p_k$ is to be co-prime with all the $h_i$'s and all the $h'_i$'s. We can hence consider the following variants, which will all imply a few conditions on the $h_i$'s and $h'_i$'s to ensure this property:
 \paragraph{Variant 1.} Smooth $p_k$:
 $ p_k=\prod_{j=r_k}^{r_{k+1}-1} \mbox{{\tt Prime}}[j], $
 where the bounds $r_k$ are chosen to ensure that each $p_k$ has the proper size.
@@ -499,7 +498,6 @@ This increases the transmission complexity slightly, but drastically reduces the
   \centering
   \caption{Protocol complexity synopsis}
   \label{tab:workload}
- \scriptsize
  \begin{threeparttable}
   \begin{tabularx}{\textwidth}{lXC{2.3cm}C{2.5cm}l}
 \toprule
@@ -561,7 +559,6 @@ Oscar & factor $b_k$
 \bottomrule
   \end{tabularx}
   \begin{tablenotes}
-    \scriptsize
     \item[a] using the basic algorithms of Section~\ref{sec:basiccomp}, and taking $t_1=t_2=\cdots=t$
     \item[b] using all the optimizations of Sections~\ref{sec:hashprime}, \ref{sec:choicep} ($p_k = 2^{ut_k}$, also yielding substatial constant factor accelerations not shown in this table), \ref{sec:algo-opt-prod-trees} and~\ref{sec:doubling}
     \item[c] only for $p_i$ prime (or variant~1 or~2 in Section~\ref{sec:choicep})
@@ -787,7 +784,6 @@ Results are given in Table \ref{tab:results}. In general, \btrsync spent more ti
 
 \begin{table}[t]
 \centering
-  \scriptsize
   \caption{Test directories}
   \label{tab:benchdirec}
 \begin{tabular}{ll}\toprule
@@ -827,7 +823,7 @@ Results are given in Table \ref{tab:results}. In general, \btrsync spent more ti
 
 \begin{table}[t]
   \centering
-  \caption{Experimental results. \scriptsize Synchronization is performed \textit{from} Neil \textit{to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes, {\tt rs} and {\tt bt} denote {\tt rsync} and {\tt btrsync}, and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between \rsync and \btrsync. The last two columns show timing results on an Intel Core i3-2310M CPU clocked at 2.10 Ghz.}
+  \caption{Experimental results. Synchronization is performed \textit{from} Neil \textit{to} Oscar. {\tt RX} and {\tt TX} denote the quantity of received and sent bytes, {\tt rs} and {\tt bt} denote {\tt rsync} and {\tt btrsync}, and $\delta_{\square}=\mbox{{\tt TX}}_{\square}+\mbox{{\tt RX}}_{\square}$. $\delta_{\mbox{{\tiny {\tt rs}}}}-\delta_{\mbox{{\tiny {\tt bt}}}}$ and ${\delta_{\mbox{{\tiny {\tt bt}}}}}/{\delta_{\mbox{{\tiny {\tt rs}}}}}$ express the absolute and the relative differences in transmission between \rsync and \btrsync. The last two columns show timing results on an Intel Core i3-2310M CPU clocked at 2.10 Ghz.}
   \label{tab:results}
   \setlength{\tabcolsep}{3pt}
   \begin{tabularx}{\textwidth}{ll X r r r r r r X r r }
