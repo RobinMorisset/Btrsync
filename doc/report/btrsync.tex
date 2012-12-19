@@ -811,9 +811,16 @@ easy to do so. An optimization implemented by \btrsync over the move resolution 
 \subsection{Experimental Comparison to \rsync}
 
 We compared \rsync\footnote{\rsync version 3.0.9, used both as a competitor to
-benchmark against and as an underlying call in our own code.} and our implementation \btrsync. The directories used for the
-benchmark are described in Table~\ref{tab:benchdirec}, and the options used
-when benchmarking \rsync are given in \full{Table~\ref{tab:rsyncopt}}{\apref{}}. Experiments
+benchmark against and as an underlying call in our own code. \rsync was passed
+the following options: {\tt {-}{-}delete} to delete Oscar's files that were
+deleted on Neil like \btrsync does, {\tt -I} to disable heuristics based on file
+modification times that \btrsync does not use, {\tt {-}{-}chmod="a=rx,u+w"} to make it unnecessary to
+transfer file permission that \btrsync does not transfer (though verbose logging
+suggest that \rsync wastes a few bytes per file becauses it transmits them
+anyway), and {\tt -v} to count the number of sent and received bytes.} and our
+implementation \btrsync. The directories used for the
+benchmark are described in Table~\ref{tab:benchdirec}.
+Experiments
 were performed without any network transfer, by synchronizing two folders on
 the same host. Hence, time measurements mostly represent the {\sc cpu} cost of
 the synchronization.
@@ -828,7 +835,7 @@ Results are given in Table \ref{tab:results}. In general, \btrsync spent more ti
 \begin{tabular}{ll}\toprule
 ~~{\bf Directory}              ~~&~~{\bf Description}\\\midrule
 ~~{\tt syn}              ~~&~~A directory containing 1000 unique very small files\\
-~~{\tt syn\_shuf}    ~~&~~{\tt syn} with: 10 deleted files, 10 renamed files 10 modified files \\
+~~{\tt syn\_shuf}    ~~&~~{\tt syn} changed by deleting 10 files, renaming 10 files and modifying 10 files \\
 ~~{\tt source}                 ~~& ~~A snapshot of \btrsync's own source tree \\
 ~~{\tt source\_moved}          ~~& ~~{\tt source} with one big folder (a few megabits) renamed.~~\\
 ~~{\tt ff-13.0}           ~~& ~~The source archive of Mozilla Firefox 13.0.\\
@@ -837,28 +844,28 @@ Results are given in Table \ref{tab:results}. In general, \btrsync spent more ti
 \end{tabular}\smallskip
 \end{table}
 
-\full{
-\begin{table}[t]
-  \centering
-  \caption{Options used when benchmarking \rsync}
-  \label{tab:rsyncopt}
-  \begin{tabular}{p{\dimexpr 0.32\linewidth-2\tabcolsep} p{\dimexpr
-    0.68\linewidth-2\tabcolsep}}
-    \toprule
-    $\blacktriangleright$ {\tt {-}{-}delete} & Delete Oscar's files that were
-    deleted on Neil, like \btrsync does.\\
-    $\blacktriangleright$ {\tt -I} & Ensure that \rsync does not cheat by
-    looking at file modification times (which \btrsync does not do).\\
-    $\blacktriangleright$ {\tt {-}{-}chmod="a=rx,u+w"} & Tell \rsync it does not
-    need to transfer file permissions (which \btrsync doesn't tranfer). Verbose
-    logging suggests that \rsync transfers them despite this option and thus
-    loses a few bytes per file as compared to \btrsync.\\
-    $\blacktriangleright$ {\tt -v} & Count the number of sent and received
-    bytes.\\
-    \bottomrule
-  \end{tabular}\smallskip
-\end{table}
-}{}
+%\full{
+%\begin{table}[t]
+%  \centering
+%  \caption{Options used when benchmarking \rsync}
+%  \label{tab:rsyncopt}
+%  \begin{tabular}{p{\dimexpr 0.32\linewidth-2\tabcolsep} p{\dimexpr
+%    0.68\linewidth-2\tabcolsep}}
+%    \toprule
+%    $\blacktriangleright$ {\tt {-}{-}delete} & Delete Oscar's files that were
+%    deleted on Neil, like \btrsync does.\\
+%    $\blacktriangleright$ {\tt -I} & Ensure that \rsync does not cheat by
+%    looking at file modification times (which \btrsync does not do).\\
+%    $\blacktriangleright$ {\tt {-}{-}chmod="a=rx,u+w"} & Tell \rsync it does not
+%    need to transfer file permissions (which \btrsync doesn't tranfer). Verbose
+%    logging suggests that \rsync transfers them despite this option and thus
+%    loses a few bytes per file as compared to \btrsync.\\
+%    $\blacktriangleright$ {\tt -v} & Count the number of sent and received
+%    bytes.\\
+%    \bottomrule
+%  \end{tabular}\smallskip
+%\end{table}
+%}{}
 
 \begin{table}[t]
   \centering
