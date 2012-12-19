@@ -195,12 +195,11 @@ are as follows:
 \section{Related Work on Set Reconciliation}
 \label{sec:related-work}
 
-Various algorithms for set reconciliation have already been proposed in~\cite{byers, Whats, PSRec, Mins1}.
-Let us compare \df with these algorithms.
+In this section, we compare \df with existing algorithms for set reconciliation.
 
-Firstly, \df can be seen as a (independently found) number theoretical variant of the polynomial based algorithm of Minsky, Trachtenberg and Zippel in~\cite{Mins1} (named MTZ in the sequel).
-Its transmission complexity is roughly the same, if we omit the fact that our algorithm only deal with fixed-size prime numbers, whereas theirs deal with any fixed-size bitstring.
-We discuss the computational complexity of these two algorithms in~\ref{sec:opt-MTZ} and show that they are quite close and that the optimizations we introduce can also be used with \cite{Mins1} to improve substantially its time efficiency.
+\df can be seen as a independently found number-theoretical variant of the polynomial-based algorithm of Minsky, Trachtenberg and Zippel in~\cite{Mins1} (named MTZ in the sequel).
+\df and MTZ have roughly the same transmission complexity, if we omit the fact that our algorithm only deals with fixed-size prime numbers, whereas their algorithm deal with any fixed-size bitstring.
+We discuss the computational complexity of these two algorithms in~\ref{sec:opt-MTZ}: we show that they are quite close and that the optimizations we introduce can also be used with \cite{Mins1} to improve substantially its time efficiency.
 \todo{TODO (Fabrice): another point is that we use a global hash to check termination, whereas MTZ uses another method which is maybe less optimal ! But this is quite trivial...
 
 TODO: introduce $\Oapp$}
