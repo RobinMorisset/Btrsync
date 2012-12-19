@@ -73,7 +73,7 @@
 \ifnum\fullversion=1
   \newcommand{\apref}[1]{Appendix~\ref{#1}}
 \else
-  \newcommand{\apref}[1]{the full version~TODO}
+  \newcommand{\apref}[1]{the full version~\cite{X:ABBMNR13}}
 \fi
 
 \newcommand{\full}[2]{%
@@ -320,7 +320,7 @@ In what follows, we will focus on two following choices of $t_k$:
 \begin{figure}[t]
 \centering
 %\setlength{\tabcolsep}{6pt}
-\begin{tabular}{p{\dimexpr 0.4\linewidth-3\tabcolsep}cp{\dimexpr 0.4\linewidth-3\tabcolsep}}
+\begin{tabular}{p{\dimexpr 0.41\linewidth-3\tabcolsep}cp{\dimexpr 0.41\linewidth-3\tabcolsep}}
 \toprule
 \textbf{Oscar}                    &                                        & \textbf{Neil}\\
 \midrule
@@ -336,21 +336,21 @@ information on the difference}} \\
 $c_1 \gets \prod_{i=1}^n h_i \bmod p_1$        & $\Rflow{c_1}$               & $c'_1 \gets \prod_{i=1}^{n'} h'_i \bmod p_1$ \\
                                   &                        & $s_1 \gets c'_1/c_1 \bmod p_1$ \\
                                   &                        & $S_1 \gets s_1$ \\
-                                  &                        & reconstruct  $a,b$ from $S_1$ (modulo $P_1$)\\
+                                  &                        & reconstruct  $a,b$ from $S_1$ ($\bmod P_1$)\\
                                   &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
                                   &                        & if $\prod_{h \in \SetD'} h \bmod P_1 = a$ \\
                                   &                        & \hspace{0.2cm} then go to \text{final phase} \\
-                                  &                        & \hspace{0.2cm} else continue (event $\bot_1$ occured) \\
+                                  &                        & \hspace{0.2cm} else continue (event $\bot_1$) \\
 \midrule
 \multicolumn{3}{c}{\textit{Round 2}} \\
 $c_2 \gets \prod_{i=1}^n h_i \bmod p_2$    & $\Rflow{c_2}$                 & $c'_2 \gets \prod_{i=1}^{n'} h'_i \bmod p_2$ \\
                                   &                        & $s_2 \gets c'_2/c_2 \bmod p_2$ \\
                                   &                        & $S_2 \gets \CRT(S_1,P_1,s_2,p_2)$ \\
-                                  &                        & reconstruct $a,b$ from $S_2$ (modulo $P_2$)\\
+                                  &                        & reconstruct $a,b$ from $S_2$ ($\bmod P_2$)\\
                                   &                        & $\SetD' \gets \{ h'_i \in \Set' \,|\, a \bmod h'_i = 0 \}$ \\
                                   &                        & if $\prod_{h \in \SetD'} h \bmod P_2 = a$ \\
                                   &                        & \hspace{0.2cm} then go to \text{final phase} \\
-                                  &                        & \hspace{0.2cm} else continue (event $\bot_1$ occured) \\
+                                  &                        & \hspace{0.2cm} else continue (event $\bot_1$) \\
 \midrule
 %\multicolumn{3}{c}{\textit{Round 3}} \\
 %$c_3 \gets \prod_{i=1}^n h_i \bmod p_3$    &                & $c'_3 \gets \prod_{i=1}^{n'} h'_i \bmod p_3$ \\
@@ -371,7 +371,7 @@ $\SetD \gets \{ h_i \in \Set \,|\, b \bmod h_i \}$ & $\Lflow{\SetD',b}$  & \\
 compute $S'$ from $S$, $\SetD$ and $\SetD'$ & & \\
 if $\Hash(S') \neq H$ & & \\
 \hspace{0.2cm} then go back to Main phase && \\
-\hspace{0.4cm} (event $\bot_2$ occured) & & \\
+\hspace{0.4cm} (event $\bot_2$) & & \\
 \hspace{0.2cm} else the protocol is complete. & & \\
 \bottomrule
 \end{tabular}\vspace{-0.25cm} % why the hell do we need that?!
@@ -639,6 +639,7 @@ Indeed, in the basic version with one round, we have:
 Notice that this implies that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended gcd computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
 \end{compactitem}
 
+<<<<<<< HEAD
 The computational complexity of MTZ is therefore TODOfabrice, which is not as good as
 our complexity of TODOfabrice. However, our better complexity bound comes from
 optimizations, all of which see (except, of course, the ones of
