@@ -2,14 +2,14 @@
 
 .PHONY: mrproper clean FORCE_MAKE
 
-PDF=btrsync.pdf btrsync-single.pdf
+PDF=btrsync-tgc.pdf btrsync-full.pdf btrsync-tgc-single.pdf
 
 all: $(PDF)
 
-btrsync-single.tex: btrsync.tex results.tex btrsync.bbl single.sh
+btrsync-tgc-single.tex: btrsync-tgc.tex results.tex btrsync-tgc.bbl single.sh
 	./single.sh
 
-btrsync.bbl: btrsync.pdf
+btrsync-tgc.bbl: btrsync-tgc.pdf
 
 # MAIN LATEXMK RULE
 
@@ -20,10 +20,10 @@ btrsync.bbl: btrsync.pdf
 # -interactive=nonstopmode keeps the pdflatex backend from stopping at a
 # missing file reference and interactively asking you for an alternative.
 
-btrsync-single.pdf: btrsync-single.tex FORCE_MAKE
+btrsync-tgc-single.pdf: btrsync-tgc-single.tex FORCE_MAKE
 	perl latexmk.pl -pdf -pdflatex="pdflatex -interaction=nonstopmode" -bibtex- $<
 
-btrsync.pdf: btrsync.tex results.tex FORCE_MAKE
+%.pdf: %.tex results.tex FORCE_MAKE
 	perl latexmk.pl -pdf -pdflatex="pdflatex -interaction=nonstopmode" -bibtex $<
 
 results.tex: results mkresults.sh si.pl
