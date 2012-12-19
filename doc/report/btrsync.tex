@@ -384,10 +384,10 @@ if $\Hash(S') \neq H$ & & \\
 \section{Transmission Complexity}
 \label{sec:trans}
 
-This section proves that \df achieves optimal asymptotic transmission complexity. An optimization to improve the transmission complexity of \df by a constant factor is given in \apref{ap:probabilistic}.
-
+This section proves that \df achieves optimal asymptotic transmission complexity.% An optimization to improve the transmission complexity of \df by a constant factor is given in \apref{ap:probabilistic}.
+%
 %\subsection{Proof of Transmission Complexity Optimality}
-
+%
 Assuming that there is no event $\bot_2$ (since these events happen with negligible probability), the transmission complexity of \df is as follows:
 \[  \sum_{k=1}^\kappa \log c_k + \log b + \log |\SetD'|
  \,\leq\, \sum_{k=1}^\kappa (ut_k+1) + \frac{1}{2} (uT_\kappa) + u T
@@ -404,6 +404,29 @@ Though the asymptotic transmission complexity is the same for both choices, we c
 However, as we will see in Section~\ref{sec:doubling}, the second choice has lower computational complexity.
 
 In both cases, however, we notice that the asymptotic transmission complexity is the size of the symmetric difference of the two multisets (i.e., the number of differences times the size of an individual item). This is also the information-theoretic lower bound on the quantity of data needed to perform reconciliation. Hence, our protocol is asymptotically optimal for transmission complexity.
+
+\paragraph{Probabilistic Decoding: Reducing $p$}
+
+This section describes a proposed improvement to \df which reduces the transmission complexity by a constant factor at the expense of a higher failure rate when performing rational number reconstruction. For simplicity, we will focus on one round of \df and denote by $p$ the current $P_\ell$. We will generate a $p$ about twice smaller than the $p$ recommended in Section~\ref{sec:basic}, namely
+%\begin{equation}
+%\label{eq:eqnewp}
+$2^{ut-1}\leq p < 2^{ut}$.
+%\end{equation}
+
+Unlike in Section~\ref{sec:basic}, we do not have a useful fixed bound for $a$ and $b$ anymore; we only have a bound for the \textit{product} $a b$: 
+%\begin{equation}
+%\label{eq:eqab}
+$ab \leq 2^{ut}$.
+%\end{equation} 
+Therefore, we define a sequence of $t+1$ couples of possible bounds:
+$\left(A_j, B_j\right)_{0 \leq j \leq t} = \left(2^{uj}, 2^{u(t-j)}\right)$.
+
+The fact $2^{ut-1}\leq p < 2^{ut}$ and $ab \leq 2^{ut}$ implies that there must exist at least one index $j$ such that $0 \leq a \leq A_j$ and $0 <b \leq B_j$. 
+We can therefore apply Theorem~\ref{th:theo} with $A = A_j$ and $B = B_j$: since $A_j B_j = 2^{ut} < p$, given $(A_j,B_j,p,s)$, one can recover $(a,b)$, and hence Oscar can compute $\Set'$.
+
+This variant of the protocol will roughly halve the quantity of transmitted bits with respect to Section~\ref{sec:basic}.
+The drawback is that, unlike in Section~\ref{sec:basic}, we have no guarantee that such an $(a,b)$ is unique. Namely, we could in theory stumble over an $(a',b')\neq (a,b)$ satisfying $ $ for some index $j' \neq j$. We conjecture that, when $u$ is large enough, such failures happen with negligible probability (that we do not try to estimate here), so that the expected number of bits to transfer with this variant is lower.
+In any case, thanks to the global hash $H = \Hash(\Set')$, if a failure occurs, it will be detected.
 
 \section{From Set Reconciliation to File Reconciliation}
 \label{sec:hashing}
@@ -979,31 +1002,6 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 %\]
 %
 %For $(\eta=10^6,u=32,\lambda=2)$, we get $\epsilon'_2 \le 0.013\%$.
-
-
-\section{Probabilistic Decoding: Reducing $p$}
-\label{ap:probabilistic}
-
-This section describes a proposed improvement to \df which reduces the transmission complexity by a constant factor at the expense of a higher failure rate when performing rational number reconstruction. For simplicity, we will focus on one round of \df and denote by $p$ the current $P_\ell$. We will generate a $p$ about twice smaller than the $p$ recommended in Section~\ref{sec:basic}, namely:
-\begin{equation}
-\label{eq:eqnewp}
-2^{ut-1}\leq p < 2^{ut}.
-\end{equation}
-
-Unlike in Section~\ref{sec:basic}, we do not have a useful fixed bound for $a$ and $b$ anymore; we only have a bound for the \textit{product} $a b$: 
-\begin{equation}
-\label{eq:eqab}
-ab \leq 2^{ut}.
-\end{equation} 
-Therefore, we define a sequence of $t+1$ couples of possible bounds:
-\[\left(A_j, B_j\right)_{0 \leq j \leq t} = \left(2^{uj}, 2^{u(t-j)}\right). \]
-
-Equations~\eqref{eq:eqnewp} and~\eqref{eq:eqab} imply that there must exist at least one index $j$ such that $0 \leq a \leq A_j$ and $0 <b \leq B_j$. 
-We can therefore apply Theorem~\ref{th:theo} with $A = A_j$ and $B = B_j$: since $A_j B_j = 2^{ut} < p$, given $(A_j,B_j,p,s)$, one can recover $(a,b)$, and hence Oscar can compute $\Set'$.
-
-This variant of the protocol will roughly halve the quantity of transmitted bits with respect to Section~\ref{sec:basic}.
-The drawback is that, unlike in Section~\ref{sec:basic}, we have no guarantee that such an $(a,b)$ is unique. Namely, we could in theory stumble over an $(a',b')\neq (a,b)$ satisfying Equation~\eqref{eq:eqab} for some index $j' \neq j$. We conjecture that, when $u$ is large enough, such failures happen with negligible probability (that we do not try to estimate here), so that the expected number of bits to transfer with this variant is lower.
-In any case, thanks to the global hash $H = \Hash(\Set')$, if a failure occurs, it will be detected.
 
 
 \section{The File Laundry: Reducing $u$}
