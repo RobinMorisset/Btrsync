@@ -1,6 +1,6 @@
 % TODO: spellcheck
 % TODO: correct figures, put algo 1/2 together, put table title above tables, put proofs in appendix, ...
-\documentclass[twoside,envcountsame,runningheads,draft]{llncs}
+\documentclass[twoside,envcountsame,runningheads]{llncs}
 
 \sloppy
 
@@ -73,7 +73,7 @@
 \ifnum\fullversion=1
   \newcommand{\apref}[1]{Appendix~\ref{#1}}
 \else
-  \newcommand{\apref}[1]{the full version~TODO}
+  \newcommand{\apref}[1]{the full version~\cite{X:ABBMNR13}}
 \fi
 
 \newcommand{\full}[2]{%
@@ -620,7 +620,7 @@ except that
 that \df only deals with fixed-size prime numbers, whereas MTZ deals with any
 fixed-size bitstring. 
 
-We can notice that in~\cite{Mins1,PSRec}, the authors do not consider the computation of the redundancies in the overall complexity, because they consider an ``incremental'' model where sets $\Set$ and $\Set'$ are often updated (by adding or removing a value in $\Set$ or $\Set'$) and often synchronised. This is not our use case; indeed, l'aspect incrémental de MTZ ne s'étend pas à \dandf.
+We can notice that in~\cite{Mins1,PSRec}, the authors do not consider the computation of the redundancies in the overall complexity, because they consider an ``incremental'' model where sets $\Set$ and $\Set'$ are often updated (by adding or removing a value in $\Set$ or $\Set'$) and often synchronised. This is not our use case; indeed, l'aspect incrémental de MTZ ne s'étend pas à \df.
 
 
 The main differences of MTZ compared to \df are the following:
@@ -639,7 +639,7 @@ Notice that this implies that the Gaussian elimination of cost $O(t^3 \mu(u))$ (
 The computation complexity of MTZ is TODO, which is more than ours. However
 We can thus easily see that all the optimizations (except, of course, the ones of Section~\ref{sec:choicep}) would also be applicable to MTZ.
 
-Papier~\cite{PSrec} presents PART, blackbox, applies to us too. (which we call PART-MTZ) is based on MTZ: it requires at least about $24e$ times more bandwidth (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ. As PART-MTZ uses MTZ as a blackbox, we can use the same construction with \df, yielding an algorithm that we call PART-\df. PART-\df and PART-MTZ have roughly the same transmission complexity.
+Papier~\cite{PSRec} presents PART, blackbox, applies to us too. (which we call PART-MTZ) is based on MTZ: it requires at least about $24e$ times more bandwidth (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ. As PART-MTZ uses MTZ as a blackbox, we can use the same construction with \df, yielding an algorithm that we call PART-\df. PART-\df and PART-MTZ have roughly the same transmission complexity.
 
 
 \section{From File Reconciliation to File Synchronization}
