@@ -154,7 +154,7 @@ determine the symmetric difference of the two sets while minimizing the amount
 of data transferred. The lower bound of the quantity of data to transfer is
 clearly the size of the symmetric difference (i.e., the number of elements in the
 difference times the size of these elements), and some known algorithms achieve
-this bound~\cite{PSRec}.
+this bound~\cite{Mins1}.
 
 In this paper, we look at the problems of set reconciliation and file
 synchronization from a theoretical and practical perspective. Our contribution
@@ -468,6 +468,9 @@ To simplify the analysis, we assume that there are no collisions, and that $n=n'
 \label{sec:basiccomp}
 \label{sec:hashprime}
 
+\todo{
+TODOfabrice: introduce $\Oapp$}
+
 Let $\mu(l)$ be the time required to multiply two $l$-bit numbers, with the assumption that $\forall l,l', \mu(l+l') \ge \mu(l) + \mu(l')$.
 For naive (\ie, convolutive) algorithms, $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$. {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
 The modular division of two $l$-bit numbers and the reduction of a $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
@@ -603,14 +606,24 @@ The asymptotic computational complexity that can be achieved with the optimizati
 
 In this section, we compare \df with the existing set reconciliation algorithm by Minsky, Trachtenberg and Zippel in~\cite{Mins1} (which
 we call MTZ). This section is not concerned with the tasks of file reconciliation or file
-synchronization.
+synchronization. We do not deal with other TODO It would also be interesting to compare the bandwidth use and running time of
+\df with that of other set reconciliation algorithms which try to achieve better
+computational performance without a proof of transmission complexity optimality
+such as the ones
+from~\cite{Whats} and~\cite{byers}.
+
 
 In contrast with MTZ which is based on polynomials, our
-independently found \df algorithm is based on number theory.
-\df and MTZ have both achieve an optimal (i.e., linear) transmission complexity, if we omit the fact
-that \df only deals with fixed-size prime numbers, whereas MTZ deals with any fixed-size bitstring. The improved algorithm from~\cite{Mins1} (TODOfabrice: is it really from this reference? could you indicate more precisely which algorithm is MTZ and which one is PART-MTZ?) (which we call PART-MTZ) is based on MTZ: it requires at least about $24e$ times more bandwidth (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ. As PART-MTZ uses MTZ as a blackbox, we can use the same construction with \df, yielding an algorithm that we call PART-\df. PART-\df and PART-MTZ have roughly the same transmission complexity.
+independently designed \df algorithm is based on number theory.
+\df and MTZ both achieve an optimal (i.e., linear) transmission complexity,
+except that
+that \df only deals with fixed-size prime numbers, whereas MTZ deals with any
+fixed-size bitstring. 
 
-Let us now compare the computational complexities of \df and MTZ. The main differences of MTZ compared to \df are the following:
+We can notice that in~\cite{Mins1,PSRec}, the authors do not consider the computation of the redundancies in the overall complexity, because they consider an ``incremental'' model where sets $\Set$ and $\Set'$ are often updated (by adding or removing a value in $\Set$ or $\Set'$) and often synchronised. This is not our use case; indeed, l'aspect incrémental de MTZ ne s'étend pas à \dandf.
+
+
+The main differences of MTZ compared to \df are the following:
 \begin{compactitem}
 \item we synchronize monomic polynomials $X-h_i$ and $X-h'_i$ over a field $\mathbb{F}_q$ (with $q$ a $(u+1)$-bit primary number), instead of $u$-bit prime numbers $h_i$ and $h'_i$;
 \item $p_k$ are square-free polynomials with are co-prime together and also co-prime with all $X-h_i$ and $X-h'_i$, instead of numbers which are co-prime together and co-prime with all $h_i$ and $h'_i$ (for all the variants in Section~\ref{sec:choicep} except the last one);
@@ -623,24 +636,10 @@ Indeed, in the basic version with one round, we have:
 Notice that this implies that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended gcd computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
 \end{compactitem}
 
+The computation complexity of MTZ is TODO, which is more than ours. However
 We can thus easily see that all the optimizations (except, of course, the ones of Section~\ref{sec:choicep}) would also be applicable to MTZ.
 
-We notice however a big difference between MTZ and \df for the factorization step.
-For both of them, we can simply check whether $a$ and $b$ are divisible by each of the $h_i$ and $h'_i$ (or $X-h_i$ and $X - h'_i$ for MTZ).
-\full{With the optimization of Section~\ref{alg:div-prod-tree}}{With the product tree optimizations of Section~\ref{sec:algo-opt-prod-trees}}, it costs $\Oapp(\frac{n}{T_k} \mu(nuT_k))$, if we consider that the multiplication of a degree $T_k$ polynomial over $\mathbb{F}_q$ is $\mu(uT_k)$.
-But, with MTZ, we can also do a direct factorization of $a$ and $b$ in time $O(T_k^3 \mu(u))$.
-
-However, this can gain only logarithmic factors on the overall asymptotic computational complexity of MTZ due to the computation of the redundancies ($\Oapp(\frac{n}{t_k} \mu(ut_k))$ for each round $k$), and only when $T^3$ is smaller or approximatively equal to $n$.
-
-Concerning the PART-MTZ and PART-\df protocols, we can remark that, their overall complexity is the same (up to logarithmic factors) and is roughly $\Oapp(n \mu(u))$.
-We can notice that in~\cite{Mins1,PSRec}, the authors do not consider the computation of the redundancies in the overall complexity, because they consider an ``incremental'' model where sets $\Set$ and $\Set'$ are often updated (by adding or removing a value in $\Set$ or $\Set'$) and often synchronised.
-Then, if a reasonnable bound on $T$ is known, it is possible to compute one time the redundancies, and this makes the overall complexity $\Oapp(T^3 \mu(u))$ for MTZ and $\Oapp(T \mu(u))$ for PART-MTZ.
-There seem to be no obvious way to extend this optimization for the ``incremental'' setting to \df.
-\comm{TODO: maybe find something more positive ???}
-
-% We discuss the computational complexity of these two algorithms in~\ref{sec:opt-MTZ}: we show that they are quite close and that the optimizations we introduce can also be used with \cite{Mins1} to improve substantially its time efficiency.
-\todo{TODO (Fabrice): another point is that we use a global hash to check termination, whereas MTZ uses another method which is maybe less optimal ! But this is quite trivial...
-TODO: introduce $\Oapp$}
+Papier~\cite{PSrec} presents PART, blackbox, applies to us too. (which we call PART-MTZ) is based on MTZ: it requires at least about $24e$ times more bandwidth (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ. As PART-MTZ uses MTZ as a blackbox, we can use the same construction with \df, yielding an algorithm that we call PART-\df. PART-\df and PART-MTZ have roughly the same transmission complexity.
 
 
 \section{From File Reconciliation to File Synchronization}
@@ -810,13 +809,13 @@ Results are given in Table \ref{tab:results}. In general, \btrsync spent more ti
   \label{tab:benchdirec}
 \begin{tabular}{ll}\toprule
 ~~{\bf Directory}              ~~&~~{\bf Description}\\\midrule
-~~{\tt syn}              ~~&~~A directory containing 1000 unique very small files\\
-~~{\tt syn\_shuf}    ~~&~~{\tt syn} changed by deleting 10 files, renaming 10 files and modifying 10 files \\
-~~{\tt source}                 ~~& ~~A snapshot of \btrsync's own source tree \\
-~~{\tt source\_moved}          ~~& ~~{\tt source} with one big folder (a few megabits) renamed.~~\\
-~~{\tt ff-13.0}           ~~& ~~The source archive of Mozilla Firefox 13.0.\\
-~~{\tt ff-13.0.1}         ~~& ~~The source archive of Mozilla Firefox 13.0.1\\
-~~{\tt empty}                  ~~& ~~An empty folder.\\\bottomrule
+~~{\tt syn}              ~~&~~a directory containing 1000 unique very small files\\
+~~{\tt syn\_shuf}    ~~&~~{\tt syn} changed by 10 deletions, renames and modifications \\
+~~{\tt source}                 ~~& ~~a snapshot of \btrsync's own source tree \\
+~~{\tt source\_moved}          ~~& ~~{\tt source} with one big folder (a few megabits) renamed\\
+~~{\tt ff-13.0}           ~~& ~~the source archive of Mozilla Firefox 13.0.\\
+~~{\tt ff-13.0.1}         ~~& ~~the source archive of Mozilla Firefox 13.0.1\\
+~~{\tt empty}                  ~~& ~~an empty folder\\\bottomrule
 \end{tabular}\smallskip
 \end{table}
 
@@ -874,10 +873,6 @@ In this paper, we introduced the novel set reconciliation protocol \df based on 
 
 Many interesting problems are left as future work, both theoretical and practical. On the theoretical side, the main effort to undertake would be to eliminate entirely the costly step of hashing to prime numbers by hashing instead to any integer coprime with all the $p_k$. This would make it harder to perform the actual reconciliation once $a$ and $b$ have been obtained, because there could exist multiple factorizations of $a$ and $b$ as products of $h_i$ and $h_i'$ and only one of them would be the correct one. A careful probabilistic analysis would be required to determine the probability of multiple factorizations, and to bound the cost of recovering the correct factorization.
 As for other aspects of our construction, many bounds on the transmisssion and computational complexity could be improved.
-It would also be interesting to compare the bandwidth use and running time of
-\df with that of other set reconciliation algorithms such as the ones
-from~\cite{Whats} and~\cite{byers}, and with that of MTZ~\cite{Whats}, also
-including the PART-\df and PART-MTZ variants.
 
 Other theoretical questions are left open by our study of move resolution. The algorithm that we propose is not \emph{optimal} in the sense that there should never be any need to use two different temporary file locations: one location is always sufficient to break cycles, and a more careful exploration of the move graph could proceed in this fashion. It is also interesting to wonder if there is a way to perform a minimal number of temporary moves (or if this problem is NP-complete), or if we can reduce the total number of moves by moving folders in addition to files.
 
@@ -892,7 +887,7 @@ Last, a possible additional feature that could be added to our file synchronizat
 %we should implement the non-prime version stuff... but difficult to find the correct subset of hi which factorizes...
 %This is left for future work.
 
-\section{Acknowledgment}
+\section*{Acknowledgment}
 
 The authors acknowledge Guillain Potron for his early involvement in this research work.
 
@@ -904,7 +899,6 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
 %\end{compactitem}
 
 \nocite{rsync}
-\nocite{wagner}
 
 % Please keep this on one line for single.sh script...
 \bibliographystyle{splncs03}\bibliography{btrsync}
