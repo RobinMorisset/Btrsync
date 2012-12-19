@@ -932,15 +932,15 @@ But we cannot have such optimization with \df.
 \label{sec:files}
 
 In Section~\ref{sec:hashing}, we reconciliated a set of files by looking only at their content.
-However, in practice, we do not wish to synchronize file \emph{sets}, but file
+However, in practice, we wish to synchronize file \emph{sets}, not just
 \emph{hierarchies}: we are not just interested in the \emph{content} of the
-files but in their \emph{metadata}. The most important metadata is the file's
+files but also in their \emph{metadata}. The most important metadata is the file's
 path (i.e., its name and its location in the filesystem), though other kinds of
 metadata exist (\eg, modification time, owner, permissions). In many use
 cases, the file metadata can change without changes in the file content: for
 instance, files can be \emph{moved} to a different location. When performing
 reconciliation, we must be aware of this fact, and reflect file moves without
-re-transferring the contents of the moved files (which is an improvement over
+re-transferring the contents of the moved files. (This is an improvement over
 popular synchronization tools such as \rsync).
 
 We will call this task \emph{file synchronization}. This section shows how it can be solved using the file reconciliation protocol that we introduced.
@@ -963,22 +963,18 @@ Oscar now looks at the list of content hashes of the missing files. For some of
 these hashes, Oscar may already have a file with the same content hash, only
 with the wrong metadata. For others, Oscar may not have any file with the same
 content hash. In the first case, Oscar can recreate Neil's file by altering the
-metadata, without retransferring the file contents. In the second case, Oscar
-needs to retrieve the full file contents from Neil. To complete the file
-synchronization, we first deal with all of Oscar's files which fall in the first
-case: this is a bit tricky because ``altering the metadata'' is not obvious to
-perform in-place when it involves file moves, and is the focus of
-Section~\ref{sec:moving}. Once this has been performed, we deal with the second case by transferring all missing
-files: this is explained in Section~\ref{sec:transferring}.
+metadata, without retransferring the file contents. This is presented in
+Section~\ref{sec:moving}. In the second case, Oscar needs to retrieve the full
+file contents from Neil. This is presented in Section~\ref{sec:transferring}.
 
 \subsection{Moving Existing Files}
 \label{sec:moving}
 
 Adjusting the metadata of existing files is trivial, except for file location which is the focus of this section: Oscar needs to perform a sequence of file moves on his copy to reproduce the structure of Neil's copy. Sadly, it is not straightforward to apply the moves, because, if we take a file to move, its destination might be blocked, either because a file already exists (we want to move $a$ to $b$, but $b$ already exists), or because a folder cannot be created (we want to move $a$ to $b/c$, but $b$ already exists as a file and not as a folder). Note that for a move operation $a \rightarrow b$, there is at most one file blocking the location $b$: we will call it the \textit{blocker}.
 
-If the blocker is absent on Neil, then we can just delete the blocker. However, if a blocker exists and is a file which appears in Neil with different metadata, then we might need to move this blocker somewhere else before we apply the move we are interested in. Moving the blocker might be impossible because of another blocker that we need to keep, and so on. It seems that we just need to continue until we reach a move which has no blocker or whose blocker can be deleted, but we can get caught in a cycle: if we must move $a$ to $b$, $b$ to $c$ and $c$ to $a$, then we will not be able to perform the operations without using a temporary location.
+If the blocker is absent on Neil, then we can just delete the blocker. However, if a blocker exists and is a file which appears in Neil with different metadata, then we might need to move this blocker somewhere else before we apply the move we are interested in. Moving the blocker might be impossible because of another blocker that we need to keep, and so on, possibly ending in a cycle (e.g., move $a$ to $b$ and $b$ to $a$) in which case we need to use an intermediate temporary location.
 
-How should we perform the moves? A simple way would be to move each file to a unique temporary location and then rearrange files to our liking: however, this performs many unnecessary moves and could lead to problems if the program is interrupted. We can do something more clever by performing a decomposition in Strongly Connected Components ({\sc scc}) of the \textit{move graph} (with one vertex per file and one edge per move operation going from to the file to its blocker or to its destination if no blocker exists).
+How should we perform the moves? A simple way would be to move each file to a unique temporary location and then move them to their final location: however, this performs many unnecessary moves and could lead to problems if the process is interrupted. We can do something more clever by performing a decomposition in Strongly Connected Components ({\sc scc}) of the \textit{move graph} (with one vertex per file and one edge per move operation going from to the file to its blocker or to its destination if no blocker exists).
 %this is wrong but hopefully the whole reasoning still stands: The computation of the {\sc scc} decomposition is simplified by the observation that because two files being moved to the same destination must have the same content, we can only keep one arbitrary in-edge per node, and look at the graph pruned in this fashion: its nodes have in-degree at most one, so the strongly connected components are either single nodes or cycles.
 Once the {\sc scc} decomposition is known, the moves can be applied by performing them in each {\sc scc} in a bottom-up fashion, an {\sc scc}'s moves being solved either trivially (for single files) or using one intermediate location (for cycles).
 
@@ -990,11 +986,8 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
   \begin{algorithmic}[1]
     \Require{$\mathfrak{M}$ is a dictionary where $\mathfrak{M}[f]$ denotes the intended destinations of $f$}
     \Statex
-    \Let{$C$}{[]} \Comment{Stores the \emph{color} of a file}
+    \Let{$C$}{[]} \Comment{Stores the \emph{color} of a file (initially ``not\_done'')}
     \Let{$T$}{[]} \Comment{Stores the temporary location assigned for a file}
-    \For{$f$ in $\mathfrak{M}$'s keys}
-      \Let{$C[f]$}{not\_done}
-    \EndFor
     \Function{unblock\_copy}{$f, d$}
       \If{$d$ is blocked by some $b$}
         \If{$b$ is not in $\mathfrak{M}$'s keys}
@@ -1020,10 +1013,8 @@ The detailed algorithm is implemented as two mutually recursive functions and pr
         \State \Return \Comment{We found a loop, moved $f$ out of the way}
       \EndIf
       \Let{$C[f]$}{doing}
-      \For{$d \in \mathfrak{M}[f]$}
-        \If{$d \neq f$}
-          \State \Call{unblock\_copy}{$f$, $d$} \Comment{Perform all the moves}
-        \EndIf
+      \For{$d \in \mathfrak{M}[f]$ with $d \neq f$}
+        \State \Call{unblock\_copy}{$f$, $d$} \Comment{Perform all the moves}
       \EndFor
       \If{$f \notin \mathfrak{M}[f]$ and $T[f]$ was not set}
         \State delete($f$)
@@ -1047,11 +1038,11 @@ Once all moves have been applied, Oscar's hierarchy contains all of its files
 which also exist on Neil, and they have been put at the correct location and have the right metadata. The
 only thing that remains is to transfer the contents of Neil's files that do not
 exist in Oscar's hierarchy and create those files at the right position. To do
-so, a simple solution is to use \rsync to synchronize explicitly the correct
+so, we can just use \rsync to synchronize explicitly the correct
 files on Neil to the matching locations in Oscar's hierarchy, using the fact that
-Oscar is now aware of all of Neil's files and their location. In so doing, we should ensure that multiple files on Neil that have the same content are only transferred once and then copied to all their locations without being retransferred.
+Oscar is now aware of all of Neil's files and their location. In so doing, we have to ensure that multiple files on Neil that have the same content are only transferred once and then copied to all their locations without being retransferred.
 
-It is interesting to notice that if a file's contents has been changed slightly on Neil but its location hasn't changed, then in most cases the \rsync invocation should try to transfer this file from Neil to Oscar and should reuse the older copy of the file on Oscar which is already at the correct location. Because \rsync uses rolling checksums to retransfer only relevant parts of a file, this may actually reduce the transmission complexity. If a file's content is slightly changed and the file is moved, however, then \btrsync will not be able to do anything intelligent; however, \rsync by itself also fails to detect such a case.
+It is interesting to notice that if a file's contents has been changed slightly on Neil but its location hasn't changed, then in most cases the \rsync invocation will reuse the existing copy of the file on Oscar when transferring this file from Neil to Oscar. Because \rsync uses rolling checksums to retransfer only relevant parts of a file, this may actually reduce the transmission complexity. If a file's content is slightly changed and the file is moved, however, then this gain will not occur.
 
 \section{Implementation}
 \label{sec:program}
@@ -1089,10 +1080,9 @@ were performed without any network transfer, by synchronizing two folders on
 the same host. Hence, time measurements mostly represent the {\sc cpu} cost of
 the synchronization.
 
-Results are given in Table \ref{tab:results}. In general, \btrsync spent more time than \rsync on computation (especially when the number of files is large, which is typically seen in the experiments involving {\tt syn}). Transmission results, however, turn out to be favorable to \btrsync.
+Results are given in Table \ref{tab:results}. In general, \btrsync spent more time than \rsync on computation (especially when the number of files is large, which is typically seen in the experiments involving {\tt syn}). Transmission results, however, are favorable to \btrsync.
 
-In the trivial experiments where either Oscar or Neil have no data at all, \rsync outperforms \btrsync. This is especially visible when Neil has no data: \rsync immediately notices that there is nothing to transfer, but \btrsync engages in information transfers to determine the symmetric
-difference.
+In the trivial experiments where either Oscar or Neil have no data at all, \rsync outperforms \btrsync. This is especially visible when Neil has no data: \rsync, unlike \btrsync, immediately notices that there is nothing to transfer.
 
 On non-trivial tasks, however, \btrsync outperforms \rsync. This is the case of the {\tt syn} datasets, where \btrsync does not have to transfer
 information about all unmodified files, and even more so in the case where there are no modifications at all. For Firefox source code datasets, \btrsync saves a very small amount of bandwidth, presumably because of unmodified files. For the \btrsync source code dataset, we notice that \btrsync, unlike \rsync, was able to detect the move and avoid retransferring the moved folder.
@@ -1363,12 +1353,8 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
   \label{tab:benchdirec}
 \begin{tabular}{ll}\toprule
 ~~{\bf Directory}              ~~&~~{\bf Description}\\\midrule
-~~{\tt syn}              ~~&~~A directory containing 1000 very small files containing~~\\
-~~                             ~~&~~the numbers $1,2,\ldots,1000$. \\
-~~{\tt syn\_shuf}    ~~&~~{\tt syn} with:\\
-                             ~~& ~~~~~10 deleted files\\
-                             ~~& ~~~~~10 renamed files \\
-                             ~~& ~~~~~10 modified files \\
+~~{\tt syn}              ~~&~~A directory containing 1000 unique very small files\\
+~~{\tt syn\_shuf}    ~~&~~{\tt syn} with: 10 deleted files, 10 renamed files 10 modified files \\
 ~~{\tt source}                 ~~& ~~A snapshot of \btrsync's own source tree \\
 ~~{\tt source\_moved}          ~~& ~~{\tt source} with one big folder (a few megabits) renamed.~~\\
 ~~{\tt ff-13.0}           ~~& ~~The source archive of Mozilla Firefox 13.0.\\
@@ -1384,19 +1370,16 @@ The authors acknowledge Guillain Potron for his early involvement in this resear
   \begin{tabular}{p{\dimexpr 0.3\linewidth-2\tabcolsep} p{\dimexpr
     0.7\linewidth-2\tabcolsep}}
     \toprule
-    $\blacktriangleright$ {\tt --delete} & Delete existing files on Oscar which
-    do not exist on Neil like \btrsync does.\\
+    $\blacktriangleright$ {\tt --delete} & Delete Oscar's files that were
+    deleted on Neil, like \btrsync does.\\
     $\blacktriangleright$ {\tt -I} & Ensure that \rsync does not cheat by
     looking at file modification times (which \btrsync does not do).\\
-    $\blacktriangleright$ {\tt --chmod="a=rx,u+w"} & Attempt to disable the
-    transfer of file permissions (which \btrsync does not transfer). Although
-    these settings ensure that \rsync does not need to transfer permissions,
-    verbose logging suggests that it does transfer them anyway, so \rsync must
-    lose a few bytes per file as compared to \btrsync for this
-    reason.\\
+    $\blacktriangleright$ {\tt --chmod="a=rx,u+w"} & Tell \rsync it does not
+    need to transfer file permissions (which \btrsync doesn't tranfer). Verbose
+    logging suggests that \rsync transfers them despite this option and thus
+    loses a few bytes per file as compared to \btrsync.\\
     $\blacktriangleright$ {\tt -v} & Count the number of sent and received
-    bytes. For \btrsync we added a piece of code counting the amount of data
-    transmitted during \btrsync's own negotiations.\\
+    bytes.\\
     \bottomrule
   \end{tabular}\smallskip
 \end{table}
