@@ -211,8 +211,8 @@ In what follows, we will extend to multisets the symbols of set operations (unio
 
 Let us write $\Set = \{h_1,\dots,h_n\}$ and $\Set' = \{h'_1,\dots,h'_{n'}\}$, such that: $h_1 \leq h_2 \leq \cdots \leq h_n$ and $h'_1 \leq h'_2 \leq \cdots \leq h'_{n'}$.
 Let $\SetD = \Set \setminus \Set'$ be the values deleted in Neil's version (compared to Oscar's version), and $\SetD' = \Set' \setminus \Set$ be the values added in Neil's version, with the adequate multiplicities.
-Let $T = \# \SetD + \# \SetD' = \# \left( \Files \Delta \Files' \right)$ be the number of differences between $\Set$ and $\Set'$, where we write
-$ \Files \Delta \Files' = (\Files \setminus \Files') \cup (\Files' \setminus \Files)$.
+Let $T = \# \SetD + \# \SetD' = \# \left( \SetD \Delta \SetD' \right)$ be the number of differences between $\Set$ and $\Set'$, where we write
+$ \SetD \Delta \SetD = (\SetD \setminus \SetD') \cup (\SetD' \setminus \SetD)$.
 
 
 \subsection{Basic Protocol with Bounded $T$}
