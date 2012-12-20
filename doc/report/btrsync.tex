@@ -306,7 +306,7 @@ After receiving the redundancies $c_1,\dots,c_k$ corresponding to $p_1,\dots,p_k
  S_k &= \CRT(S_{k-1},P_{k-1},s_k,p_k) \\
      &= S_{k-1} (p_k^{-1} \bmod P_{k-1}) p_k + s_k (P_{k-1}^{-1} \bmod p_k) P_{k-1} \bmod P_k.
 \end{align*}
-The full protocol is depicted in Figure~\ref{fig:complete-df}.
+The full protocol is depicted in Figure~\ref{fig:complete-df} page~\pageref{fig:complete-df}.
 Note that no information is lost and that the transmitted modular knowledge about the difference adds up until it becomes sufficiently large to reconcile $\Set$ and $\Set'$.
 Therefore, the number $\kappa$ of rounds used is the minimum number $k$ such that $T_k \ge T$.
 
@@ -458,7 +458,7 @@ This provides another constant-factor improvement of the transmission complexity
 
 \section{Computational Complexity}
 \label{sec:comp}
-In this section, we determine the computational complexity of \df. We first describe the complexity using a straightforward implementation, and then present how the complexity can be improved using four independent optimizations. A summary of all costs can be found in Table~\ref{tab:workload}.
+In this section, we determine the computational complexity of \df. We first describe the complexity using a straightforward implementation (Section~\ref{sec:basiccomp}), and then present how the complexity can be improved using four independent optimizations (Section~\ref{sec:optims}). A summary of all costs can be found in Table~\ref{tab:workload}.
 To simplify the analysis, we assume that there are no collisions, and that $n=n'$.
 
 %We first present some variants of the protocol we described above, and then we analyse the complexity of all these variants.
@@ -479,6 +479,7 @@ In \apref{ap:hashprime}, we recall this algorithm and present an optimization wh
 Hence, if we use the same $t$ for each round ($t_1=t_2=\cdots=t$), the complexity of \df using the operations described in this section is given in the third column of Table~\ref{tab:workload}.
 
 \subsection{Optimizations}
+\label{sec:optims}
 
 \subsubsection{Adapting $p_k$.}
 \label{sec:choicep}
@@ -608,7 +609,7 @@ computational performance but are not proved to reach linear asymptotic
 transmission complexity optimality (such as the ones from~\cite{Whats}
 or~\cite{byers}).
 
-In contrast with MTZ which is based on polynomials, our
+Unlike MTZ which is based on polynomials, our
 independently designed \df algorithm is based on number theory.
 \df and MTZ both achieve an optimal (i.e., linear) transmission complexity,
 except that
@@ -621,20 +622,21 @@ and often synchronised. This is not our setting, and there seems to be no
 straightforward manner to extend \df in this fashion while maintaining a good
 computational complexity. For this reason, our analysis of the computational
 complexity of MTZ in what follows will take into account the cost of computing
-the redundancies, like we did for \df.
+the redundancies, like we did for \df. The main differences of MTZ compared to
+\df are the following:
 
-The main differences of MTZ compared to \df are the following:
-\begin{compactitem}
+\begin{itemize}
 \item we synchronize monomic polynomials $X-h_i$ and $X-h'_i$ over a field $\mathbb{F}_q$ (with $q$ a $(u+1)$-bit primary number), instead of $u$-bit prime numbers $h_i$ and $h'_i$;
-\item $p_k$ are square-free polynomials with are co-prime together and also co-prime with all $X-h_i$ and $X-h'_i$, instead of numbers which are co-prime together and co-prime with all $h_i$ and $h'_i$ (for all the variants in Section~\ref{sec:choicep} except the last one);
-\end{compactitem}
+\item $p_k$ are square-free polynomials which are co-prime together and also co-prime with all $X-h_i$ and $X-h'_i$, instead of numbers which are co-prime together and co-prime with all $h_i$ and $h'_i$ (for all the variants in Section~\ref{sec:choicep} except the last one);
+\end{itemize}
 
-Indeed, in the basic version with one round, we have:
-\begin{compactitem}
-\item If we write $p = (X-\rho_1) \cdots (X-\rho_t)$, $c = \prod_{i=1}^n (X-h_i) \bmod p_k$ and $\chi_\Set = \prod_{i=1}^n (X-h_i)$, $\chi_\Set(\rho_j) = c(\rho_j)$, and so, due to Lagrange interpolation theorems, sending evaluations of $\chi_\Set$ in $t$ points $\rho_1,\dots,\rho_j$ as does Oscar in~\cite{Mins1}, is equivalent to sending $c$.
-\item The rational function interpolation of~\cite{Mins1} can also be seen as a rational number reconstruction of Theorem~\ref{th:theo}, but for polynomials: we try to recover two polynomials $a$,$b$ (with correct bound on degrees) such that $a b^{-1} \bmod p = c' c^{-1} \bmod p$.
-Notice that this implies that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended gcd computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
-\end{compactitem}
+\noindent Indeed, in the basic version with one round, we have:
+
+\begin{itemize}
+\item If we write $p = (X-\rho_1) \cdots (X-\rho_t)$, then $c = \prod_{i=1}^n (X-h_i) \bmod p_k$ and $\chi_\Set = \prod_{i=1}^n (X-h_i)$, $\chi_\Set(\rho_j) = c(\rho_j)$. Thus, due to Lagrange interpolation theorems, sending evaluations of $\chi_\Set$ in $t$ points $\rho_1,\dots,\rho_j$ as Oscar does in~\cite{Mins1}, is equivalent to sending $c$.
+\item The rational function interpolation of~\cite{Mins1} can also be seen as a version of the rational number reconstruction of Theorem~\ref{th:theo}, but for polynomials: we try to recover two polynomials $a$, $b$ (with correct bound on degrees) such that $a b^{-1} \bmod p = c' c^{-1} \bmod p$.
+Notice that this implies that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended GCD computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
+\end{itemize}
 
 The computational complexity of MTZ is therefore $O(n u^2 T + u^2 T^3)$ when doubling is used, which is not as good as
 our complexity of $\Oapp(n u)$ with FFT (if we forget the cost of hashing which is not a part of the set reconciliation protocol itself), and also not as good as our complexity of $\Oapp(n u^2 T)$ without FFT in situations where $n \ll T^2$. However, our better complexity bound comes from
