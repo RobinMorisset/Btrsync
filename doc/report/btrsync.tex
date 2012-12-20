@@ -458,7 +458,7 @@ This provides another constant-factor improvement of the transmission complexity
 
 \section{Computational Complexity}
 \label{sec:comp}
-In this section, we determine the computational complexity of \df. We first describe the complexity using a straightforward implementation, and then present how the complexity can be improved using four independent optimizations. A summary of all costs can be found in Table~\ref{tab:workload}.
+In this section, we determine the computational complexity of \df. We first describe the complexity using a straightforward implementation (Section~\ref{sec:basiccomp}), and then present how the complexity can be improved using four independent optimizations (Section~\ref{sec:optims}). A summary of all costs can be found in Table~\ref{tab:workload}.
 To simplify the analysis, we assume that there are no collisions, and that $n=n'$.
 
 %We first present some variants of the protocol we described above, and then we analyse the complexity of all these variants.
@@ -479,6 +479,7 @@ In \apref{ap:hashprime}, we recall this algorithm and present an optimization wh
 Hence, if we use the same $t$ for each round ($t_1=t_2=\cdots=t$), the complexity of \df using the operations described in this section is given in the third column of Table~\ref{tab:workload}.
 
 \subsection{Optimizations}
+\label{sec:optims}
 
 \subsubsection{Adapting $p_k$.}
 \label{sec:choicep}
