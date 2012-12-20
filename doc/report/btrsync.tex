@@ -609,7 +609,7 @@ computational performance but are not proved to reach linear asymptotic
 transmission complexity optimality (such as the ones from~\cite{Whats}
 or~\cite{byers}).
 
-In contrast with MTZ which is based on polynomials, our
+Unlike MTZ which is based on polynomials, our
 independently designed \df algorithm is based on number theory.
 \df and MTZ both achieve an optimal (i.e., linear) transmission complexity,
 except that
@@ -622,20 +622,21 @@ and often synchronised. This is not our setting, and there seems to be no
 straightforward manner to extend \df in this fashion while maintaining a good
 computational complexity. For this reason, our analysis of the computational
 complexity of MTZ in what follows will take into account the cost of computing
-the redundancies, like we did for \df.
+the redundancies, like we did for \df. The main differences of MTZ compared to
+\df are the following:
 
-The main differences of MTZ compared to \df are the following:
-\begin{compactitem}
+\begin{itemize}
 \item we synchronize monomic polynomials $X-h_i$ and $X-h'_i$ over a field $\mathbb{F}_q$ (with $q$ a $(u+1)$-bit primary number), instead of $u$-bit prime numbers $h_i$ and $h'_i$;
-\item $p_k$ are square-free polynomials with are co-prime together and also co-prime with all $X-h_i$ and $X-h'_i$, instead of numbers which are co-prime together and co-prime with all $h_i$ and $h'_i$ (for all the variants in Section~\ref{sec:choicep} except the last one);
-\end{compactitem}
+\item $p_k$ are square-free polynomials which are co-prime together and also co-prime with all $X-h_i$ and $X-h'_i$, instead of numbers which are co-prime together and co-prime with all $h_i$ and $h'_i$ (for all the variants in Section~\ref{sec:choicep} except the last one);
+\end{itemize}
 
-Indeed, in the basic version with one round, we have:
-\begin{compactitem}
-\item If we write $p = (X-\rho_1) \cdots (X-\rho_t)$, $c = \prod_{i=1}^n (X-h_i) \bmod p_k$ and $\chi_\Set = \prod_{i=1}^n (X-h_i)$, $\chi_\Set(\rho_j) = c(\rho_j)$, and so, due to Lagrange interpolation theorems, sending evaluations of $\chi_\Set$ in $t$ points $\rho_1,\dots,\rho_j$ as does Oscar in~\cite{Mins1}, is equivalent to sending $c$.
-\item The rational function interpolation of~\cite{Mins1} can also be seen as a rational number reconstruction of Theorem~\ref{th:theo}, but for polynomials: we try to recover two polynomials $a$,$b$ (with correct bound on degrees) such that $a b^{-1} \bmod p = c' c^{-1} \bmod p$.
-Notice that this implies that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended gcd computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
-\end{compactitem}
+\noindent Indeed, in the basic version with one round, we have:
+
+\begin{itemize}
+\item If we write $p = (X-\rho_1) \cdots (X-\rho_t)$, then $c = \prod_{i=1}^n (X-h_i) \bmod p_k$ and $\chi_\Set = \prod_{i=1}^n (X-h_i)$, $\chi_\Set(\rho_j) = c(\rho_j)$. Thus, due to Lagrange interpolation theorems, sending evaluations of $\chi_\Set$ in $t$ points $\rho_1,\dots,\rho_j$ as Oscar does in~\cite{Mins1}, is equivalent to sending $c$.
+\item The rational function interpolation of~\cite{Mins1} can also be seen as a version of the rational number reconstruction of Theorem~\ref{th:theo}, but for polynomials: we try to recover two polynomials $a$, $b$ (with correct bound on degrees) such that $a b^{-1} \bmod p = c' c^{-1} \bmod p$.
+Notice that this implies that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended GCD computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
+\end{itemize}
 
 The computational complexity of MTZ is therefore $O(n u^2 T + u^2 T^3)$ when doubling is used, which is not as good as
 our complexity of $\Oapp(n u)$ with FFT (if we forget the cost of hashing which is not a part of the set reconciliation protocol itself), and also not as good as our complexity of $\Oapp(n u^2 T)$ without FFT in situations where $n \ll T^2$. However, our better complexity bound comes from
