@@ -574,7 +574,7 @@ Oscar & factor $b_k$
       & $n u^2 T^2 + \frac{\phi(\alpha)}{\alpha} n u^4$
       & doubling\tnote{f} \\
       & \dots with FFT
-      & $n u T^2 + n u^3$
+      & $n u T + n u^3$
       & $n u + \frac{\phi(\alpha)}{\alpha} n u^3$
       & doubling\tnote{f} \\
 \bottomrule
@@ -637,7 +637,7 @@ Notice that this implies that the Gaussian elimination of cost $O(t^3 \mu(u))$ (
 \end{compactitem}
 
 The computational complexity of MTZ is therefore $O(n u^2 T + u^2 T^3)$ when doubling is used, which is not as good as
-our complexity of $\Oapp(n u)$ (if we forget the cost of hashing which is not a part of the set reconciliation protocol itself). However, our better complexity bound comes from
+our complexity of $\Oapp(n u)$ with FFT (if we forget the cost of hashing which is not a part of the set reconciliation protocol itself), and also not as good as our complexity of $\Oapp(n u^2 T)$ without FFT, if $n \ll T^2$. However, our better complexity bound comes from
 optimizations, all of which see (except, of course, the ones% of
 %Section~\ref{sec:choicep}
 concerning the choice of $p_k$) could also be applied to MTZ.
