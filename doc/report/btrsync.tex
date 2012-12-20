@@ -1,5 +1,4 @@
 % TODO: spellcheck
-% TODO: correct figures, put algo 1/2 together, put table title above tables, put proofs in appendix, ...
 \documentclass[twoside,envcountsame,runningheads]{llncs}
 
 \sloppy
@@ -468,11 +467,8 @@ To simplify the analysis, we assume that there are no collisions, and that $n=n'
 \label{sec:basiccomp}
 \label{sec:hashprime}
 
-\todo{
-TODOfabrice: introduce $\Oapp$}
-
 Let $\mu(l)$ be the time required to multiply two $l$-bit numbers, with the assumption that $\forall l,l', \mu(l+l') \ge \mu(l) + \mu(l')$.
-For naive (\ie, convolutive) algorithms, $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$. {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
+For naive (\ie, convolutive) algorithms, $\mu(l) = O(l^2)$, but using {\sc fft} multiplication~\cite{schonhage1971schnelle}, $\mu(l) = \Oapp(l)$ (where $\Oapp(f(n))$ is the shorthand for $O(f(n) \log^k f(n))$ for some $k$). {\sc fft} is experimentally faster than convolutive methods starting at $l \sim 10^6$.
 The modular division of two $l$-bit numbers and the reduction of a $2l$-bit number modulo a $l$-bit number are also known to cost $\Oapp(\mu(l))$~\cite{burnikel1998fast}.
 Indeed, in packages such as {\sf gmp}, division and modular reduction run in $\Oapp(l)$, for sufficiently large $l$.
 
@@ -606,7 +602,8 @@ The asymptotic computational complexity that can be achieved with the optimizati
 
 In this section, we compare \df with the existing set reconciliation algorithm by Minsky, Trachtenberg and Zippel in~\cite{Mins1} (which
 we call MTZ). This section is not concerned with the tasks of file reconciliation or file
-synchronization, only set reconciliation. We do not deal with other set reconciliation algorithms which try to achieve better
+synchronization, only set reconciliation. 
+We do not deal with other set reconciliation algorithms which try to achieve better
 computational performance but are not proved to reach linear asymptotic
 transmission complexity optimality (such as the ones from~\cite{Whats}
 or~\cite{byers}).
@@ -639,13 +636,13 @@ Indeed, in the basic version with one round, we have:
 Notice that this implies that the Gaussian elimination of cost $O(t^3 \mu(u))$ (used for this step by the authors of MTZ) can be replaced by an extended gcd computation of cost only $O(t^2 \mu(u))$ (and $\Oapp(\mu(ut))$ using advanced algorithms in~\cite{pan2004rational,wang2003acceleration});
 \end{compactitem}
 
-<<<<<<< HEAD
-The computational complexity of MTZ is therefore TODOfabrice, which is not as good as
-our complexity of TODOfabrice. However, our better complexity bound comes from
-optimizations, all of which see (except, of course, the ones of
-Section~\ref{sec:choicep}) could also be applied to MTZ.
+The computational complexity of MTZ is therefore $O(n u^2 T + u^2 T^3)$ when doubling is used, which is not as good as
+our complexity of $\Oapp(n u)$ (if we forget the cost of hashing which is not a part of the set reconciliation protocol itself). However, our better complexity bound comes from
+optimizations, all of which see (except, of course, the ones% of
+%Section~\ref{sec:choicep}
+concerning the choice of $p_k$) could also be applied to MTZ.
 
-An improved way to perform set reconciliation is presented in~\cite{PSrec}. The
+An improved way to perform set reconciliation is presented in~\cite{PSRec}. The
 construction presented in this article uses MTZ as a black box; it requires at least about $24e$ times more bandwidth (with a partition in $2$ parts), but substantially improves the computational complexity of MTZ. However, since this construction is agnostic about the workings of the underlying set reconciliation algorithm, it can be applied to \df to yield the same improvement in computational complexity.
 
 \section{From File Reconciliation to File Synchronization}
